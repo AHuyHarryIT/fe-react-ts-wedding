@@ -1,11 +1,217 @@
-# React + TypeScript + Vite
+# Wedding Planner - React + TypeScript + Vite
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+This template provides a modern setup for building wedding planning applications with React, TypeScript, and Vite. It includes Ant Design 5 for UI components, Tailwind CSS v4 for styling, and React Icons for iconography.
 
-Currently, two official plugins are available:
+## 🚀 Tech Stack
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+- **React 19** - Latest React with TypeScript support
+- **Vite** - Fast build tool and development server
+- **Ant Design 5** - Enterprise-class UI components
+- **Tailwind CSS v4** - Utility-first CSS framework
+- **React Icons** - Popular icon library with multiple icon sets
+- **Zustand** - Lightweight state management library
+- **Immer** - Immutable state updates for complex state
+- **Day.js** - Date manipulation library for Ant Design DatePicker
+- **Husky** - Git hooks for code quality
+- **lint-staged** - Run linters on staged files only
+- **Prettier** - Code formatting
+- **ESLint** - Code linting
+
+## 📦 Installation
+
+```bash
+npm install
+```
+
+## 🛠️ Development
+
+```bash
+npm run dev
+```
+
+## 🏗️ Build
+
+```bash
+npm run build
+```
+
+## 🎨 Features
+
+### Dark Mode Support
+- **System Preference Detection**: Automatically detects user's system dark mode preference
+- **Manual Toggle**: Users can manually switch between light and dark modes
+- **Persistent Settings**: Dark mode preference is saved in localStorage
+- **Seamless Integration**: Both Ant Design and Tailwind CSS components adapt to dark mode
+- **Smooth Transitions**: All color changes are animated with CSS transitions
+
+### Ant Design + Tailwind CSS Integration
+- Seamless integration between Ant Design components and Tailwind utilities
+- Custom theme configuration for Ant Design with dark mode algorithm
+- Tailwind config optimized to work with Ant Design (preflight disabled)
+- No style conflicts between the two frameworks
+
+### React Icons Integration
+- Uses React Icons instead of Ant Design icons for better flexibility
+- Includes icons from Font Awesome (fa), Simple Icons (si), Material Design (md)
+- Consistent icon styling with Tailwind classes
+
+### Code Quality Tools
+- Pre-commit hooks that run linters and formatters
+- Conventional commit message validation
+- TypeScript strict mode enabled
+
+## 🌙 Dark Mode Implementation
+
+The dark mode feature is implemented using a combination of:
+
+1. **React Context**: `ThemeContext` manages the global dark mode state
+2. **Ant Design Dark Algorithm**: Uses `theme.darkAlgorithm` for consistent dark theming
+3. **Tailwind CSS Dark Mode**: Class-based dark mode with `dark:` prefixes
+4. **Persistent Storage**: User preference saved in localStorage
+5. **System Preference**: Automatically detects `prefers-color-scheme: dark`
+
+### Key Files:
+- `src/contexts/ThemeContext.tsx` - Theme state management
+- `src/hooks/useTheme.ts` - Theme hook for components
+- `src/config/antd-theme.ts` - Ant Design theme configurations
+- `src/providers/AntdProvider.tsx` - Ant Design theme provider
+
+### Usage Example:
+```tsx
+import { useTheme } from './hooks/useTheme';
+
+function MyComponent() {
+  const { darkMode, toggleDarkMode, setDarkMode } = useTheme();
+  
+  return (
+    <div className={darkMode ? 'dark' : ''}>
+      <button onClick={toggleDarkMode}>
+        Toggle Dark Mode
+      </button>
+    </div>
+  );
+}
+```
+
+## 🎯 State Management with Zustand
+
+This project uses **Zustand** as a modern alternative to React Context and Redux for state management. Zustand provides a simple, lightweight, and TypeScript-friendly solution.
+
+### Features:
+- **Minimal Boilerplate**: Simple store creation without providers
+- **TypeScript Support**: Full type safety with excellent TypeScript integration
+- **Persistence**: Built-in localStorage persistence with selective state saving
+- **Immutable Updates**: Uses Immer middleware for complex state mutations
+- **DevTools**: Compatible with Redux DevTools for debugging
+- **Performance**: Automatic subscription optimization, no unnecessary re-renders
+
+### Store Architecture:
+
+#### 1. Theme Store (`src/stores/themeStore.ts`)
+Manages dark mode theme state with persistence:
+```tsx
+const { darkMode, toggleDarkMode, setDarkMode, initializeTheme } = useTheme();
+```
+
+#### 2. Notification Store (`src/stores/notificationStore.ts`)
+Handles application notifications:
+```tsx
+const { notifications, addNotification, removeNotification, clearAllNotifications } = useNotifications();
+```
+
+#### 3. Wedding Form Store (`src/stores/weddingFormStore.ts`)
+Complex form state with validation and async operations:
+```tsx
+const { 
+  formData, 
+  updateBride, 
+  updateGroom, 
+  updateWedding, 
+  saveForm, 
+  isLoading, 
+  errors 
+} = useWeddingForm();
+```
+
+### Key Store Features:
+
+#### Persistence
+```tsx
+persist(
+  (set) => ({ /* store logic */ }),
+  {
+    name: 'theme-storage',
+    storage: createJSONStorage(() => localStorage),
+    partialize: (state) => ({ darkMode: state.darkMode }), // Only persist specific fields
+  }
+)
+```
+
+#### Immer Integration
+```tsx
+immer((set) => ({
+  updateBride: (data) => set((state) => {
+    state.formData.bride = { ...state.formData.bride, ...data };
+  }),
+}))
+```
+
+#### Async Actions
+```tsx
+saveForm: async () => {
+  set((state) => { state.isLoading = true; });
+  try {
+    await apiCall();
+    set((state) => { state.isLoading = false; });
+  } catch (error) {
+    set((state) => { state.isLoading = false; });
+  }
+}
+```
+
+### Usage Patterns:
+
+#### Basic Store Usage
+```tsx
+import { useThemeStore } from '../stores';
+
+// Use entire store
+const themeStore = useThemeStore();
+
+// Use specific selectors (optimized)
+const darkMode = useThemeStore(state => state.darkMode);
+const toggleDarkMode = useThemeStore(state => state.toggleDarkMode);
+```
+
+#### Custom Hooks (Recommended)
+```tsx
+// src/hooks/useTheme.ts
+import { useThemeStore } from '../stores';
+
+export const useTheme = () => {
+  return useThemeStore();
+};
+```
+
+#### Centralized Exports
+```tsx
+// src/stores/index.ts
+export { useThemeStore, type ThemeState } from './themeStore';
+export { useNotificationStore, type NotificationState } from './notificationStore';
+
+// src/hooks/index.ts
+export { useTheme } from './useTheme';
+export { useNotifications } from './useNotifications';
+```
+
+### Benefits over React Context:
+- **No Provider Wrapping**: Stores are directly accessible without context providers
+- **Better Performance**: Automatic subscription optimization
+- **TypeScript Integration**: Better type inference and safety
+- **Persistence**: Built-in localStorage integration
+- **DevTools**: Native Redux DevTools support
+- **Code Splitting**: Stores can be lazy-loaded
+- **Testing**: Easier to test store logic in isolation
 
 ## Git Hooks with Husky
 
