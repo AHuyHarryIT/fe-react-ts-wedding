@@ -12,22 +12,32 @@ Currently, two official plugins are available:
 This project uses [Husky](https://typicode.github.io/husky/) to manage Git hooks:
 
 ### Pre-commit Hook
-- Runs ESLint to check code quality before each commit
-- Ensures code follows the project's linting rules
 
-### Pre-push Hook  
+- Uses [lint-staged](https://github.com/okonet/lint-staged) to run linters only on staged files
+- Runs ESLint with auto-fix on TypeScript/JavaScript files
+- Runs Prettier formatting on JSON, CSS, and Markdown files
+- Ensures code quality and consistent formatting before commits
+
+### Pre-push Hook
+
 - Runs TypeScript compilation and build process
 - Ensures the project builds successfully before pushing
 
 ### Commit Message Hook
+
+- Uses [@commitlint/cli](https://commitlint.js.org/) with conventional config
 - Validates commit messages follow conventional commit format
 - Expected format: `type(scope): description`
-- Allowed types: feat, fix, docs, style, refactor, test, chore, ci, build, perf
+- Allowed types: feat, fix, docs, style, refactor, test, chore, ci, build, perf, revert
 - Example: `feat(auth): add login functionality`
 
 ### Available Scripts
-- `npm run lint` - Run ESLint
-- `npm run lint:fix` - Run ESLint with auto-fix
+
+- `npm run lint` - Run ESLint on all files
+- `npm run lint:fix` - Run ESLint with auto-fix on all files
+- `npm run lint-staged` - Run lint-staged manually
+- `npm run format` - Format all files with Prettier
+- `npm run format:check` - Check if files are formatted correctly
 - `npm run build` - Build the project
 - `npm run dev` - Start development server
 
@@ -60,15 +70,15 @@ export default tseslint.config([
       // other options...
     },
   },
-])
+]);
 ```
 
 You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
 
 ```js
 // eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+import reactX from 'eslint-plugin-react-x';
+import reactDom from 'eslint-plugin-react-dom';
 
 export default tseslint.config([
   globalIgnores(['dist']),
@@ -89,5 +99,5 @@ export default tseslint.config([
       // other options...
     },
   },
-])
+]);
 ```
