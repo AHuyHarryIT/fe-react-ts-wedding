@@ -247,63 +247,235 @@ This project uses [Husky](https://typicode.github.io/husky/) to manage Git hooks
 - `npm run build` - Build the project
 - `npm run dev` - Start development server
 
-## Expanding the ESLint configuration
+# Wedding Landing Page - Dreams
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+A beautiful, modern wedding landing page built with React 19, TypeScript, Ant Design v5, and Tailwind CSS v4. This project showcases a professional wedding planning website with elegant design, smooth animations, and responsive layout.
 
-```js
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## 🌟 Features
 
-      // Remove tseslint.configs.recommended and replace with this
-      ...tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      ...tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      ...tseslint.configs.stylisticTypeChecked,
+### ✨ Modern Design
+- **Hero Section**: Stunning full-screen hero with background image and compelling CTA
+- **Services Section**: Professional service cards with icons and descriptions
+- **Portfolio Gallery**: Image gallery showcasing wedding photography and events
+- **Statistics Section**: Impressive numbers with parallax background
+- **Contact Form**: Complete contact form with validation
+- **Blog Section**: Latest blog posts and articles
+- **Footer**: Comprehensive footer with links and social media
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+### 🎨 UI/UX Excellence
+- **Responsive Design**: Mobile-first approach with perfect tablet and desktop layouts
+- **Dark Mode**: Complete dark/light theme support with smooth transitions
+- **Smooth Animations**: CSS animations and Ant Design transitions
+- **Modern Typography**: Beautiful font hierarchy and spacing
+- **Color Scheme**: Elegant pink/rose gradient theme
+- **Custom Scrollbar**: Branded scrollbar design
+
+### 🛠 Technical Features
+- **React 19**: Latest React with TypeScript
+- **Ant Design v5**: Enterprise-grade UI components
+- **Tailwind CSS v4**: Utility-first CSS framework with CSS-first configuration
+- **Zustand**: Lightweight state management
+- **React Icons**: Beautiful icon library
+- **Vite**: Fast build tool and development server
+- **ESLint & Prettier**: Code quality and formatting
+- **Husky**: Git hooks for quality assurance
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Node.js 18+
+- npm or yarn
+
+### Installation
+
+1. **Clone the repository**
+   ```bash
+   git clone <repository-url>
+   cd fe-react-ts-wedding
+   ```
+
+2. **Install dependencies**
+   ```bash
+   npm install
+   ```
+
+3. **Start development server**
+   ```bash
+   npm run dev
+   ```
+
+4. **Open in browser**
+   Navigate to `http://localhost:5173` (or the port shown in terminal)
+
+## 📁 Project Structure
+
+```
+src/
+├── components/
+│   ├── Navigation.tsx          # Header navigation with mobile menu
+│   ├── WeddingLandingPage.tsx  # Main landing page component
+│   └── ThemeInitializer.tsx    # Theme setup component
+├── contexts/
+│   ├── ThemeContext.tsx        # Theme context provider
+│   └── theme.ts               # Theme configuration
+├── hooks/
+│   ├── useTheme.ts            # Theme management hook
+│   ├── useNotifications.ts    # Notification management
+│   └── useWeddingForm.ts      # Wedding form state
+├── providers/
+│   └── AntdProvider.tsx       # Ant Design theme provider
+├── stores/
+│   ├── themeStore.ts          # Theme Zustand store
+│   ├── notificationStore.ts   # Notification store
+│   └── weddingFormStore.ts    # Form data store
+├── config/
+│   └── antd-theme.ts          # Ant Design theme configuration
+├── App.tsx                    # Main app component
+├── main.tsx                   # App entry point
+└── index.css                  # Global styles and Tailwind imports
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+## 🎨 Design Reference
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x';
-import reactDom from 'eslint-plugin-react-dom';
+This landing page is inspired by modern wedding planning websites with:
+- **Elegant color schemes**: Pink/rose gradients with sophisticated grays
+- **Professional photography**: High-quality wedding images from Unsplash
+- **Modern layout patterns**: Grid systems, cards, and sections
+- **Typography hierarchy**: Clear information architecture
+- **Call-to-action optimization**: Strategic button placements
 
-export default tseslint.config([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-]);
+## 🔧 Key Components
+
+### Navigation
+- Fixed header with transparency option
+- Mobile-responsive hamburger menu
+- Theme toggle button
+- Smooth scroll to sections
+
+### Hero Section
+- Full-screen background image
+- Gradient overlay for text readability
+- Compelling headline and description
+- Call-to-action buttons
+- Scroll indicator animation
+
+### Services Section
+- Grid layout with service cards
+- Icon-based visual hierarchy
+- Hover animations
+- Responsive design
+
+### Portfolio Gallery
+- Masonry-style image grid
+- Category labels
+- Hover effects
+- Modal view capability
+
+### Contact Form
+- Complete form validation
+- Multiple input types
+- Service selection dropdown
+- Date picker integration
+- Responsive layout
+
+## 🎯 SEO & Performance
+
+- **Semantic HTML**: Proper heading hierarchy and structure
+- **Responsive Images**: Optimized loading and sizing
+- **Lazy Loading**: Images load as needed
+- **Accessibility**: ARIA labels and keyboard navigation
+- **Performance**: Optimized bundle size and loading
+
+## 🌈 Customization
+
+### Theme Colors
+Edit `src/config/antd-theme.ts` to customize:
+- Primary colors
+- Secondary colors
+- Component-specific styles
+
+### Content
+Update content in `src/components/WeddingLandingPage.tsx`:
+- Service descriptions
+- Portfolio images
+- Contact information
+- Blog posts
+
+### Styling
+Modify `src/index.css` for:
+- Custom animations
+- Additional utilities
+- Component overrides
+
+## 📱 Responsive Breakpoints
+
+- **Mobile**: < 640px
+- **Tablet**: 641px - 1024px
+- **Desktop**: > 1024px
+
+All sections are optimized for each breakpoint with appropriate spacing, typography, and layout adjustments.
+
+## 🔗 Navigation Sections
+
+- **Home**: Hero section with main CTA
+- **Services**: Wedding planning services
+- **Portfolio**: Image gallery and work showcase
+- **About**: Statistics and company information
+- **Blog**: Latest articles and news
+- **Contact**: Contact form and information
+
+## 💡 Best Practices Implemented
+
+- **Component Architecture**: Modular, reusable components
+- **State Management**: Proper separation of concerns
+- **Type Safety**: Full TypeScript implementation
+- **Performance**: Optimized rendering and bundling
+- **Accessibility**: WCAG guidelines compliance
+- **Code Quality**: ESLint, Prettier, and consistent formatting
+
+## 🚀 Deployment
+
+Build for production:
+```bash
+npm run build
 ```
+
+Preview production build:
+```bash
+npm run preview
+```
+
+## 📄 Scripts
+
+- `npm run dev` - Start development server
+- `npm run build` - Build for production
+- `npm run preview` - Preview production build
+- `npm run lint` - Run ESLint
+- `npm run lint:fix` - Fix ESLint issues
+- `npm run format` - Format code with Prettier
+- `npm run ts:check` - Check TypeScript types
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Open a Pull Request
+
+## 📝 License
+
+This project is licensed under the MIT License.
+
+## 🙏 Acknowledgments
+
+- **Ant Design** team for the amazing component library
+- **Tailwind CSS** team for the utility-first framework
+- **Unsplash** photographers for beautiful wedding images
+- **React** team for the excellent framework
+
+---
+
+**Built with ❤️ by [Your Name]**
+
+*Creating beautiful wedding experiences through modern web technologies.*
