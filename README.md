@@ -1,9 +1,15 @@
-# Wedding Planner - React + TypeScript + Vite
+# Wedding Planner - Full Stack Application
 
-This template provides a modern setup for building wedding planning applications with React, TypeScript, and Vite. It includes Ant Design 5 for UI components, Tailwind CSS v4 for styling, and React Icons for iconography.
+This is a full-stack wedding planning application with a React TypeScript frontend and NestJS backend. The frontend provides a modern user interface with Ant Design 5, Tailwind CSS v4, and React Icons, while the backend offers RESTful CRUD APIs powered by NestJS and Prisma.
+
+## 🏗️ Project Structure
+
+- **Frontend** (`/`) - React + TypeScript + Vite application
+- **Backend** (`/backend`) - NestJS + Prisma API server
 
 ## 🚀 Tech Stack
 
+### Frontend
 - **React 19** - Latest React with TypeScript support
 - **Vite** - Fast build tool and development server
 - **Ant Design 5** - Enterprise-class UI components
@@ -17,21 +23,51 @@ This template provides a modern setup for building wedding planning applications
 - **Prettier** - Code formatting
 - **ESLint** - Code linting
 
+### Backend
+- **NestJS** - Progressive Node.js framework
+- **Prisma** - Modern ORM for database access
+- **PostgreSQL** - Relational database
+- **TypeScript** - Type-safe development
+
 ## 📦 Installation
 
+### Frontend
 ```bash
 npm install
 ```
 
+### Backend
+```bash
+cd backend
+npm install
+npx prisma generate
+```
+
 ## 🛠️ Development
 
+### Frontend
 ```bash
 npm run dev
 ```
 
+### Backend
+```bash
+cd backend
+npm run start:dev
+```
+
+The frontend will be available at `http://localhost:5173` and the backend API at `http://localhost:3000`.
+
 ## 🏗️ Build
 
+### Frontend
 ```bash
+npm run build
+```
+
+### Backend
+```bash
+cd backend
 npm run build
 ```
 
@@ -307,3 +343,26 @@ export default tseslint.config([
   },
 ]);
 ```
+
+## 🔌 Backend API
+
+The backend provides RESTful CRUD APIs for all wedding-related entities. See the [Backend README](./backend/README.md) for detailed API documentation.
+
+### Available Endpoints
+
+- **Users** - `/users` - User management and authentication
+- **Weddings** - `/weddings` - Wedding event management
+- **Guests** - `/guests` - Guest list and RSVP management
+- **Vendors** - `/vendors` - Vendor management (catering, photography, etc.)
+- **Tasks** - `/tasks` - Wedding planning task management
+
+### Database Schema
+
+The Prisma schema includes:
+- User model with role-based access
+- Wedding model with bride, groom, date, venue, and budget
+- Guest model with RSVP status and dietary restrictions
+- Vendor model with categorization and payment tracking
+- Task model with priority levels and due dates
+
+For more details, see the [Prisma schema](./backend/prisma/schema.prisma).
