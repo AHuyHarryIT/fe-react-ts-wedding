@@ -1,0 +1,121 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      UserRole @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  weddings  Wedding[]
+}
+
+model Wedding {
+  id          String    @id @default(uuid())
+  brideName   String
+  groomName   String
+  weddingDate DateTime
+  venue       String?
+  budget      Float?
+  status      WeddingStatus @default(PLANNING)
+  description String?
+  userId      String
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  guests      Guest[]
+  vendors     Vendor[]
+  tasks       Task[]
+}
+
+model Guest {
+  id          String   @id @default(uuid())
+  name        String
+  email       String?
+  phone       String?
+  rsvpStatus  RsvpStatus @default(PENDING)
+  plusOne     Boolean  @default(false)
+  dietaryRestrictions String?
+  weddingId   String
+  wedding     Wedding  @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model Vendor {
+  id          String      @id @default(uuid())
+  name        String
+  category    VendorCategory
+  contactName String?
+  email       String?
+  phone       String?
+  price       Float?
+  paid        Boolean     @default(false)
+  notes       String?
+  weddingId   String
+  wedding     Wedding     @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+model Task {
+  id          String      @id @default(uuid())
+  title       String
+  description String?
+  dueDate     DateTime?
+  completed   Boolean     @default(false)
+  priority    Priority    @default(MEDIUM)
+  weddingId   String
+  wedding     Wedding     @relation(fields: [weddingId], references: [id], onDelete: Cascade)
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+}
+
+enum UserRole {
+  USER
+  ADMIN
+}
+
+enum WeddingStatus {
+  PLANNING
+  CONFIRMED
+  COMPLETED
+  CANCELLED
+}
+
+enum RsvpStatus {
+  PENDING
+  ACCEPTED
+  DECLINED
+}
+
+enum VendorCategory {
+  VENUE
+  CATERING
+  PHOTOGRAPHY
+  VIDEOGRAPHY
+  MUSIC
+  FLORIST
+  CAKE
+  DECORATION
+  TRANSPORTATION
+  OTHER
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+}
