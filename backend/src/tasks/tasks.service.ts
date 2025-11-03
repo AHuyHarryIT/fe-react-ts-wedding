@@ -8,12 +8,13 @@ export class TasksService {
   constructor(private prisma: PrismaService) {}
 
   create(createTaskDto: CreateTaskDto) {
-    const data: any = { ...createTaskDto };
-    if (createTaskDto.dueDate) {
-      data.dueDate = new Date(createTaskDto.dueDate);
-    }
     return this.prisma.task.create({
-      data,
+      data: {
+        ...createTaskDto,
+        dueDate: createTaskDto.dueDate
+          ? new Date(createTaskDto.dueDate)
+          : undefined,
+      },
     });
   }
 
@@ -35,13 +36,14 @@ export class TasksService {
   }
 
   update(id: string, updateTaskDto: UpdateTaskDto) {
-    const data: any = { ...updateTaskDto };
-    if (updateTaskDto.dueDate) {
-      data.dueDate = new Date(updateTaskDto.dueDate);
-    }
     return this.prisma.task.update({
       where: { id },
-      data,
+      data: {
+        ...updateTaskDto,
+        dueDate: updateTaskDto.dueDate
+          ? new Date(updateTaskDto.dueDate)
+          : undefined,
+      },
     });
   }
 

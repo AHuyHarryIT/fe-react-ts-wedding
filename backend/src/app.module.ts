@@ -9,7 +9,14 @@ import { VendorsModule } from './vendors/vendors.module';
 import { TasksModule } from './tasks/tasks.module';
 
 @Module({
-  imports: [PrismaModule, UsersModule, WeddingsModule, GuestsModule, VendorsModule, TasksModule],
+  imports: [
+    PrismaModule,
+    UsersModule,
+    WeddingsModule,
+    GuestsModule,
+    VendorsModule,
+    TasksModule,
+  ],
   controllers: [AppController],
   providers: [AppService],
 })

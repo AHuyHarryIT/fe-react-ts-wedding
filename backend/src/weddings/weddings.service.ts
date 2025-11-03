@@ -40,13 +40,14 @@ export class WeddingsService {
   }
 
   update(id: string, updateWeddingDto: UpdateWeddingDto) {
-    const data: any = { ...updateWeddingDto };
-    if (updateWeddingDto.weddingDate) {
-      data.weddingDate = new Date(updateWeddingDto.weddingDate);
-    }
     return this.prisma.wedding.update({
       where: { id },
-      data,
+      data: {
+        ...updateWeddingDto,
+        weddingDate: updateWeddingDto.weddingDate
+          ? new Date(updateWeddingDto.weddingDate)
+          : undefined,
+      },
     });
   }
 
