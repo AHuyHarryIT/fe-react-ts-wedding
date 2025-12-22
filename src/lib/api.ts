@@ -26,7 +26,12 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    if (error.response?.status === 401) {
+    // Don't auto-redirect on 401 during login - let the component handle it
+    // Only redirect if it's an authenticated endpoint that fails
+    if (
+      error.response?.status === 401 &&
+      !error.config.url?.includes('/login')
+    ) {
       // Clear auth state and redirect to login
       window.location.href = '/login';
     }

@@ -39,11 +39,8 @@ const AdminLogin: React.FC = () => {
         navigate({ to: '/' });
       }, 1000);
     },
-    onError: (error: unknown) => {
-      const err = error as { response?: { data?: { message?: string } } };
-      const errorMessage =
-        err.response?.data?.message || 'Invalid phone number or password';
-      messageApi.error(errorMessage);
+    onError: () => {
+      messageApi.error('Invalid phone number or password');
     },
   });
 
