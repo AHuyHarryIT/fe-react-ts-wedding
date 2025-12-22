@@ -6,11 +6,15 @@ This template provides a modern setup for building wedding planning applications
 
 - **React 19** - Latest React with TypeScript support
 - **Vite** - Fast build tool and development server
+- **TanStack Router** - Type-safe routing with file-based routes
+- **TanStack Query** - Powerful data synchronization and caching
 - **Ant Design 5** - Enterprise-class UI components
 - **Tailwind CSS v4** - Utility-first CSS framework
 - **React Icons** - Popular icon library with multiple icon sets
 - **Zustand** - Lightweight state management library
+- **Axios** - Promise-based HTTP client
 - **Immer** - Immutable state updates for complex state
+- **Motion (Framer Motion)** - Production-ready animations
 - **Day.js** - Date manipulation library for Ant Design DatePicker
 - **Husky** - Git hooks for code quality
 - **lint-staged** - Run linters on staged files only
@@ -36,6 +40,15 @@ npm run build
 ```
 
 ## 🎨 Features
+
+### Admin Authentication System
+- **Admin Login Page**: Beautiful login UI with glassmorphism effects (`/admin/login`)
+- **TanStack Query Integration**: Efficient API state management
+- **Zustand Auth Store**: Persistent authentication state
+- **JWT Token Management**: Automatic token refresh and validation
+- **Protected Routes**: Route guards for admin pages
+- **Error Handling**: User-friendly error messages
+- See [ADMIN_LOGIN.md](./ADMIN_LOGIN.md) for detailed documentation
 
 ### Dark Mode Support
 - **System Preference Detection**: Automatically detects user's system dark mode preference
@@ -458,9 +471,9 @@ npm run preview
 ## 🤝 Contributing
 
 1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/amazing-feature`)
+2. Create your feature branch (`git checkout -b feat/amazing-feature`)
 3. Commit your changes (`git commit -m 'Add some amazing feature'`)
-4. Push to the branch (`git push origin feature/amazing-feature`)
+4. Push to the branch (`git push origin feat/amazing-feature`)
 5. Open a Pull Request
 
 ## 📝 License
@@ -476,6 +489,5 @@ This project is licensed under the MIT License.
 
 ---
 
-**Built with ❤️ by [Your Name]**
+**Built with ❤️ by [AHuyHarryIT]**
 
-*Creating beautiful wedding experiences through modern web technologies.*

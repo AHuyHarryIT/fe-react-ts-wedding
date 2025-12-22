@@ -170,7 +170,7 @@ const ServicesSection: React.FC = () => {
                     ? 'bg-gray-800'
                     : 'bg-white/70 backdrop-blur-sm border border-white/20'
                 }`}
-                bodyStyle={{ padding: '2rem' }}
+                styles={{ body: { padding: '2rem' } }}
               >
                 <div
                   className={`w-16 h-16 rounded-full mx-auto mb-6 flex items-center justify-center ${
@@ -263,7 +263,7 @@ const WeddingFeaturesSection: React.FC = () => {
             <Col xs={24} sm={12} lg={8} key={index}>
               <Card
                 className="border-none shadow-lg hover:shadow-xl transition-all duration-300 group overflow-hidden"
-                bodyStyle={{ padding: 0 }}
+                styles={{ body: { padding: 0 } }}
                 cover={
                   <div className="relative overflow-hidden h-64">
                     <img
@@ -661,7 +661,7 @@ const BlogSection: React.FC = () => {
                     ? 'bg-gray-700'
                     : 'bg-white/80 backdrop-blur-sm border border-white/30'
                 }`}
-                bodyStyle={{ padding: '1.5rem' }}
+                styles={{ body: { padding: '1.5rem' } }}
                 cover={
                   <div className="relative overflow-hidden h-48">
                     <img
