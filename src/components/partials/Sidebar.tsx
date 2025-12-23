@@ -5,6 +5,7 @@ import {
   DollarOutlined,
   FileImageOutlined,
   GiftOutlined,
+  KeyOutlined,
   SafetyOutlined,
   SettingOutlined,
   ShoppingOutlined,
@@ -77,6 +78,12 @@ export function Sidebar({
       icon: <SafetyOutlined />,
       label: 'Roles',
       onClick: () => navigate({ to: '/roles' }),
+    },
+    {
+      key: 'permissions',
+      icon: <KeyOutlined />,
+      label: 'Permissions',
+      onClick: () => navigate({ to: '/permissions' }),
     },
     {
       key: 'settings',

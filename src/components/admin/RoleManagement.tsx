@@ -74,7 +74,7 @@ export function RoleManagement() {
 
   const { data: permissionsData } = useQuery({
     queryKey: ['permissions'],
-    queryFn: () => permissionApi.getAll({ limit: 1000 }),
+    queryFn: () => permissionApi.list({ limit: 10 }),
   });
 
   const { data: rolePermissionsData } = useQuery({
