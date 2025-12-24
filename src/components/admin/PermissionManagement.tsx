@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Button, Card, Input, Space, Table, Tag, Typography } from 'antd';
 import { useState } from 'react';
 import { useTheme } from '../../hooks';
-import { permissionApi } from '../../lib/api';
+import { permissionApi } from '../../lib';
 
 const { Title, Text } = Typography;
 

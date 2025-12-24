@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router';
 import { Layout, message } from 'antd';
 import { useState, type ReactNode } from 'react';
 import { useTheme } from '../../hooks';
-import { authApi } from '../../lib/api';
+import { authApi } from '../../lib';
 import { AntdProvider } from '../../providers/AntdProvider';
 import { useAuthStore } from '../../stores/authStore';
 import { Footer } from '../partials/Footer';

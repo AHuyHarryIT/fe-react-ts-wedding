@@ -32,7 +32,7 @@ import {
   type Permission,
   type CreateRoleRequest,
   type UpdateRoleRequest,
-} from '../../lib/api';
+} from '../../lib';
 import { useTheme } from '../../hooks/useTheme';
 
 const { Title, Text } = Typography;
