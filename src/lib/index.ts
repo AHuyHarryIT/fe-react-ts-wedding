@@ -27,6 +27,22 @@ export type {
 // Permission Service
 export { permissionApi } from './services/PermissionService';
 
+// Product Service
+export { productApi } from './services/ProductService';
+export type {
+  Product,
+  CreateProductRequest,
+  UpdateProductRequest,
+} from './services/ProductService';
+
+// Category Service
+export { categoryApi } from './services/CategoryService';
+export type {
+  Category,
+  CreateCategoryRequest,
+  UpdateCategoryRequest,
+} from './services/CategoryService';
+
 // Common Types
 export type {
   PaginationParams,

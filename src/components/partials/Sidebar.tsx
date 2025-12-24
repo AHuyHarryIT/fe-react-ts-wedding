@@ -9,6 +9,7 @@ import {
   SafetyOutlined,
   SettingOutlined,
   ShoppingOutlined,
+  TagOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from '@tanstack/react-router';
@@ -62,6 +63,13 @@ export function Sidebar({
       key: 'products',
       icon: <ShoppingOutlined />,
       label: 'Products',
+      onClick: () => navigate({ to: '/products' }),
+    },
+    {
+      key: 'categories',
+      icon: <TagOutlined />,
+      label: 'Categories',
+      onClick: () => navigate({ to: '/categories' }),
     },
     {
       key: 'albums',

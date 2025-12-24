@@ -8,106 +8,182 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root'
-import { Route as RolesRouteImport } from './routes/roles'
-import { Route as PermissionsRouteImport } from './routes/permissions'
-import { Route as LoginRouteImport } from './routes/login'
-import { Route as IndexRouteImport } from './routes/index'
+import { Route as rootRouteImport } from './routes/__root';
+import { Route as RolesRouteImport } from './routes/roles';
+import { Route as ProductsRouteImport } from './routes/products';
+import { Route as PermissionsRouteImport } from './routes/permissions';
+import { Route as LoginRouteImport } from './routes/login';
+import { Route as CategoriesRouteImport } from './routes/categories';
+import { Route as IndexRouteImport } from './routes/index';
+import { Route as AdminCategoriesRouteImport } from './routes/admin/categories';
 
 const RolesRoute = RolesRouteImport.update({
   id: '/roles',
   path: '/roles',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
+const ProductsRoute = ProductsRouteImport.update({
+  id: '/products',
+  path: '/products',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const PermissionsRoute = PermissionsRouteImport.update({
   id: '/permissions',
   path: '/permissions',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
+const CategoriesRoute = CategoriesRouteImport.update({
+  id: '/categories',
+  path: '/categories',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any)
+} as any);
+const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
+  id: '/admin/categories',
+  path: '/admin/categories',
+  getParentRoute: () => rootRouteImport,
+} as any);
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/permissions': typeof PermissionsRoute
-  '/roles': typeof RolesRoute
+  '/': typeof IndexRoute;
+  '/categories': typeof CategoriesRoute;
+  '/login': typeof LoginRoute;
+  '/permissions': typeof PermissionsRoute;
+  '/products': typeof ProductsRoute;
+  '/roles': typeof RolesRoute;
+  '/admin/categories': typeof AdminCategoriesRoute;
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/permissions': typeof PermissionsRoute
-  '/roles': typeof RolesRoute
+  '/': typeof IndexRoute;
+  '/categories': typeof CategoriesRoute;
+  '/login': typeof LoginRoute;
+  '/permissions': typeof PermissionsRoute;
+  '/products': typeof ProductsRoute;
+  '/roles': typeof RolesRoute;
+  '/admin/categories': typeof AdminCategoriesRoute;
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/login': typeof LoginRoute
-  '/permissions': typeof PermissionsRoute
-  '/roles': typeof RolesRoute
+  __root__: typeof rootRouteImport;
+  '/': typeof IndexRoute;
+  '/categories': typeof CategoriesRoute;
+  '/login': typeof LoginRoute;
+  '/permissions': typeof PermissionsRoute;
+  '/products': typeof ProductsRoute;
+  '/roles': typeof RolesRoute;
+  '/admin/categories': typeof AdminCategoriesRoute;
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/permissions' | '/roles'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/permissions' | '/roles'
-  id: '__root__' | '/' | '/login' | '/permissions' | '/roles'
-  fileRoutesById: FileRoutesById
+  fileRoutesByFullPath: FileRoutesByFullPath;
+  fullPaths:
+    | '/'
+    | '/categories'
+    | '/login'
+    | '/permissions'
+    | '/products'
+    | '/roles'
+    | '/admin/categories';
+  fileRoutesByTo: FileRoutesByTo;
+  to:
+    | '/'
+    | '/categories'
+    | '/login'
+    | '/permissions'
+    | '/products'
+    | '/roles'
+    | '/admin/categories';
+  id:
+    | '__root__'
+    | '/'
+    | '/categories'
+    | '/login'
+    | '/permissions'
+    | '/products'
+    | '/roles'
+    | '/admin/categories';
+  fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  LoginRoute: typeof LoginRoute
-  PermissionsRoute: typeof PermissionsRoute
-  RolesRoute: typeof RolesRoute
+  IndexRoute: typeof IndexRoute;
+  CategoriesRoute: typeof CategoriesRoute;
+  LoginRoute: typeof LoginRoute;
+  PermissionsRoute: typeof PermissionsRoute;
+  ProductsRoute: typeof ProductsRoute;
+  RolesRoute: typeof RolesRoute;
+  AdminCategoriesRoute: typeof AdminCategoriesRoute;
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/roles': {
-      id: '/roles'
-      path: '/roles'
-      fullPath: '/roles'
-      preLoaderRoute: typeof RolesRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/roles';
+      path: '/roles';
+      fullPath: '/roles';
+      preLoaderRoute: typeof RolesRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/products': {
+      id: '/products';
+      path: '/products';
+      fullPath: '/products';
+      preLoaderRoute: typeof ProductsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/permissions': {
-      id: '/permissions'
-      path: '/permissions'
-      fullPath: '/permissions'
-      preLoaderRoute: typeof PermissionsRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/permissions';
+      path: '/permissions';
+      fullPath: '/permissions';
+      preLoaderRoute: typeof PermissionsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/login': {
-      id: '/login'
-      path: '/login'
-      fullPath: '/login'
-      preLoaderRoute: typeof LoginRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/login';
+      path: '/login';
+      fullPath: '/login';
+      preLoaderRoute: typeof LoginRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/categories': {
+      id: '/categories';
+      path: '/categories';
+      fullPath: '/categories';
+      preLoaderRoute: typeof CategoriesRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
-    }
+      id: '/';
+      path: '/';
+      fullPath: '/';
+      preLoaderRoute: typeof IndexRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
+    '/admin/categories': {
+      id: '/admin/categories';
+      path: '/admin/categories';
+      fullPath: '/admin/categories';
+      preLoaderRoute: typeof AdminCategoriesRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
   }
 }
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CategoriesRoute: CategoriesRoute,
   LoginRoute: LoginRoute,
   PermissionsRoute: PermissionsRoute,
+  ProductsRoute: ProductsRoute,
   RolesRoute: RolesRoute,
-}
+  AdminCategoriesRoute: AdminCategoriesRoute,
+};
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>()
+  ._addFileTypes<FileRouteTypes>();
