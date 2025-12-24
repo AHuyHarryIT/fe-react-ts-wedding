@@ -11,10 +11,55 @@ export const api = axios.create({
   withCredentials: true, // Enable cookies for cookie-based auth
 });
 
-// Request interceptor (cookies handled automatically by browser)
+// Track if a token refresh is in progress to avoid multiple simultaneous refresh calls
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (value?: unknown) => void;
+  reject: (reason?: unknown) => void;
+}> = [];
+
+const processQueue = (error: unknown = null) => {
+  failedQueue.forEach((prom) => {
+    if (error) {
+      prom.reject(error);
+    } else {
+      prom.resolve();
+    }
+  });
+  failedQueue = [];
+};
+
+// Request interceptor - refresh token before each request
 api.interceptors.request.use(
-  (config) => {
-    // Cookies are sent automatically with withCredentials: true
+  async (config) => {
+    // Skip token refresh for login, register, and refresh endpoints
+    const skipRefresh = ['/auth/login', '/auth/register', '/auth/refresh'].some(
+      (path) => config.url?.includes(path)
+    );
+
+    if (!skipRefresh) {
+      try {
+        // If a refresh is already in progress, wait for it
+        if (isRefreshing) {
+          await new Promise((resolve, reject) => {
+            failedQueue.push({ resolve, reject });
+          });
+        } else {
+          // Refresh the token before making the request
+          isRefreshing = true;
+          await api.post('/auth/refresh');
+          isRefreshing = false;
+          processQueue();
+        }
+      } catch (error) {
+        isRefreshing = false;
+        processQueue(error);
+        // If refresh fails, redirect to login
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+    }
+
     return config;
   },
   (error) => {
