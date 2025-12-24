@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { AdminLayout } from '../components/layouts/AdminLayout';
-import { PermissionManagement } from '../components/admin/PermissionManagement';
+import { AdminLayout } from '@components/layouts/AdminLayout';
+import { PermissionManagement } from '@components/admin/PermissionManagement';
 
 export const Route = createFileRoute('/permissions')({
   component: PermissionManagementPage,

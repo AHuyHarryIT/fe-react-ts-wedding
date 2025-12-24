@@ -18,9 +18,9 @@ import {
   TeamOutlined,
 } from '@ant-design/icons';
 import { motion } from 'motion/react';
-import { useTheme } from '../hooks';
-import { useAuthStore } from '../stores/authStore';
-import { AdminLayout } from '../components/layouts/AdminLayout';
+import { useTheme } from '@hooks';
+import { useAuthStore } from '@stores/authStore';
+import { AdminLayout } from '@components/layouts/AdminLayout';
 
 const { Title, Text } = Typography;
 

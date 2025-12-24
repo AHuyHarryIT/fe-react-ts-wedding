@@ -8,7 +8,7 @@ import {
   PhoneOutlined,
 } from '@ant-design/icons';
 import { motion, useScroll, useMotionValueEvent } from 'motion/react';
-import { useTheme } from '../hooks';
+import { useTheme } from '@hooks';
 
 const { Text } = Typography;
 

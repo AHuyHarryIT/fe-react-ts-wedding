@@ -27,7 +27,7 @@ import {
   TwitterOutlined,
   ArrowUpOutlined,
 } from '@ant-design/icons';
-import { useTheme } from '../hooks';
+import { useTheme } from '@hooks';
 
 const { Title, Paragraph, Text } = Typography;
 const { TextArea } = Input;

@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { RoleManagement } from '../components/admin/RoleManagement';
-import { AdminLayout } from '../components/layouts/AdminLayout';
+import { RoleManagement } from '@components/admin/RoleManagement';
+import { AdminLayout } from '@components/layouts/AdminLayout';
 
 export const Route = createFileRoute('/roles')({
   component: RoleManagementPage,

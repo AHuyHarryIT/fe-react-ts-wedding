@@ -1,4 +1,4 @@
-import { useWeddingFormStore } from '../stores';
+import { useWeddingFormStore } from '@stores';
 
 export const useWeddingForm = () => {
   return useWeddingFormStore();

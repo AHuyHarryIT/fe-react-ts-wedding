@@ -1,7 +1,7 @@
-import { AntdProvider } from './providers/AntdProvider';
-import { useTheme } from './hooks';
-import Navigation from './components/Navigation';
-import WeddingLandingPage from './components/WeddingLandingPage';
+import { AntdProvider } from '@providers/AntdProvider';
+import { useTheme } from '@hooks';
+import Navigation from '@components/Navigation';
+import WeddingLandingPage from '@components/WeddingLandingPage';
 
 function App() {
   const { darkMode } = useTheme();

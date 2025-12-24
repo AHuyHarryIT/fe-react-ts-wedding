@@ -32,8 +32,8 @@ import {
   type Permission,
   type CreateRoleRequest,
   type UpdateRoleRequest,
-} from '../../lib';
-import { useTheme } from '../../hooks/useTheme';
+} from '@lib';
+import { useTheme } from '@hooks/useTheme';
 
 const { Title, Text } = Typography;
 const { TextArea } = Input;

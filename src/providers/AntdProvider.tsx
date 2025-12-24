@@ -1,6 +1,6 @@
 import React from 'react';
 import { ConfigProvider } from 'antd';
-import { getLightTheme, getDarkTheme } from '../config/antd-theme';
+import { getLightTheme, getDarkTheme } from '@config/antd-theme';
 
 interface AntdProviderProps {
   children: React.ReactNode;

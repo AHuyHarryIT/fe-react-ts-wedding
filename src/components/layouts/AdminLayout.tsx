@@ -2,13 +2,13 @@ import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { Layout, message } from 'antd';
 import { useState, type ReactNode } from 'react';
-import { useTheme } from '../../hooks';
-import { authApi } from '../../lib';
-import { AntdProvider } from '../../providers/AntdProvider';
-import { useAuthStore } from '../../stores/authStore';
-import { Footer } from '../partials/Footer';
-import { Header } from '../partials/Header';
-import { Sidebar } from '../partials/Sidebar';
+import { useTheme } from '@hooks';
+import { authApi } from '@lib';
+import { AntdProvider } from '@providers/AntdProvider';
+import { useAuthStore } from '@stores/authStore';
+import { Footer } from '@components/partials/Footer';
+import { Header } from '@components/partials/Header';
+import { Sidebar } from '@components/partials/Sidebar';
 
 const { Content } = Layout;
 

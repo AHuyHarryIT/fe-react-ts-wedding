@@ -9,10 +9,10 @@ import {
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { motion } from 'motion/react';
-import { authApi, type LoginRequest } from '../../lib';
-import { useAuthStore } from '../../stores/authStore';
-import { useTheme } from '../../hooks';
-import { AntdProvider } from '../../providers/AntdProvider';
+import { authApi, type LoginRequest } from '@lib';
+import { useAuthStore } from '@stores/authStore';
+import { useTheme } from '@hooks';
+import { AntdProvider } from '@providers/AntdProvider';
 
 const { Title, Text, Paragraph } = Typography;
 
