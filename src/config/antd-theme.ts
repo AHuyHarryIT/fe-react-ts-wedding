@@ -13,15 +13,15 @@ export const getLightTheme = () => ({
     // Background colors
     colorBgBase: '#ffffff',
     colorBgContainer: '#ffffff',
-    colorBgLayout: '#f5f5f5',
+    colorBgLayout: '#fafafa',
 
-    // Text colors
-    colorText: '#000000d9',
-    colorTextSecondary: '#00000073',
-    colorTextTertiary: '#00000045',
+    // Text colors - using Ant Design standard for better contrast
+    colorText: '#000000d9', // Standard Ant Design primary text
+    colorTextSecondary: '#00000073', // Standard Ant Design secondary text
+    colorTextTertiary: '#00000045', // Standard Ant Design tertiary text
 
     // Border
-    colorBorder: '#d9d9d9',
+    colorBorder: '#d9d9d9', // Standard Ant Design border
     borderRadius: 6,
 
     // Typography
@@ -64,7 +64,18 @@ export const getDarkTheme = () => ({
     colorError: '#ff4d4f',
     colorInfo: '#1677ff',
 
-    // Border
+    // Background colors - Dark mode variants
+    colorBgBase: '#1f2937', // Matches Tailwind gray-800
+    colorBgContainer: '#1f2937', // Matches Tailwind gray-800
+    colorBgLayout: '#111827', // Matches Tailwind gray-900
+
+    // Text colors - Dark mode variants
+    colorText: '#f3f4f6', // Matches Tailwind gray-100
+    colorTextSecondary: '#d1d5db', // Matches Tailwind gray-300
+    colorTextTertiary: '#9ca3af', // Matches Tailwind gray-400
+
+    // Border - Dark mode variants
+    colorBorder: '#374151', // Matches Tailwind gray-700
     borderRadius: 6,
 
     // Typography

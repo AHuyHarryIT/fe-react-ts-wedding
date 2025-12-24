@@ -1,5 +1,7 @@
 @import 'tailwindcss';
 
+@custom-variant dark (&:where(.dark, .dark *));
+
 /* Custom CSS Variables for better color coordination */
 :root {
   --color-primary: #ec4899;

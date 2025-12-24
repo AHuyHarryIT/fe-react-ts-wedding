@@ -15,7 +15,6 @@ import { Route as PermissionsRouteImport } from './routes/permissions';
 import { Route as LoginRouteImport } from './routes/login';
 import { Route as CategoriesRouteImport } from './routes/categories';
 import { Route as IndexRouteImport } from './routes/index';
-import { Route as AdminCategoriesRouteImport } from './routes/admin/categories';
 
 const RolesRoute = RolesRouteImport.update({
   id: '/roles',
@@ -47,11 +46,6 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any);
-const AdminCategoriesRoute = AdminCategoriesRouteImport.update({
-  id: '/admin/categories',
-  path: '/admin/categories',
-  getParentRoute: () => rootRouteImport,
-} as any);
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
@@ -60,7 +54,6 @@ export interface FileRoutesByFullPath {
   '/permissions': typeof PermissionsRoute;
   '/products': typeof ProductsRoute;
   '/roles': typeof RolesRoute;
-  '/admin/categories': typeof AdminCategoriesRoute;
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute;
@@ -69,7 +62,6 @@ export interface FileRoutesByTo {
   '/permissions': typeof PermissionsRoute;
   '/products': typeof ProductsRoute;
   '/roles': typeof RolesRoute;
-  '/admin/categories': typeof AdminCategoriesRoute;
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
@@ -79,7 +71,6 @@ export interface FileRoutesById {
   '/permissions': typeof PermissionsRoute;
   '/products': typeof ProductsRoute;
   '/roles': typeof RolesRoute;
-  '/admin/categories': typeof AdminCategoriesRoute;
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
@@ -89,17 +80,9 @@ export interface FileRouteTypes {
     | '/login'
     | '/permissions'
     | '/products'
-    | '/roles'
-    | '/admin/categories';
+    | '/roles';
   fileRoutesByTo: FileRoutesByTo;
-  to:
-    | '/'
-    | '/categories'
-    | '/login'
-    | '/permissions'
-    | '/products'
-    | '/roles'
-    | '/admin/categories';
+  to: '/' | '/categories' | '/login' | '/permissions' | '/products' | '/roles';
   id:
     | '__root__'
     | '/'
@@ -107,8 +90,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/permissions'
     | '/products'
-    | '/roles'
-    | '/admin/categories';
+    | '/roles';
   fileRoutesById: FileRoutesById;
 }
 export interface RootRouteChildren {
@@ -118,7 +100,6 @@ export interface RootRouteChildren {
   PermissionsRoute: typeof PermissionsRoute;
   ProductsRoute: typeof ProductsRoute;
   RolesRoute: typeof RolesRoute;
-  AdminCategoriesRoute: typeof AdminCategoriesRoute;
 }
 
 declare module '@tanstack/react-router' {
@@ -165,13 +146,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport;
       parentRoute: typeof rootRouteImport;
     };
-    '/admin/categories': {
-      id: '/admin/categories';
-      path: '/admin/categories';
-      fullPath: '/admin/categories';
-      preLoaderRoute: typeof AdminCategoriesRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
   }
 }
 
@@ -182,7 +156,6 @@ const rootRouteChildren: RootRouteChildren = {
   PermissionsRoute: PermissionsRoute,
   ProductsRoute: ProductsRoute,
   RolesRoute: RolesRoute,
-  AdminCategoriesRoute: AdminCategoriesRoute,
 };
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
