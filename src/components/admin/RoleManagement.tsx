@@ -72,9 +72,39 @@ export function RoleManagement() {
       }),
   });
 
+  // Fetch all permissions across multiple pages
   const { data: permissionsData } = useQuery({
     queryKey: ['permissions'],
-    queryFn: () => permissionApi.list({ limit: 10 }),
+    queryFn: async () => {
+      const allPermissions: Permission[] = [];
+      const pageLimit = 100;
+
+      // Fetch first page to get total pages
+      const firstPage = await permissionApi.list({ page: 1, limit: pageLimit });
+      allPermissions.push(...firstPage.data);
+
+      const { totalPages } = firstPage.pagination;
+
+      // Fetch remaining pages in parallel
+      if (totalPages > 1) {
+        const remainingPages = Array.from(
+          { length: totalPages - 1 },
+          (_, i) => i + 2
+        );
+
+        const remainingData = await Promise.all(
+          remainingPages.map((page) =>
+            permissionApi.list({ page, limit: pageLimit })
+          )
+        );
+
+        remainingData.forEach((response) => {
+          allPermissions.push(...response.data);
+        });
+      }
+
+      return { data: allPermissions };
+    },
   });
 
   const { data: rolePermissionsData } = useQuery({
@@ -497,6 +527,9 @@ export function RoleManagement() {
             height: 400,
           }}
           showSearch
+          pagination={{
+            pageSize: 10,
+          }}
           filterOption={(inputValue, item) =>
             item.title!.toLowerCase().includes(inputValue.toLowerCase()) ||
             item.description!.toLowerCase().includes(inputValue.toLowerCase())
