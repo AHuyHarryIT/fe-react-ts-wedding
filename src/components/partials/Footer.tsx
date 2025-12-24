@@ -17,7 +17,7 @@ export function Footer({ darkMode }: FooterProps) {
         background: darkMode ? '#1f2937' : '#ffffff',
       }}
     >
-      <Space split="|" size="middle">
+      <Space separator="|" size="middle">
         <Text style={{ color: darkMode ? '#9ca3af' : '#64748b' }}>
           © 2025 HaMy Studio. All rights reserved.
         </Text>

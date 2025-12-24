@@ -522,13 +522,15 @@ export function RoleManagement() {
               )}
             </div>
           )}
-          listStyle={{
-            width: 350,
-            height: 400,
+          styles={{
+            section: {
+              width: 350,
+              height: 400,
+            },
           }}
           showSearch
           pagination={{
-            pageSize: 10,
+            showSizeChanger: true,
           }}
           filterOption={(inputValue, item) =>
             item.title!.toLowerCase().includes(inputValue.toLowerCase()) ||
