@@ -43,6 +43,19 @@ export type {
   UpdateCategoryRequest,
 } from './services/CategoryService';
 
+// Album Service
+export { albumApi } from './services/AlbumService';
+export type {
+  Album,
+  AlbumFile,
+  AlbumWithFiles,
+  CreateAlbumRequest,
+  UpdateAlbumRequest,
+  GenerateShareTokenRequest,
+  AddFilesToAlbumRequest,
+  RemoveFilesFromAlbumRequest,
+} from './services/AlbumService';
+
 // Common Types
 export type {
   PaginationParams,

@@ -75,6 +75,7 @@ export function Sidebar({
       key: 'albums',
       icon: <FileImageOutlined />,
       label: 'Albums',
+      onClick: () => navigate({ to: '/albums' }),
     },
     {
       key: 'payments',

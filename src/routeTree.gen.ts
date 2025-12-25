@@ -14,6 +14,7 @@ import { Route as ProductsRouteImport } from './routes/products';
 import { Route as PermissionsRouteImport } from './routes/permissions';
 import { Route as LoginRouteImport } from './routes/login';
 import { Route as CategoriesRouteImport } from './routes/categories';
+import { Route as AlbumsRouteImport } from './routes/albums';
 import { Route as IndexRouteImport } from './routes/index';
 
 const RolesRoute = RolesRouteImport.update({
@@ -41,6 +42,11 @@ const CategoriesRoute = CategoriesRouteImport.update({
   path: '/categories',
   getParentRoute: () => rootRouteImport,
 } as any);
+const AlbumsRoute = AlbumsRouteImport.update({
+  id: '/albums',
+  path: '/albums',
+  getParentRoute: () => rootRouteImport,
+} as any);
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
@@ -49,6 +55,7 @@ const IndexRoute = IndexRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute;
+  '/albums': typeof AlbumsRoute;
   '/categories': typeof CategoriesRoute;
   '/login': typeof LoginRoute;
   '/permissions': typeof PermissionsRoute;
@@ -57,6 +64,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute;
+  '/albums': typeof AlbumsRoute;
   '/categories': typeof CategoriesRoute;
   '/login': typeof LoginRoute;
   '/permissions': typeof PermissionsRoute;
@@ -66,6 +74,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport;
   '/': typeof IndexRoute;
+  '/albums': typeof AlbumsRoute;
   '/categories': typeof CategoriesRoute;
   '/login': typeof LoginRoute;
   '/permissions': typeof PermissionsRoute;
@@ -76,16 +85,25 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath;
   fullPaths:
     | '/'
+    | '/albums'
     | '/categories'
     | '/login'
     | '/permissions'
     | '/products'
     | '/roles';
   fileRoutesByTo: FileRoutesByTo;
-  to: '/' | '/categories' | '/login' | '/permissions' | '/products' | '/roles';
+  to:
+    | '/'
+    | '/albums'
+    | '/categories'
+    | '/login'
+    | '/permissions'
+    | '/products'
+    | '/roles';
   id:
     | '__root__'
     | '/'
+    | '/albums'
     | '/categories'
     | '/login'
     | '/permissions'
@@ -95,6 +113,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute;
+  AlbumsRoute: typeof AlbumsRoute;
   CategoriesRoute: typeof CategoriesRoute;
   LoginRoute: typeof LoginRoute;
   PermissionsRoute: typeof PermissionsRoute;
@@ -139,6 +158,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CategoriesRouteImport;
       parentRoute: typeof rootRouteImport;
     };
+    '/albums': {
+      id: '/albums';
+      path: '/albums';
+      fullPath: '/albums';
+      preLoaderRoute: typeof AlbumsRouteImport;
+      parentRoute: typeof rootRouteImport;
+    };
     '/': {
       id: '/';
       path: '/';
@@ -151,6 +177,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AlbumsRoute: AlbumsRoute,
   CategoriesRoute: CategoriesRoute,
   LoginRoute: LoginRoute,
   PermissionsRoute: PermissionsRoute,
