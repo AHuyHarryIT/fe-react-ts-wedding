@@ -26,13 +26,14 @@ export interface Album {
   };
 }
 
-export interface AlbumFile {
+export interface AlbumImage {
   albumId: string;
   fileId: string;
   sortOrder: number;
   caption?: string;
-  file: {
+  image: {
     id: string;
+    name: string;
     storageUrl: string;
     mimeType: string;
     byteSize: number;
@@ -40,7 +41,7 @@ export interface AlbumFile {
 }
 
 export interface AlbumWithFiles extends Album {
-  files?: AlbumFile[];
+  files?: AlbumImage[];
 }
 
 export interface CreateAlbumRequest {

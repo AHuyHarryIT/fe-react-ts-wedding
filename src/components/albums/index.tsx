@@ -26,12 +26,14 @@ function AlbumManagement() {
     albumsLoading,
     albumDetailsData,
     albumDetailsLoading,
+    albumDetailsFetching,
     createForm,
     editForm,
     contextHolder,
     createMutation,
     updateMutation,
     revokeShareTokenMutation,
+    uploadImageMutation,
     setIsCreateModalOpen,
     setSearchText,
     setCurrentPage,
@@ -48,6 +50,7 @@ function AlbumManagement() {
     handleCloseEditModal,
     handleCloseDetailsModal,
     handleCloseShareModal,
+    handleUploadImage,
   } = useAlbumManagement();
 
   return (
@@ -111,11 +114,17 @@ function AlbumManagement() {
 
       <AlbumDetailsModal
         open={isDetailsModalOpen}
-        loading={albumDetailsLoading}
+        loading={albumDetailsLoading || uploadImageMutation.isPending}
+        fetching={albumDetailsFetching}
         album={selectedAlbum}
         albumWithFiles={albumDetailsData?.data || null}
         onCancel={handleCloseDetailsModal}
         onRemoveFile={(fileId) => handleRemoveFiles([fileId])}
+        onUploadImage={(files, caption, sortOrder) => {
+          if (selectedAlbum) {
+            handleUploadImage(files, caption, sortOrder);
+          }
+        }}
       />
 
       <AlbumShareModal

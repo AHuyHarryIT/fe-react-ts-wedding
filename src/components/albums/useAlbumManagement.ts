@@ -37,7 +37,6 @@ export function useAlbumManagement() {
   const [messageApi, contextHolder] = message.useMessage();
   const [createForm] = Form.useForm<AlbumFormData>();
   const [editForm] = Form.useForm<AlbumFormData>();
-
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [isDetailsModalOpen, setIsDetailsModalOpen] = useState(false);
@@ -64,7 +63,11 @@ export function useAlbumManagement() {
     staleTime: 30000,
   });
 
-  const { data: albumDetailsData, isLoading: albumDetailsLoading } = useQuery({
+  const {
+    data: albumDetailsData,
+    isLoading: albumDetailsLoading,
+    isFetching: albumDetailsFetching,
+  } = useQuery({
     queryKey: albumKeys.detail(selectedAlbum?.id || ''),
     queryFn: () => albumApi.getOne(selectedAlbum!.id),
     enabled: !!selectedAlbum && isDetailsModalOpen,
@@ -177,6 +180,39 @@ export function useAlbumManagement() {
     },
     onError: (error) => {
       message.error(error.message || 'Failed to revoke share token');
+    },
+  });
+
+  const uploadImageMutation = useMutation({
+    mutationFn: ({
+      id,
+      files,
+      caption,
+      sortOrder,
+    }: {
+      id: string;
+      files: File[];
+      caption?: string;
+      sortOrder?: number;
+    }) => albumApi.uploadImages(id, files, caption, sortOrder),
+    onSuccess: (response, variables) => {
+      // Manually update the album details cache with the new files
+      // This avoids refetching and reloading the entire list
+      const previousData = queryClient.getQueryData(
+        albumKeys.detail(variables.id)
+      );
+
+      if (previousData && response.data) {
+        queryClient.setQueryData(albumKeys.detail(variables.id), {
+          ...previousData,
+          files: response.data.files,
+        });
+      }
+
+      message.success(response.message || 'Images uploaded successfully');
+    },
+    onError: (error) => {
+      message.error(error.message || 'Failed to upload images');
     },
   });
 
@@ -304,7 +340,23 @@ export function useAlbumManagement() {
     setShareLink('');
   };
 
+  const handleUploadImage = (
+    files: File[],
+    caption?: string,
+    sortOrder?: number
+  ) => {
+    if (!selectedAlbum) return;
+
+    uploadImageMutation.mutate({
+      id: selectedAlbum.id,
+      files,
+      caption,
+      sortOrder,
+    });
+  };
+
   return {
+    // State
     // State
     isCreateModalOpen,
     isEditModalOpen,
@@ -319,6 +371,7 @@ export function useAlbumManagement() {
     albumsLoading,
     albumDetailsData,
     albumDetailsLoading,
+    albumDetailsFetching,
     createForm,
     editForm,
     messageApi,
@@ -332,6 +385,7 @@ export function useAlbumManagement() {
     removeFilesMutation,
     generateShareTokenMutation,
     revokeShareTokenMutation,
+    uploadImageMutation,
 
     // Handlers
     setIsCreateModalOpen,
@@ -351,5 +405,6 @@ export function useAlbumManagement() {
     handleCloseEditModal,
     handleCloseDetailsModal,
     handleCloseShareModal,
+    handleUploadImage,
   };
 }

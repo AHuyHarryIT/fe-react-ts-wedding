@@ -117,4 +117,61 @@ export const albumApi = {
     );
     return response.data;
   },
+  // Upload image to album
+  uploadImage: async (
+    id: string,
+    file: File,
+    caption?: string,
+    sortOrder?: number
+  ): Promise<StandardResponse<AlbumWithFiles>> => {
+    return albumApi.uploadImages(id, [file], caption, sortOrder);
+  },
+
+  // Upload multiple images to album
+  uploadImages: async (
+    id: string,
+    files: File[],
+    caption?: string,
+    sortOrder?: number
+  ): Promise<StandardResponse<AlbumWithFiles>> => {
+    const formData = new FormData();
+    files.forEach((file) => {
+      formData.append('files', file);
+    });
+    if (caption) {
+      formData.append('caption', caption);
+    }
+    if (sortOrder !== undefined) {
+      formData.append('sortOrder', sortOrder.toString());
+    }
+
+    const response = await api.post<StandardResponse<AlbumWithFiles>>(
+      `/albums/${id}/upload-image`,
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
+    );
+    return response.data;
+  },
+
+  // Get file stream through backend proxy
+  getFileUrl: (fileId: string): string => {
+    return `${api.defaults.baseURL}/albums/file/${fileId}/download`;
+  },
+
+  // Get thumbnail URL
+  getThumbnailUrl: async (fileId: string): Promise<string> => {
+    try {
+      const response = await api.get<{ data: { url: string } }>(
+        `/albums/file/${fileId}/thumbnail`
+      );
+      return response.data.data.url || '';
+    } catch (error) {
+      console.error('Failed to get thumbnail URL:', error);
+      return ''; // Fallback to empty string if thumbnail fails
+    }
+  },
 };

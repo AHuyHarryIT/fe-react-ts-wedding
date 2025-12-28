@@ -8,81 +8,81 @@
 // You should NOT make any changes in this file as it will be overwritten.
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
-import { Route as rootRouteImport } from './routes/__root';
-import { Route as RolesRouteImport } from './routes/roles';
-import { Route as ProductsRouteImport } from './routes/products';
-import { Route as PermissionsRouteImport } from './routes/permissions';
-import { Route as LoginRouteImport } from './routes/login';
-import { Route as CategoriesRouteImport } from './routes/categories';
-import { Route as AlbumsRouteImport } from './routes/albums';
-import { Route as IndexRouteImport } from './routes/index';
+import { Route as rootRouteImport } from './routes/__root'
+import { Route as RolesRouteImport } from './routes/roles'
+import { Route as ProductsRouteImport } from './routes/products'
+import { Route as PermissionsRouteImport } from './routes/permissions'
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as CategoriesRouteImport } from './routes/categories'
+import { Route as AlbumsRouteImport } from './routes/albums'
+import { Route as IndexRouteImport } from './routes/index'
 
 const RolesRoute = RolesRouteImport.update({
   id: '/roles',
   path: '/roles',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const ProductsRoute = ProductsRouteImport.update({
   id: '/products',
   path: '/products',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const PermissionsRoute = PermissionsRouteImport.update({
   id: '/permissions',
   path: '/permissions',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const CategoriesRoute = CategoriesRouteImport.update({
   id: '/categories',
   path: '/categories',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const AlbumsRoute = AlbumsRouteImport.update({
   id: '/albums',
   path: '/albums',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
-} as any);
+} as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute;
-  '/albums': typeof AlbumsRoute;
-  '/categories': typeof CategoriesRoute;
-  '/login': typeof LoginRoute;
-  '/permissions': typeof PermissionsRoute;
-  '/products': typeof ProductsRoute;
-  '/roles': typeof RolesRoute;
+  '/': typeof IndexRoute
+  '/albums': typeof AlbumsRoute
+  '/categories': typeof CategoriesRoute
+  '/login': typeof LoginRoute
+  '/permissions': typeof PermissionsRoute
+  '/products': typeof ProductsRoute
+  '/roles': typeof RolesRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute;
-  '/albums': typeof AlbumsRoute;
-  '/categories': typeof CategoriesRoute;
-  '/login': typeof LoginRoute;
-  '/permissions': typeof PermissionsRoute;
-  '/products': typeof ProductsRoute;
-  '/roles': typeof RolesRoute;
+  '/': typeof IndexRoute
+  '/albums': typeof AlbumsRoute
+  '/categories': typeof CategoriesRoute
+  '/login': typeof LoginRoute
+  '/permissions': typeof PermissionsRoute
+  '/products': typeof ProductsRoute
+  '/roles': typeof RolesRoute
 }
 export interface FileRoutesById {
-  __root__: typeof rootRouteImport;
-  '/': typeof IndexRoute;
-  '/albums': typeof AlbumsRoute;
-  '/categories': typeof CategoriesRoute;
-  '/login': typeof LoginRoute;
-  '/permissions': typeof PermissionsRoute;
-  '/products': typeof ProductsRoute;
-  '/roles': typeof RolesRoute;
+  __root__: typeof rootRouteImport
+  '/': typeof IndexRoute
+  '/albums': typeof AlbumsRoute
+  '/categories': typeof CategoriesRoute
+  '/login': typeof LoginRoute
+  '/permissions': typeof PermissionsRoute
+  '/products': typeof ProductsRoute
+  '/roles': typeof RolesRoute
 }
 export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath;
+  fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
     | '/albums'
@@ -90,8 +90,8 @@ export interface FileRouteTypes {
     | '/login'
     | '/permissions'
     | '/products'
-    | '/roles';
-  fileRoutesByTo: FileRoutesByTo;
+    | '/roles'
+  fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
     | '/albums'
@@ -99,7 +99,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/permissions'
     | '/products'
-    | '/roles';
+    | '/roles'
   id:
     | '__root__'
     | '/'
@@ -108,70 +108,70 @@ export interface FileRouteTypes {
     | '/login'
     | '/permissions'
     | '/products'
-    | '/roles';
-  fileRoutesById: FileRoutesById;
+    | '/roles'
+  fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute;
-  AlbumsRoute: typeof AlbumsRoute;
-  CategoriesRoute: typeof CategoriesRoute;
-  LoginRoute: typeof LoginRoute;
-  PermissionsRoute: typeof PermissionsRoute;
-  ProductsRoute: typeof ProductsRoute;
-  RolesRoute: typeof RolesRoute;
+  IndexRoute: typeof IndexRoute
+  AlbumsRoute: typeof AlbumsRoute
+  CategoriesRoute: typeof CategoriesRoute
+  LoginRoute: typeof LoginRoute
+  PermissionsRoute: typeof PermissionsRoute
+  ProductsRoute: typeof ProductsRoute
+  RolesRoute: typeof RolesRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
     '/roles': {
-      id: '/roles';
-      path: '/roles';
-      fullPath: '/roles';
-      preLoaderRoute: typeof RolesRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/roles'
+      path: '/roles'
+      fullPath: '/roles'
+      preLoaderRoute: typeof RolesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/products': {
-      id: '/products';
-      path: '/products';
-      fullPath: '/products';
-      preLoaderRoute: typeof ProductsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/products'
+      path: '/products'
+      fullPath: '/products'
+      preLoaderRoute: typeof ProductsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/permissions': {
-      id: '/permissions';
-      path: '/permissions';
-      fullPath: '/permissions';
-      preLoaderRoute: typeof PermissionsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/permissions'
+      path: '/permissions'
+      fullPath: '/permissions'
+      preLoaderRoute: typeof PermissionsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
-      id: '/login';
-      path: '/login';
-      fullPath: '/login';
-      preLoaderRoute: typeof LoginRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/login'
+      path: '/login'
+      fullPath: '/login'
+      preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/categories': {
-      id: '/categories';
-      path: '/categories';
-      fullPath: '/categories';
-      preLoaderRoute: typeof CategoriesRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/categories'
+      path: '/categories'
+      fullPath: '/categories'
+      preLoaderRoute: typeof CategoriesRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/albums': {
-      id: '/albums';
-      path: '/albums';
-      fullPath: '/albums';
-      preLoaderRoute: typeof AlbumsRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/albums'
+      path: '/albums'
+      fullPath: '/albums'
+      preLoaderRoute: typeof AlbumsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/': {
-      id: '/';
-      path: '/';
-      fullPath: '/';
-      preLoaderRoute: typeof IndexRouteImport;
-      parentRoute: typeof rootRouteImport;
-    };
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -183,7 +183,7 @@ const rootRouteChildren: RootRouteChildren = {
   PermissionsRoute: PermissionsRoute,
   ProductsRoute: ProductsRoute,
   RolesRoute: RolesRoute,
-};
+}
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
-  ._addFileTypes<FileRouteTypes>();
+  ._addFileTypes<FileRouteTypes>()
