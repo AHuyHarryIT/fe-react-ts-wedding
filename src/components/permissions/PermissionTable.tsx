@@ -1,6 +1,6 @@
 import { Table, Tag, Typography } from 'antd';
-import { type Permission } from '@lib';
 import { useTheme } from '@hooks';
+import type { Permission } from '@/types';
 
 const { Text } = Typography;
 

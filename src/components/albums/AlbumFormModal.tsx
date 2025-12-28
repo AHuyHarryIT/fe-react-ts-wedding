@@ -1,7 +1,7 @@
+import type { Album } from '@types';
 import { Modal, Form, Input, Switch, DatePicker } from 'antd';
 import { type FormInstance } from 'antd';
 import dayjs from 'dayjs';
-import type { Album } from '@lib';
 
 const { TextArea } = Input;
 

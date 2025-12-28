@@ -1,6 +1,6 @@
+import type { Role } from '@types';
 import { Modal, Form, Input } from 'antd';
 import { type FormInstance } from 'antd';
-import { type Role } from '@lib';
 
 const { TextArea } = Input;
 

@@ -38,7 +38,3 @@ export interface ChangePasswordRequest {
   newPassword: string;
   confirmPassword: string;
 }
-
-export interface MessageResponse {
-  message: string;
-}

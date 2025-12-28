@@ -18,19 +18,20 @@
     /* Path aliases */
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
       "@lib": ["src/lib/index.ts"],
       "@lib/*": ["src/lib/*"],
-      "@services/*": ["src/lib/services/*"],
+      "@services/*": ["src/services/*"],
       "@components/*": ["src/components/*"],
       "@hooks": ["src/hooks/index.ts"],
       "@hooks/*": ["src/hooks/*"],
       "@stores": ["src/stores/index.ts"],
       "@stores/*": ["src/stores/*"],
+      "@types": ["src/types/index.ts"],
       "@types/*": ["src/types/*"],
       "@routes/*": ["src/routes/*"],
       "@config/*": ["src/config/*"],
-      "@providers/*": ["src/providers/*"]
+      "@providers/*": ["src/providers/*"],
+      "@/*": ["src/*"],
     },
 
     /* Linting */

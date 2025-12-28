@@ -12,8 +12,8 @@ import {
   DeleteOutlined,
   SafetyOutlined,
 } from '@ant-design/icons';
-import { type Role } from '@lib';
 import { useTheme } from '@hooks';
+import type { Role } from '@/types';
 
 const { Text } = Typography;
 

@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { permissionApi } from '@lib';
+import { permissionApi } from '@services/PermissionService';
 
 export function usePermissionManagement() {
   const [page, setPage] = useState(1);

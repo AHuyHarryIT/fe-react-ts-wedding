@@ -1,32 +1,13 @@
-import { api } from '../client';
 import type {
-  PaginationParams,
+  Category,
+  CreateCategoryRequest,
+  MessageResponse,
   PaginatedResponse,
+  PaginationParams,
   StandardResponse,
-} from '../common';
-import type { MessageResponse } from '../types';
-
-export interface Category {
-  id: string;
-  name: string;
-  description?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt?: string;
-}
-
-export interface CreateCategoryRequest {
-  name: string;
-  description?: string;
-  isActive?: boolean;
-}
-
-export interface UpdateCategoryRequest {
-  name?: string;
-  description?: string;
-  isActive?: boolean;
-}
+  UpdateCategoryRequest,
+} from '@types';
+import { api } from '../api/client';
 
 export const categoryApi = {
   getAll: async (

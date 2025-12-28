@@ -1,13 +1,13 @@
 import { useState } from 'react';
 import { Form, message } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  productApi,
-  categoryApi,
-  type Product,
-  type CreateProductRequest,
-  type UpdateProductRequest,
-} from '@lib';
+import type {
+  CreateProductRequest,
+  Product,
+  UpdateProductRequest,
+} from '@types';
+import { categoryApi } from '@services/CategoryService';
+import { productApi } from '@services/ProductService';
 
 interface ProductFormData {
   name: string;

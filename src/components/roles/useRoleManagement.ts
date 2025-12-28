@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { Form, message } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  roleApi,
-  permissionApi,
-  type Role,
-  type Permission,
-  type CreateRoleRequest,
-  type UpdateRoleRequest,
-} from '@lib';
+import type {
+  CreateRoleRequest,
+  Permission,
+  Role,
+  UpdateRoleRequest,
+} from '@/types';
+import { roleApi } from '@services/RoleService';
+import { permissionApi } from '@services/PermissionService';
 
 interface RoleFormData {
   name: string;

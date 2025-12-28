@@ -1,7 +1,7 @@
 import { Table, Button, Space, Popconfirm, Tooltip, Typography } from 'antd';
 import { EditOutlined, DeleteOutlined, TagOutlined } from '@ant-design/icons';
-import { type Category } from '@lib';
 import { useTheme } from '@hooks';
+import type { Category } from '@/types';
 
 const { Text } = Typography;
 

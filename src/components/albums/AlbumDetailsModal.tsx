@@ -18,7 +18,7 @@ import {
   PlusOutlined,
   DeleteOutlined,
 } from '@ant-design/icons';
-import type { Album, AlbumWithFiles, AlbumFile } from '@lib';
+import type { Album, AlbumFile, AlbumWithFiles } from '@/types';
 
 const { Text, Title } = Typography;
 

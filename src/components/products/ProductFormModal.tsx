@@ -1,6 +1,6 @@
+import type { Category, Product } from '@types';
 import { Modal, Form, Input, InputNumber, Switch, Select } from 'antd';
 import { type FormInstance } from 'antd';
-import { type Product, type Category } from '@lib';
 
 const { TextArea } = Input;
 

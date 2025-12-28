@@ -3,12 +3,12 @@ import { useNavigate } from '@tanstack/react-router';
 import { Layout, message } from 'antd';
 import { useState, type ReactNode } from 'react';
 import { useTheme } from '@hooks';
-import { authApi } from '@lib';
 import { AntdProvider } from '@providers/AntdProvider';
 import { useAuthStore } from '@stores/authStore';
 import { Footer } from '@components/partials/Footer';
 import { Header } from '@components/partials/Header';
 import { Sidebar } from '@components/partials/Sidebar';
+import { authApi } from '@services/AuthService';
 
 const { Content } = Layout;
 

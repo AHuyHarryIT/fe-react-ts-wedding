@@ -1,16 +1,16 @@
 import { useState } from 'react';
 import { Form, message } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  albumApi,
-  type Album,
-  type CreateAlbumRequest,
-  type UpdateAlbumRequest,
-  type GenerateShareTokenRequest,
-  type AddFilesToAlbumRequest,
-  type RemoveFilesFromAlbumRequest,
-} from '@lib';
-import type { PaginationParams } from '@lib';
+import type {
+  AddFilesToAlbumRequest,
+  Album,
+  CreateAlbumRequest,
+  GenerateShareTokenRequest,
+  PaginationParams,
+  RemoveFilesFromAlbumRequest,
+  UpdateAlbumRequest,
+} from '@/types';
+import { albumApi } from '@services/AlbumService';
 
 interface AlbumFormData {
   ownerUserId?: string;

@@ -4,8 +4,8 @@ import {
   DeleteOutlined,
   ShoppingOutlined,
 } from '@ant-design/icons';
-import { type Product } from '@lib';
 import { useTheme } from '@hooks';
+import type { Product } from '@types';
 
 const { Text } = Typography;
 

@@ -1,12 +1,12 @@
 import { useState } from 'react';
 import { Form, message } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-  categoryApi,
-  type Category,
-  type CreateCategoryRequest,
-  type UpdateCategoryRequest,
-} from '@lib';
+import type {
+  Category,
+  CreateCategoryRequest,
+  UpdateCategoryRequest,
+} from '@/types';
+import { categoryApi } from '@services/CategoryService';
 
 interface CategoryFormData {
   name: string;

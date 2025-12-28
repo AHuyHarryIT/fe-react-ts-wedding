@@ -29,3 +29,7 @@ export interface StandardResponse<T> {
   message: string;
   data: T;
 }
+
+export interface MessageResponse {
+  message: string;
+}

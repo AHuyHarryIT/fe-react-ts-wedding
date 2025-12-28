@@ -1,4 +1,4 @@
-import { api } from '@lib/client';
+import { api } from '@/api/client';
 import type {
   LoginRequest,
   RegisterRequest,
@@ -7,7 +7,7 @@ import type {
   UpdateProfileRequest,
   ChangePasswordRequest,
   MessageResponse,
-} from '@lib/types';
+} from '@types';
 
 export const authApi = {
   // Login with phone number and password

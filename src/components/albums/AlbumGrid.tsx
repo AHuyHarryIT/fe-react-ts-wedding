@@ -21,8 +21,8 @@ import {
   LockOutlined,
   GlobalOutlined,
 } from '@ant-design/icons';
-import { type Album } from '@lib';
 import { useTheme } from '@hooks';
+import type { Album } from '@/types';
 
 const { Text } = Typography;
 

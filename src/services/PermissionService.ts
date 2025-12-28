@@ -1,17 +1,10 @@
-import { api } from '../client';
 import type {
-  PaginationParams,
   PaginatedResponse,
+  PaginationParams,
+  Permission,
   StandardResponse,
-} from '../common';
-
-export interface Permission {
-  id: string;
-  key: string;
-  description: string | null;
-  createdAt: string;
-  updatedAt: string;
-}
+} from '@types';
+import { api } from '../api/client';
 
 export const permissionApi = {
   // Get all permissions with pagination

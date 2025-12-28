@@ -1,6 +1,6 @@
+import type { Permission, Role } from '@types';
 import { Modal, Transfer } from 'antd';
 import type { TransferProps } from 'antd';
-import { type Role, type Permission } from '@lib';
 
 interface PermissionTransferData {
   key: string;

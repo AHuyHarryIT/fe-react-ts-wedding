@@ -1,41 +1,13 @@
-import { api } from '@lib/client';
+import { api } from '@/api/client';
 import type {
-  PaginationParams,
+  CreateProductRequest,
+  MessageResponse,
   PaginatedResponse,
+  PaginationParams,
+  Product,
   StandardResponse,
-} from '@lib/common';
-import type { MessageResponse } from '@lib/types';
-
-export interface Product {
-  id: string;
-  name: string;
-  description: string | null;
-  price: number;
-  stockQty: number;
-  isActive: boolean;
-  categoryId?: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-}
-
-export interface CreateProductRequest {
-  name: string;
-  description?: string;
-  price?: number;
-  stockQty?: number;
-  isActive?: boolean;
-  categoryId?: string;
-}
-
-export interface UpdateProductRequest {
-  name?: string;
-  description?: string;
-  price?: number;
-  stockQty?: number;
-  isActive?: boolean;
-  categoryId?: string;
-}
+  UpdateProductRequest,
+} from '@types';
 
 export const productApi = {
   // Get all products with pagination
