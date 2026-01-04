@@ -45,7 +45,7 @@ export function useRoleManagement() {
     queryKey: ['permissions'],
     queryFn: async () => {
       const allPermissions: Permission[] = [];
-      const pageLimit = 100;
+      const pageLimit = 10;
 
       const firstPage = await permissionApi.list({ page: 1, limit: pageLimit });
       allPermissions.push(...firstPage.data);

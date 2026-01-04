@@ -1,15 +1,16 @@
 import { roleApi } from '@services/RoleService';
 import { userApi } from '@services/UserService';
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import type {
   CreateUserRequest,
+  Role,
   UpdateUserRequest,
   User,
   UserWithRoles,
 } from '@types';
-import { Form, message } from 'antd';
-import { useCallback, useMemo, useState } from 'react';
 import { getErrorMessage } from '@utils/error';
+import { Form, message } from 'antd';
+import { useCallback, useState } from 'react';
 
 export function useUserManagement() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -43,32 +44,37 @@ export function useUserManagement() {
       }),
   });
 
-  // Fetch roles with infinite query
-  const {
-    data: rolesInfiniteData,
-    isLoading: rolesLoading,
-    isFetchingNextPage,
-    fetchNextPage,
-    hasNextPage,
-  } = useInfiniteQuery({
-    queryKey: ['roles-infinite'],
-    queryFn: ({ pageParam = 1 }) =>
-      roleApi.getAll({ page: pageParam, limit: 10 }),
-    getNextPageParam: (lastPage) => {
-      const currentPage = lastPage.pagination.page;
-      const totalPages = Math.ceil(
-        lastPage.pagination.total / lastPage.pagination.limit
-      );
-      return currentPage < totalPages ? currentPage + 1 : undefined;
-    },
-    initialPageParam: 1,
-  });
+  const { data: rolesData } = useQuery({
+    queryKey: ['roles'],
+    queryFn: async () => {
+      const allRoles: Role[] = [];
+      const pageLimit = 10;
 
-  // Flatten the pages data into a single array
-  const lazyRoles = useMemo(
-    () => rolesInfiniteData?.pages.flatMap((page) => page.data) ?? [],
-    [rolesInfiniteData]
-  );
+      const firstPage = await roleApi.getAll({ page: 1, limit: pageLimit });
+      allRoles.push(...firstPage.data);
+
+      const { totalPages } = firstPage.pagination;
+
+      if (totalPages > 1) {
+        const remainingPages = Array.from(
+          { length: totalPages - 1 },
+          (_, i) => i + 2
+        );
+
+        const remainingData = await Promise.all(
+          remainingPages.map((page) =>
+            roleApi.getAll({ page, limit: pageLimit })
+          )
+        );
+
+        remainingData.forEach((page) => {
+          allRoles.push(...page.data);
+        });
+      }
+
+      return { data: allRoles };
+    },
+  });
 
   // Fetch selected user with roles
   const { data: selectedUserData, refetch: refetchSelectedUser } = useQuery({
@@ -237,12 +243,6 @@ export function useUserManagement() {
     setSelectedUserId(null);
   }, []);
 
-  const handleRoleScrollLoad = useCallback(() => {
-    if (hasNextPage && !isFetchingNextPage) {
-      fetchNextPage();
-    }
-  }, [hasNextPage, isFetchingNextPage, fetchNextPage]);
-
   return {
     isCreateModalOpen,
     isEditModalOpen,
@@ -253,10 +253,7 @@ export function useUserManagement() {
     pageSize,
     usersData,
     usersLoading,
-    lazyRoles,
-    rolesLoading,
-    isFetchingNextPage,
-    hasNextPage,
+    rolesData,
     createForm,
     editForm,
     contextHolder,
@@ -279,6 +276,5 @@ export function useUserManagement() {
     handleCloseCreateModal,
     handleCloseEditModal,
     handleCloseRoleModal,
-    handleRoleScrollLoad,
   };
 }

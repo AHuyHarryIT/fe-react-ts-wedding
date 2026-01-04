@@ -19,10 +19,6 @@ export function UserManagement() {
     pageSize,
     usersData,
     usersLoading,
-    lazyRoles,
-    rolesLoading,
-    isFetchingNextPage,
-    hasNextPage,
     createForm,
     editForm,
     contextHolder,
@@ -30,6 +26,7 @@ export function UserManagement() {
     updateMutation,
     assignRolesMutation,
     removeRolesMutation,
+    rolesData,
     setIsCreateModalOpen,
     setSearchText,
     setCurrentPage,
@@ -44,10 +41,9 @@ export function UserManagement() {
     handleCloseCreateModal,
     handleCloseEditModal,
     handleCloseRoleModal,
-    handleRoleScrollLoad,
   } = useUserManagement();
 
-  const allRoles = lazyRoles || [];
+  const allRoles = rolesData?.data || [];
 
   return (
     <>
@@ -91,11 +87,7 @@ export function UserManagement() {
             loading={createMutation.isPending}
             selectedUser={null}
             form={createForm}
-            roles={lazyRoles}
-            rolesLoading={rolesLoading}
-            isFetchingNextPage={isFetchingNextPage}
-            hasNextPage={hasNextPage}
-            onRoleScrollEnd={handleRoleScrollLoad}
+            roles={allRoles}
             onCancel={handleCloseCreateModal}
             onSubmit={handleCreate}
           />
@@ -124,7 +116,6 @@ export function UserManagement() {
             onCancel={handleCloseRoleModal}
             onAssign={handleAssignRoles}
             onRemove={handleRemoveRoles}
-            onRoleScrollEnd={handleRoleScrollLoad}
           />,
         ]}
       />
