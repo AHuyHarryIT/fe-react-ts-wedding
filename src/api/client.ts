@@ -1,4 +1,6 @@
-import axios from 'axios';
+import type { ApiErrorData } from '@types';
+import { extractErrorMessage, logError } from '@utils/error';
+import axios, { type AxiosError } from 'axios';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
@@ -54,6 +56,7 @@ api.interceptors.request.use(
       } catch (error) {
         isRefreshing = false;
         processQueue(error);
+        logError(error, 'Token Refresh');
         // If refresh fails, redirect to login
         window.location.href = '/login';
         return Promise.reject(error);
@@ -63,6 +66,7 @@ api.interceptors.request.use(
     return config;
   },
   (error) => {
+    logError(error, 'Request Interceptor');
     return Promise.reject(error);
   }
 );
@@ -71,15 +75,67 @@ api.interceptors.request.use(
 api.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Don't auto-redirect on 401 during login - let the component handle it
-    // Only redirect if it's an authenticated endpoint that fails
-    if (
-      error.response?.status === 401 &&
-      !error.config.url?.includes('/login')
-    ) {
-      // Clear auth state and redirect to login
-      window.location.href = '/login';
+    const axiosError = error as AxiosError<ApiErrorData>;
+    const errorMessage = extractErrorMessage(error);
+    const statusCode = axiosError.response?.status;
+    const url = axiosError.config?.url;
+
+    logError({ statusCode, url, message: errorMessage }, 'Response Error');
+
+    // Handle specific HTTP error codes
+    switch (statusCode) {
+      case 400:
+        // Bad request - validation errors
+        console.warn(
+          '[Validation Error]',
+          axiosError.response?.data?.error?.details
+        );
+        break;
+
+      case 401:
+        // Unauthorized - token expired or invalid
+        if (!url?.includes('/login') && !url?.includes('/register')) {
+          // Clear auth state and redirect to login
+          window.location.href = '/login';
+        }
+        break;
+
+      case 403:
+        // Forbidden - insufficient permissions
+        console.warn(
+          '[Permission Error]',
+          'User does not have permission to perform this action'
+        );
+        break;
+
+      case 404:
+        // Not found
+        console.warn('[Not Found Error]', `Resource not found: ${url}`);
+        break;
+
+      case 409:
+        // Conflict - duplicate resource
+        console.warn('[Conflict Error]', errorMessage);
+        break;
+
+      case 500:
+      case 502:
+      case 503:
+      case 504:
+        // Server errors
+        console.error(
+          '[Server Error]',
+          `Server error (${statusCode}): ${errorMessage}`
+        );
+        break;
+
+      default:
+        if (!navigator.onLine) {
+          console.warn('[Network Error]', 'No internet connection');
+        }
     }
+
+    // Re-throw the error with enhanced message for downstream handlers
     return Promise.reject(error);
   }
 );

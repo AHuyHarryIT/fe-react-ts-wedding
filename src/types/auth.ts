@@ -1,3 +1,5 @@
+import type { User } from './user';
+
 export interface LoginRequest {
   phoneNumber: string;
   password: string;
@@ -9,17 +11,6 @@ export interface RegisterRequest {
   firstName?: string;
   lastName?: string;
   email?: string;
-}
-
-export interface User {
-  id: string;
-  phoneNumber: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
 }
 
 export interface AuthResponse {

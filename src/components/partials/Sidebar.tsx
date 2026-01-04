@@ -83,6 +83,12 @@ export function Sidebar({
       label: 'Payments',
     },
     {
+      key: 'users',
+      icon: <TeamOutlined />,
+      label: 'Users',
+      onClick: () => navigate({ to: '/users' }),
+    },
+    {
       key: 'roles',
       icon: <SafetyOutlined />,
       label: 'Roles',

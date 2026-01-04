@@ -9,6 +9,7 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
+import { Route as UsersRouteImport } from './routes/users'
 import { Route as RolesRouteImport } from './routes/roles'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as PermissionsRouteImport } from './routes/permissions'
@@ -17,6 +18,11 @@ import { Route as CategoriesRouteImport } from './routes/categories'
 import { Route as AlbumsRouteImport } from './routes/albums'
 import { Route as IndexRouteImport } from './routes/index'
 
+const UsersRoute = UsersRouteImport.update({
+  id: '/users',
+  path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RolesRoute = RolesRouteImport.update({
   id: '/roles',
   path: '/roles',
@@ -61,6 +67,7 @@ export interface FileRoutesByFullPath {
   '/permissions': typeof PermissionsRoute
   '/products': typeof ProductsRoute
   '/roles': typeof RolesRoute
+  '/users': typeof UsersRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -70,6 +77,7 @@ export interface FileRoutesByTo {
   '/permissions': typeof PermissionsRoute
   '/products': typeof ProductsRoute
   '/roles': typeof RolesRoute
+  '/users': typeof UsersRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -80,6 +88,7 @@ export interface FileRoutesById {
   '/permissions': typeof PermissionsRoute
   '/products': typeof ProductsRoute
   '/roles': typeof RolesRoute
+  '/users': typeof UsersRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -91,6 +100,7 @@ export interface FileRouteTypes {
     | '/permissions'
     | '/products'
     | '/roles'
+    | '/users'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -100,6 +110,7 @@ export interface FileRouteTypes {
     | '/permissions'
     | '/products'
     | '/roles'
+    | '/users'
   id:
     | '__root__'
     | '/'
@@ -109,6 +120,7 @@ export interface FileRouteTypes {
     | '/permissions'
     | '/products'
     | '/roles'
+    | '/users'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -119,10 +131,18 @@ export interface RootRouteChildren {
   PermissionsRoute: typeof PermissionsRoute
   ProductsRoute: typeof ProductsRoute
   RolesRoute: typeof RolesRoute
+  UsersRoute: typeof UsersRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
+    '/users': {
+      id: '/users'
+      path: '/users'
+      fullPath: '/users'
+      preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/roles': {
       id: '/roles'
       path: '/roles'
@@ -183,6 +203,7 @@ const rootRouteChildren: RootRouteChildren = {
   PermissionsRoute: PermissionsRoute,
   ProductsRoute: ProductsRoute,
   RolesRoute: RolesRoute,
+  UsersRoute: UsersRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

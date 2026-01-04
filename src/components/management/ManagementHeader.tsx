@@ -8,6 +8,7 @@ interface ManagementHeaderProps {
   title: string;
   subtitle: string;
   showCreateButton?: boolean;
+  createButtonText?: string;
   onCreateClick?: () => void;
   icon?: React.ReactNode;
 }
@@ -19,6 +20,7 @@ export function ManagementHeader({
   title,
   subtitle,
   showCreateButton = true,
+  createButtonText,
   onCreateClick,
   icon,
 }: ManagementHeaderProps) {
@@ -44,7 +46,7 @@ export function ManagementHeader({
             onClick={onCreateClick}
             size="large"
           >
-            Create {title.replace(' Management', '')}
+            {createButtonText || `Create ${title.replace(' Management', '')}`}
           </Button>
         </Col>
       )}
