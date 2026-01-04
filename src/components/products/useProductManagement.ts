@@ -1,13 +1,14 @@
-import { useState } from 'react';
-import { Form, message } from 'antd';
+import { categoryApi } from '@services/CategoryService';
+import { productApi } from '@services/ProductService';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateProductRequest,
   Product,
   UpdateProductRequest,
 } from '@types';
-import { categoryApi } from '@services/CategoryService';
-import { productApi } from '@services/ProductService';
+import { Form, message } from 'antd';
+import type { UploadChangeParam } from 'antd/es/upload';
+import { useState } from 'react';
 
 interface ProductFormData {
   name: string;
@@ -16,6 +17,7 @@ interface ProductFormData {
   stockQty?: number;
   isActive?: boolean;
   categoryId?: string;
+  image?: UploadChangeParam;
 }
 
 export function useProductManagement() {
@@ -98,12 +100,38 @@ export function useProductManagement() {
 
   // Handlers
   const handleCreate = (values: ProductFormData) => {
-    createMutation.mutate(values);
+    const imageFile = values.image?.file;
+
+    const createData: CreateProductRequest = {
+      name: values.name,
+      description: values.description,
+      price: values.price,
+      stockQty: values.stockQty,
+      isActive: values.isActive,
+      categoryId: values.categoryId,
+    };
+    if (imageFile && imageFile instanceof File) {
+      createData.image = imageFile;
+    }
+    createMutation.mutate(createData);
   };
 
   const handleEdit = (values: ProductFormData) => {
     if (selectedProduct) {
-      updateMutation.mutate({ id: selectedProduct.id, data: values });
+      const imageFile = values.image?.file;
+
+      const updateData: UpdateProductRequest = {
+        name: values.name,
+        description: values.description,
+        price: values.price,
+        stockQty: values.stockQty,
+        isActive: values.isActive,
+        categoryId: values.categoryId,
+      };
+      if (imageFile && imageFile instanceof File) {
+        updateData.image = imageFile;
+      }
+      updateMutation.mutate({ id: selectedProduct.id, data: updateData });
     }
   };
 

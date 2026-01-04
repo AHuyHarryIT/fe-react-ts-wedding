@@ -1,6 +1,19 @@
 import type { Category, Product } from '@types';
-import { Modal, Form, Input, InputNumber, Switch, Select } from 'antd';
+import {
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  Switch,
+  Select,
+  Upload,
+  Image,
+  type UploadFile,
+} from 'antd';
 import { type FormInstance } from 'antd';
+import { PlusOutlined } from '@ant-design/icons';
+import { useState } from 'react';
+import type { UploadChangeParam } from 'antd/es/upload';
 
 const { TextArea } = Input;
 
@@ -11,6 +24,7 @@ interface ProductFormData {
   stockQty?: number;
   isActive?: boolean;
   categoryId?: string;
+  image?: UploadFile[];
 }
 
 interface ProductFormModalProps {
@@ -36,6 +50,25 @@ export function ProductFormModal({
 }: ProductFormModalProps) {
   const isEditMode = type === 'edit' && selectedProduct;
   const title = isEditMode ? 'Edit Product' : 'Create New Product';
+  const [previewImage, setPreviewImage] = useState<string | undefined>();
+  const [imageList, setImageList] = useState<UploadFile[]>([]);
+
+  const handleUploadChange = (info: UploadChangeParam) => {
+    setImageList(info.fileList);
+    if (info.fileList.length > 0) {
+      const file = info.fileList[0].originFileObj;
+      if (file instanceof File) {
+        // Show preview
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          setPreviewImage(e.target?.result as string);
+        };
+        reader.readAsDataURL(file);
+      }
+    } else {
+      setPreviewImage(undefined);
+    }
+  };
 
   return (
     <Modal
@@ -98,6 +131,29 @@ export function ProductFormModal({
         >
           <InputNumber placeholder="0" min={0} style={{ width: '100%' }} />
         </Form.Item>
+
+        <Form.Item name="image" label="Product Image">
+          <Upload
+            listType="picture-card"
+            maxCount={1}
+            beforeUpload={() => false}
+            accept="image/*"
+            onChange={handleUploadChange}
+          >
+            {imageList.length === 0 && (
+              <div>
+                <PlusOutlined />
+                <div className="mt-2">Upload Image</div>
+              </div>
+            )}
+          </Upload>
+        </Form.Item>
+
+        {previewImage && (
+          <Form.Item label="Preview">
+            <Image width={200} src={previewImage} alt="Product preview" />
+          </Form.Item>
+        )}
 
         <Form.Item
           name="isActive"

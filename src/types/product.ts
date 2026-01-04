@@ -6,6 +6,7 @@ export interface Product {
   stockQty: number;
   isActive: boolean;
   categoryId?: string;
+  imageFileId?: string;
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
@@ -18,6 +19,7 @@ export interface CreateProductRequest {
   stockQty?: number;
   isActive?: boolean;
   categoryId?: string;
+  image?: File;
 }
 
 export interface UpdateProductRequest {
@@ -27,4 +29,5 @@ export interface UpdateProductRequest {
   stockQty?: number;
   isActive?: boolean;
   categoryId?: string;
+  image?: File;
 }

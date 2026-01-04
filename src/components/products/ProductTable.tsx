@@ -1,10 +1,19 @@
-import { Table, Button, Space, Popconfirm, Tooltip, Typography } from 'antd';
+import {
+  Table,
+  Button,
+  Space,
+  Popconfirm,
+  Tooltip,
+  Typography,
+  Image,
+} from 'antd';
 import {
   EditOutlined,
   DeleteOutlined,
   ShoppingOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '@hooks';
+import { albumApi } from '@services/AlbumService';
 import type { Product } from '@types';
 
 const { Text } = Typography;
@@ -33,6 +42,37 @@ export function ProductTable({
   const { darkMode: isDark } = useTheme();
 
   const columns = [
+    {
+      title: 'Image',
+      dataIndex: 'imageFileId',
+      key: 'image',
+      width: 80,
+      render: (fileId: string) =>
+        fileId ? (
+          <Image
+            src={albumApi.getFileUrl(fileId)}
+            alt="Product"
+            width={60}
+            height={60}
+            style={{ objectFit: 'cover', borderRadius: '4px' }}
+          />
+        ) : (
+          <div
+            style={{
+              width: '60px',
+              height: '60px',
+              background: '#f0f0f0',
+              borderRadius: '4px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#8c8c8c',
+            }}
+          >
+            No Image
+          </div>
+        ),
+    },
     {
       title: 'Name',
       dataIndex: 'name',
