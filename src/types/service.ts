@@ -1,3 +1,5 @@
+import type { PaginationParams } from './common';
+
 export interface Service {
   id: string;
   name: string;
@@ -24,4 +26,10 @@ export interface UpdateServiceRequest {
   description?: string;
   price?: number;
   isActive?: boolean;
+}
+
+export interface QueryServiceParams extends PaginationParams {
+  isActive?: boolean;
+  minPrice?: number;
+  maxPrice?: number;
 }

@@ -59,6 +59,7 @@ export function Sidebar({
       key: 'packages',
       icon: <GiftOutlined />,
       label: 'Packages',
+      onClick: () => navigate({ to: '/packages' }),
     },
     {
       key: 'products',

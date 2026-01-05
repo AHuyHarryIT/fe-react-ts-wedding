@@ -1,18 +1,18 @@
 import { api } from '@/api/client';
 import type {
-  Service,
-  PaginatedResponse,
-  PaginationParams,
-  StandardResponse,
-  MessageResponse,
   CreateServiceRequest,
+  MessageResponse,
+  PaginatedResponse,
+  QueryServiceParams,
+  Service,
+  StandardResponse,
   UpdateServiceRequest,
 } from '@types';
 
 export const serviceApi = {
   // Get all services with pagination
   getAll: async (
-    params?: PaginationParams & { isActive?: boolean }
+    params?: QueryServiceParams
   ): Promise<PaginatedResponse<Service>> => {
     const response = await api.get<PaginatedResponse<Service>>('/services', {
       params,
