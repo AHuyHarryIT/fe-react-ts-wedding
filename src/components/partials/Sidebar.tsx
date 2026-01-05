@@ -53,6 +53,7 @@ export function Sidebar({
       key: 'services',
       icon: <CameraOutlined />,
       label: 'Services',
+      onClick: () => navigate({ to: '/services' }),
     },
     {
       key: 'packages',

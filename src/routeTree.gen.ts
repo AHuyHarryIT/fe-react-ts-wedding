@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as UsersRouteImport } from './routes/users'
+import { Route as ServicesRouteImport } from './routes/services'
 import { Route as RolesRouteImport } from './routes/roles'
 import { Route as ProductsRouteImport } from './routes/products'
 import { Route as PermissionsRouteImport } from './routes/permissions'
@@ -21,6 +22,11 @@ import { Route as IndexRouteImport } from './routes/index'
 const UsersRoute = UsersRouteImport.update({
   id: '/users',
   path: '/users',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ServicesRoute = ServicesRouteImport.update({
+  id: '/services',
+  path: '/services',
   getParentRoute: () => rootRouteImport,
 } as any)
 const RolesRoute = RolesRouteImport.update({
@@ -67,6 +73,7 @@ export interface FileRoutesByFullPath {
   '/permissions': typeof PermissionsRoute
   '/products': typeof ProductsRoute
   '/roles': typeof RolesRoute
+  '/services': typeof ServicesRoute
   '/users': typeof UsersRoute
 }
 export interface FileRoutesByTo {
@@ -77,6 +84,7 @@ export interface FileRoutesByTo {
   '/permissions': typeof PermissionsRoute
   '/products': typeof ProductsRoute
   '/roles': typeof RolesRoute
+  '/services': typeof ServicesRoute
   '/users': typeof UsersRoute
 }
 export interface FileRoutesById {
@@ -88,6 +96,7 @@ export interface FileRoutesById {
   '/permissions': typeof PermissionsRoute
   '/products': typeof ProductsRoute
   '/roles': typeof RolesRoute
+  '/services': typeof ServicesRoute
   '/users': typeof UsersRoute
 }
 export interface FileRouteTypes {
@@ -100,6 +109,7 @@ export interface FileRouteTypes {
     | '/permissions'
     | '/products'
     | '/roles'
+    | '/services'
     | '/users'
   fileRoutesByTo: FileRoutesByTo
   to:
@@ -110,6 +120,7 @@ export interface FileRouteTypes {
     | '/permissions'
     | '/products'
     | '/roles'
+    | '/services'
     | '/users'
   id:
     | '__root__'
@@ -120,6 +131,7 @@ export interface FileRouteTypes {
     | '/permissions'
     | '/products'
     | '/roles'
+    | '/services'
     | '/users'
   fileRoutesById: FileRoutesById
 }
@@ -131,6 +143,7 @@ export interface RootRouteChildren {
   PermissionsRoute: typeof PermissionsRoute
   ProductsRoute: typeof ProductsRoute
   RolesRoute: typeof RolesRoute
+  ServicesRoute: typeof ServicesRoute
   UsersRoute: typeof UsersRoute
 }
 
@@ -141,6 +154,13 @@ declare module '@tanstack/react-router' {
       path: '/users'
       fullPath: '/users'
       preLoaderRoute: typeof UsersRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/services': {
+      id: '/services'
+      path: '/services'
+      fullPath: '/services'
+      preLoaderRoute: typeof ServicesRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/roles': {
@@ -203,6 +223,7 @@ const rootRouteChildren: RootRouteChildren = {
   PermissionsRoute: PermissionsRoute,
   ProductsRoute: ProductsRoute,
   RolesRoute: RolesRoute,
+  ServicesRoute: ServicesRoute,
   UsersRoute: UsersRoute,
 }
 export const routeTree = rootRouteImport
