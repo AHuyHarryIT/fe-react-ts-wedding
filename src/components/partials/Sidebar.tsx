@@ -43,6 +43,7 @@ export function Sidebar({
       key: 'bookings',
       icon: <CalendarOutlined />,
       label: 'Bookings',
+      onClick: () => navigate({ to: '/bookings' }),
     },
     {
       key: 'clients',

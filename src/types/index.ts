@@ -8,3 +8,4 @@ export * from './user';
 export * from './error';
 export * from './service';
 export * from './package';
+export * from './booking';
