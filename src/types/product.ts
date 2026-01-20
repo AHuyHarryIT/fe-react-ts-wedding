@@ -1,3 +1,5 @@
+import type { UploadChangeParam } from 'antd/es/upload';
+
 export interface Product {
   id: string;
   name: string;
@@ -10,6 +12,16 @@ export interface Product {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+}
+
+export interface ProductFormData {
+  name: string;
+  description?: string;
+  price?: number;
+  stockQty?: number;
+  isActive?: boolean;
+  categoryId?: string;
+  image?: UploadChangeParam;
 }
 
 export interface CreateProductRequest {

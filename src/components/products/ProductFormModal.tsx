@@ -1,31 +1,21 @@
-import type { Category, Product } from '@types';
+import { PlusOutlined } from '@ant-design/icons';
+import type { Category, Product, ProductFormData } from '@types';
 import {
-  Modal,
   Form,
+  Image,
   Input,
   InputNumber,
-  Switch,
+  Modal,
   Select,
+  Switch,
   Upload,
-  Image,
+  type FormInstance,
   type UploadFile,
 } from 'antd';
-import { type FormInstance } from 'antd';
-import { PlusOutlined } from '@ant-design/icons';
-import { useState } from 'react';
 import type { UploadChangeParam } from 'antd/es/upload';
+import { useState } from 'react';
 
 const { TextArea } = Input;
-
-interface ProductFormData {
-  name: string;
-  description?: string;
-  price?: number;
-  stockQty?: number;
-  isActive?: boolean;
-  categoryId?: string;
-  image?: UploadFile[];
-}
 
 interface ProductFormModalProps {
   type: 'create' | 'edit';

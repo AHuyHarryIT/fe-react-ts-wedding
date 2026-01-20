@@ -4,21 +4,11 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateProductRequest,
   Product,
+  ProductFormData,
   UpdateProductRequest,
 } from '@types';
 import { Form, message } from 'antd';
-import type { UploadChangeParam } from 'antd/es/upload';
 import { useState } from 'react';
-
-interface ProductFormData {
-  name: string;
-  description?: string;
-  price?: number;
-  stockQty?: number;
-  isActive?: boolean;
-  categoryId?: string;
-  image?: UploadChangeParam;
-}
 
 export function useProductManagement() {
   const queryClient = useQueryClient();
