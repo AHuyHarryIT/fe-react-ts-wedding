@@ -48,13 +48,6 @@ export function BookingTable({
         '-',
     },
     {
-      title: 'Package',
-      dataIndex: ['package', 'name'],
-      key: 'package',
-      width: 180,
-      render: (name) => name || '-',
-    },
-    {
       title: 'Event Date',
       dataIndex: 'eventDate',
       key: 'eventDate',
@@ -88,37 +81,44 @@ export function BookingTable({
       title: 'Actions',
       key: 'actions',
       width: 200,
-      render: (_, record) => (
-        <Space size="small">
-          <Button
-            type="primary"
-            size="small"
-            icon={<EyeOutlined />}
-            onClick={() => onView(record)}
-          >
-            View
-          </Button>
-          <Button
-            type="primary"
-            size="small"
-            icon={<EditOutlined />}
-            onClick={() => onEdit(record)}
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Delete Booking"
-            description="Are you sure you want to delete this booking?"
-            onConfirm={() => onDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button danger size="small" icon={<DeleteOutlined />}>
-              Delete
+      render: (_, record) => {
+        const isPending = record.status === 'PENDING';
+        return (
+          <Space size="small">
+            <Button
+              type="primary"
+              size="small"
+              icon={<EyeOutlined />}
+              onClick={() => onView(record)}
+            >
+              View
             </Button>
-          </Popconfirm>
-        </Space>
-      ),
+            {isPending && (
+              <>
+                <Button
+                  type="primary"
+                  size="small"
+                  icon={<EditOutlined />}
+                  onClick={() => onEdit(record)}
+                >
+                  Edit
+                </Button>
+                <Popconfirm
+                  title="Delete Booking"
+                  description="Are you sure you want to delete this booking?"
+                  onConfirm={() => onDelete(record.id)}
+                  okText="Yes"
+                  cancelText="No"
+                >
+                  <Button danger size="small" icon={<DeleteOutlined />}>
+                    Delete
+                  </Button>
+                </Popconfirm>
+              </>
+            )}
+          </Space>
+        );
+      },
     },
   ];
 

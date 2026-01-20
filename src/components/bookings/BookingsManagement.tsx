@@ -1,24 +1,23 @@
-import { Card, Button, Space, Input, Row, Col } from 'antd';
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { useState } from 'react';
+import { BookingDetailModal } from '@components/bookings/BookingDetailModal';
 import { BookingFormModal } from '@components/bookings/BookingFormModal';
 import { BookingTable } from '@components/bookings/BookingTable';
-import { BookingDetailModal } from '@components/bookings/BookingDetailModal';
 import { useBookingManagement } from '@components/bookings/useBookingManagement';
-import type { Booking } from '@types';
+import { Button, Card, Col, Input, Row, Space } from 'antd';
 
 export function BookingsManagement() {
-  const [detailBooking, setDetailBooking] = useState<Booking | null>(null);
-  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
-
   const {
     bookings,
+    detailBooking,
     loading,
+    loadingBooking,
     total,
     customers,
     packages,
+    services,
     createForm,
     editForm,
+    isDetailModalOpen,
     isCreateModalOpen,
     isEditModalOpen,
     selectedBooking,
@@ -26,6 +25,8 @@ export function BookingsManagement() {
     currentPage,
     pageSize,
     contextHolder,
+    createSelectedItems,
+    editSelectedItems,
     setIsCreateModalOpen,
     setSearchText,
     setCurrentPage,
@@ -34,19 +35,19 @@ export function BookingsManagement() {
     handleEdit,
     handleDelete,
     handleOpenEdit,
+    handleViewBooking,
     handleCloseCreateModal,
     handleCloseEditModal,
+    handleCloseDetailModal,
+    handleAddCreateItem,
+    handleRemoveCreateItem,
+    handleAddEditItem,
+    handleRemoveEditItem,
+    calculateCreateTotalPrice,
+    calculateEditTotalPrice,
+    handleUpdateCreateItemQuantity,
+    handleUpdateEditItemQuantity,
   } = useBookingManagement();
-
-  const handleViewBooking = (booking: Booking) => {
-    setDetailBooking(booking);
-    setIsDetailModalOpen(true);
-  };
-
-  const handleCloseDetailModal = () => {
-    setIsDetailModalOpen(false);
-    setDetailBooking(null);
-  };
 
   return (
     <div style={{ padding: '24px' }}>
@@ -102,20 +103,32 @@ export function BookingsManagement() {
         form={createForm}
         customers={customers}
         packages={packages}
+        services={services}
+        selectedItems={createSelectedItems}
         onCancel={handleCloseCreateModal}
         onSubmit={handleCreate}
+        onItemAdd={handleAddCreateItem}
+        onItemRemove={handleRemoveCreateItem}
+        onItemQuantityChange={handleUpdateCreateItemQuantity}
+        calculateTotalPrice={calculateCreateTotalPrice}
       />
 
       <BookingFormModal
         type="edit"
         open={isEditModalOpen}
-        loading={false}
+        loading={loadingBooking}
         selectedBooking={selectedBooking}
         form={editForm}
         customers={customers}
         packages={packages}
+        services={services}
+        selectedItems={editSelectedItems}
         onCancel={handleCloseEditModal}
         onSubmit={handleEdit}
+        onItemAdd={handleAddEditItem}
+        onItemRemove={handleRemoveEditItem}
+        onItemQuantityChange={handleUpdateEditItemQuantity}
+        calculateTotalPrice={calculateEditTotalPrice}
       />
 
       <BookingDetailModal

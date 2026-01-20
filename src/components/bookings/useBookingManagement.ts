@@ -1,22 +1,32 @@
 import { bookingApi } from '@services/BookingService';
 import { packageApi } from '@services/PackageService';
+import { serviceApi } from '@services/ServiceService';
 import { userApi } from '@services/UserService';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   Booking,
   CreateBookingRequest,
   UpdateBookingRequest,
+  Service,
+  BookingStatus,
 } from '@types';
 import { Form, message } from 'antd';
 import { useState } from 'react';
 
+interface SelectedItem {
+  id: string;
+  type: 'package' | 'service';
+  name: string;
+  price: number;
+  quantity: number;
+}
+
 interface BookingFormData {
   customerId: string;
-  packageId: string;
   notes?: string;
   eventDate: string;
   totalPrice?: number;
-  status?: 'PENDING' | 'CONFIRMED' | 'COMPLETED' | 'CANCELLED' | 'RESCHEDULED';
+  status?: BookingStatus;
 }
 
 export function useBookingManagement() {
@@ -31,6 +41,17 @@ export function useBookingManagement() {
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [isLoadingBooking, setIsLoadingBooking] = useState(false);
+  const [detailBooking, setDetailBooking] = useState<Booking | null>(null);
+  const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  // Selected items state for create and edit
+  const [createSelectedItems, setCreateSelectedItems] = useState<
+    SelectedItem[]
+  >([]);
+  const [editSelectedItems, setEditSelectedItems] = useState<SelectedItem[]>(
+    []
+  );
 
   // Queries
   const { data: bookingsData, isLoading: bookingsLoading } = useQuery({
@@ -42,7 +63,8 @@ export function useBookingManagement() {
         search: searchText || undefined,
         includeCustomer: true,
         includePackage: true,
-        includeSessions: true,
+        includePackages: true,
+        includeServices: true,
       }),
   });
 
@@ -53,7 +75,12 @@ export function useBookingManagement() {
 
   const { data: packagesData } = useQuery({
     queryKey: ['packages'],
-    queryFn: () => packageApi.getAll({ limit: 100 }),
+    queryFn: () => packageApi.getAll({ limit: 100, isActive: true }),
+  });
+
+  const { data: servicesData } = useQuery({
+    queryKey: ['services'],
+    queryFn: () => serviceApi.getAll({ limit: 100, isActive: true }),
   });
 
   // Mutations
@@ -63,6 +90,7 @@ export function useBookingManagement() {
       messageApi.success('Booking created successfully');
       setIsCreateModalOpen(false);
       createForm.resetFields();
+      setCreateSelectedItems([]);
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: (error: unknown) => {
@@ -81,6 +109,7 @@ export function useBookingManagement() {
       setIsEditModalOpen(false);
       setSelectedBooking(null);
       editForm.resetFields();
+      setEditSelectedItems([]);
       queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: (error: unknown) => {
@@ -105,76 +134,248 @@ export function useBookingManagement() {
     },
   });
 
+  // Calculate total price for create
+  const calculateCreateTotalPrice = (): number => {
+    return createSelectedItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+  };
+
+  // Calculate total price for edit
+  const calculateEditTotalPrice = (): number => {
+    return editSelectedItems.reduce(
+      (sum, item) => sum + item.price * item.quantity,
+      0
+    );
+  };
+
+  // Add item to selected items (create)
+  const handleAddCreateItem = (item: SelectedItem) => {
+    setCreateSelectedItems((prev) => {
+      if (prev.some((i) => i.id === item.id && i.type === item.type)) {
+        return prev;
+      }
+      return [...prev, item];
+    });
+  };
+
+  // Remove item from selected items (create)
+  const handleRemoveCreateItem = (
+    itemId: string,
+    type: 'package' | 'service'
+  ) => {
+    setCreateSelectedItems((prev) =>
+      prev.filter((item) => !(item.id === itemId && item.type === type))
+    );
+  };
+
+  // Add item to selected items (edit)
+  const handleAddEditItem = (item: SelectedItem) => {
+    setEditSelectedItems((prev) => {
+      if (prev.some((i) => i.id === item.id && i.type === item.type)) {
+        return prev;
+      }
+      return [...prev, item];
+    });
+  };
+
+  // Remove item from selected items (edit)
+  const handleRemoveEditItem = (
+    itemId: string,
+    type: 'package' | 'service'
+  ) => {
+    setEditSelectedItems((prev) =>
+      prev.filter((item) => !(item.id === itemId && item.type === type))
+    );
+  };
+
+  // Update item quantity (create)
+  const handleUpdateCreateItemQuantity = (
+    itemId: string,
+    type: 'package' | 'service',
+    quantity: number
+  ) => {
+    setCreateSelectedItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId && item.type === type ? { ...item, quantity } : item
+      )
+    );
+  };
+
+  // Update item quantity (edit)
+  const handleUpdateEditItemQuantity = (
+    itemId: string,
+    type: 'package' | 'service',
+    quantity: number
+  ) => {
+    setEditSelectedItems((prev) =>
+      prev.map((item) =>
+        item.id === itemId && item.type === type ? { ...item, quantity } : item
+      )
+    );
+  };
+
   // Handlers
   const handleCreate = (values: BookingFormData) => {
+    if (createSelectedItems.length === 0) {
+      messageApi.error('Please select at least 1 package or service');
+      return;
+    }
+
     const bookingData: CreateBookingRequest = {
       customerId: values.customerId,
-      packageId: values.packageId,
+      packageIds: createSelectedItems
+        .filter((item) => item.type === 'package')
+        .map((item) => item.id),
+      serviceIds: createSelectedItems
+        .filter((item) => item.type === 'service')
+        .map((item) => item.id),
       notes: values.notes,
       eventDate: values.eventDate,
-      totalPrice: values.totalPrice || 0,
+      totalPrice: calculateCreateTotalPrice(),
       status: values.status,
     };
     createMutation.mutate(bookingData);
   };
 
   const handleEdit = (values: BookingFormData) => {
-    if (selectedBooking) {
-      const updateData: UpdateBookingRequest = {
-        customerId: values.customerId,
-        packageId: values.packageId,
-        notes: values.notes,
-        eventDate: values.eventDate,
-        totalPrice: values.totalPrice,
-        status: values.status,
-      };
-      updateMutation.mutate({ id: selectedBooking.id, data: updateData });
+    if (!selectedBooking) return;
+
+    if (editSelectedItems.length === 0) {
+      messageApi.error('Please select at least 1 package or service');
+      return;
     }
+
+    const updateData: UpdateBookingRequest = {
+      customerId: values.customerId,
+      packageIds: editSelectedItems
+        .filter((item) => item.type === 'package')
+        .map((item) => item.id),
+      serviceIds: editSelectedItems
+        .filter((item) => item.type === 'service')
+        .map((item) => item.id),
+      notes: values.notes,
+      eventDate: values.eventDate,
+      totalPrice: calculateEditTotalPrice(),
+      status: values.status,
+    };
+    updateMutation.mutate({ id: selectedBooking.id, data: updateData });
   };
 
   const handleDelete = (id: string) => {
     deleteMutation.mutate(id);
   };
 
-  const handleOpenEdit = (booking: Booking) => {
-    setSelectedBooking(booking);
-    editForm.setFieldsValue({
-      customerId: booking.customerId,
-      packageId: booking.packageId,
-      notes: booking.notes || '',
-      eventDate: booking.eventDate,
-      totalPrice: booking.totalPrice,
-      status: booking.status,
-    });
-    setIsEditModalOpen(true);
+  const handleOpenEdit = async (booking: Booking) => {
+    try {
+      setIsLoadingBooking(true);
+      // Fetch fresh booking data by ID
+      const response = await bookingApi.getOne(booking.id);
+      const freshBooking = response.data;
+
+      setSelectedBooking(freshBooking);
+      const items: SelectedItem[] = [];
+
+      // Add packages from booking
+      if (freshBooking.packages && freshBooking.packages.length > 0) {
+        freshBooking.packages.forEach((bp) => {
+          if (bp.package) {
+            items.push({
+              id: bp.package.id,
+              type: 'package',
+              name: bp.package.name,
+              price: bp.package.price || 0,
+              quantity: bp.quantity || 1,
+            });
+          }
+        });
+      }
+
+      // Add services from booking
+      if (freshBooking.services && freshBooking.services.length > 0) {
+        freshBooking.services.forEach((bs) => {
+          if (bs.service) {
+            items.push({
+              id: bs.service.id,
+              type: 'service',
+              name: bs.service.name,
+              price: bs.service.price || 0,
+              quantity: bs.quantity || 1,
+            });
+          }
+        });
+      }
+
+      setEditSelectedItems(items);
+      editForm.setFieldsValue({
+        customerId: freshBooking.customerId,
+        notes: freshBooking.notes || '',
+        eventDate: freshBooking.eventDate,
+        totalPrice: freshBooking.totalPrice,
+        status: freshBooking.status,
+      });
+      setIsEditModalOpen(true);
+    } catch (error) {
+      const errorMessage =
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message || 'Failed to load booking details';
+      messageApi.error(errorMessage);
+    } finally {
+      setIsLoadingBooking(false);
+    }
+  };
+
+  const handleViewBooking = async (booking: Booking) => {
+    try {
+      // Fetch fresh booking data by ID
+      const response = await bookingApi.getOne(booking.id);
+      setDetailBooking(response.data);
+      setIsDetailModalOpen(true);
+    } catch (error) {
+      console.error('Failed to load booking details:', error);
+    }
+  };
+
+  const handleCloseDetailModal = () => {
+    setIsDetailModalOpen(false);
+    setDetailBooking(null);
   };
 
   const handleCloseCreateModal = () => {
     setIsCreateModalOpen(false);
     createForm.resetFields();
+    setCreateSelectedItems([]);
   };
 
   const handleCloseEditModal = () => {
     setIsEditModalOpen(false);
     setSelectedBooking(null);
     editForm.resetFields();
+    setEditSelectedItems([]);
   };
 
   return {
     bookings: bookingsData?.data || [],
     loading: bookingsLoading,
+    loadingBooking: isLoadingBooking,
     total: bookingsData?.pagination?.total || 0,
     customers: customersData?.data || [],
     packages: packagesData?.data || [],
+    services: (servicesData?.data as Service[]) || [],
     createForm,
     editForm,
     isCreateModalOpen,
     isEditModalOpen,
+    detailBooking,
     selectedBooking,
     searchText,
     currentPage,
     pageSize,
     contextHolder,
+    createSelectedItems,
+    editSelectedItems,
+    isDetailModalOpen,
     setIsCreateModalOpen,
     setIsEditModalOpen,
     setSearchText,
@@ -184,7 +385,17 @@ export function useBookingManagement() {
     handleEdit,
     handleDelete,
     handleOpenEdit,
+    handleViewBooking,
     handleCloseCreateModal,
     handleCloseEditModal,
+    handleCloseDetailModal,
+    handleAddCreateItem,
+    handleRemoveCreateItem,
+    handleAddEditItem,
+    handleRemoveEditItem,
+    calculateCreateTotalPrice,
+    calculateEditTotalPrice,
+    handleUpdateCreateItemQuantity,
+    handleUpdateEditItemQuantity,
   };
 }

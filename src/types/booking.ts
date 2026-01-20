@@ -1,6 +1,7 @@
 import type { PaginationParams } from './common';
 import type { User } from './user';
 import type { Package } from './package';
+import type { Service } from './service';
 
 export type BookingStatus =
   | 'PENDING'
@@ -9,10 +10,25 @@ export type BookingStatus =
   | 'CANCELLED'
   | 'RESCHEDULED';
 
+export interface BookingPackage {
+  bookingId: Booking['id'];
+  packageId: Package['id'];
+  quantity: number;
+  price: number; // Price at time of booking
+  package?: Package;
+}
+
+export interface BookingService {
+  bookingId: string;
+  serviceId: string;
+  quantity: number;
+  price: number; // Price at time of booking
+  service?: Service;
+}
+
 export interface Booking {
   id: string;
-  customerId: string;
-  packageId: string;
+  customerId: User['id'];
   notes?: string;
   eventDate: string;
   totalPrice: number;
@@ -21,12 +37,14 @@ export interface Booking {
   updatedAt: string;
   deletedAt?: string | null;
   customer?: User;
-  package?: Package;
+  packages?: BookingPackage[];
+  services?: BookingService[];
 }
 
 export interface CreateBookingRequest {
-  customerId: string;
-  packageId: string;
+  customerId: User['id'];
+  packageIds?: Package['id'][];
+  serviceIds?: Service['id'][];
   notes?: string;
   eventDate: string;
   totalPrice?: number;
@@ -34,8 +52,9 @@ export interface CreateBookingRequest {
 }
 
 export interface UpdateBookingRequest {
-  customerId?: string;
-  packageId?: string;
+  customerId?: User['id'];
+  packageIds?: Package['id'][];
+  serviceIds?: Service['id'][];
   notes?: string;
   eventDate?: string;
   totalPrice?: number;
@@ -49,5 +68,6 @@ export interface QueryBookingParams extends PaginationParams {
   toDate?: string;
   includeCustomer?: boolean;
   includePackage?: boolean;
-  includeSessions?: boolean;
+  includePackages?: boolean;
+  includeServices?: boolean;
 }
