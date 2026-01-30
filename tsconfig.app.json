@@ -32,6 +32,7 @@
       "@config/*": ["src/config/*"],
       "@providers/*": ["src/providers/*"],
       "@utils/*": ["src/utils/*"],
+      "@assets/*" : ["src/assets/*"],
       "@/*": ["src/*"],
     },
 

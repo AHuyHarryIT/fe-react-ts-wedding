@@ -3,3 +3,4 @@ export { useTheme } from './useTheme';
 export { useNotifications } from './useNotifications';
 export { useWeddingForm } from './useWeddingForm';
 export { useAuth } from './useAuth';
+export { useCheckout } from './useCheckout';

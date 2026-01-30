@@ -2,6 +2,7 @@ import type { PaginationParams } from './common';
 import type { User } from './user';
 import type { Package } from './package';
 import type { Service } from './service';
+import type { Order } from './order';
 
 export type BookingStatus =
   | 'PENDING'
@@ -39,6 +40,8 @@ export interface Booking {
   customer?: User;
   packages?: BookingPackage[];
   services?: BookingService[];
+  orders?: Order[];
+  order?: Order;
 }
 
 export interface CreateBookingRequest {

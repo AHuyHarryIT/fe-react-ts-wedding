@@ -1,5 +1,5 @@
 import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { BookingDetailModal } from '@components/bookings/BookingDetailModal';
+import { BookingDetailWithOrders } from '@components/bookings/BookingDetailWithOrders';
 import { BookingFormModal } from '@components/bookings/BookingFormModal';
 import { BookingTable } from '@components/bookings/BookingTable';
 import { useBookingManagement } from '@components/bookings/useBookingManagement';
@@ -131,7 +131,7 @@ export function BookingsManagement() {
         calculateTotalPrice={calculateEditTotalPrice}
       />
 
-      <BookingDetailModal
+      <BookingDetailWithOrders
         open={isDetailModalOpen}
         booking={detailBooking}
         onClose={handleCloseDetailModal}
