@@ -11,3 +11,4 @@ export * from './package';
 export * from './booking';
 export * from './order';
 export * from './payment';
+export * from './selection';

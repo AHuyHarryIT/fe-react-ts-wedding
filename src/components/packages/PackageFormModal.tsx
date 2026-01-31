@@ -6,7 +6,6 @@ const { TextArea } = Input;
 
 interface PackageFormData {
   name: string;
-  slug?: string;
   description?: string;
   price?: number;
   isActive?: boolean;
@@ -60,19 +59,6 @@ export function PackageFormModal({
           <Input placeholder="e.g., Premium Wedding Package, Silver Package, etc." />
         </Form.Item>
 
-        <Form.Item
-          name="slug"
-          label="Slug"
-          rules={[
-            {
-              max: 255,
-              message: 'Slug cannot exceed 255 characters',
-            },
-          ]}
-        >
-          <Input placeholder="e.g., premium-wedding-package" />
-        </Form.Item>
-
         <Form.Item name="description" label="Description">
           <TextArea
             rows={4}
@@ -94,7 +80,7 @@ export function PackageFormModal({
         </Form.Item>
 
         <Form.Item name="isActive" label="Active" valuePropName="checked">
-          <Switch defaultChecked />
+          <Switch />
         </Form.Item>
 
         <Form.Item

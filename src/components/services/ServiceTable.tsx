@@ -34,13 +34,6 @@ export function ServiceTable({
       width: 200,
     },
     {
-      title: 'Slug',
-      dataIndex: 'slug',
-      key: 'slug',
-      width: 150,
-      render: (slug) => slug || '-',
-    },
-    {
       title: 'Description',
       dataIndex: 'description',
       key: 'description',

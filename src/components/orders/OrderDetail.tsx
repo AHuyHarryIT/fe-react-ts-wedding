@@ -152,7 +152,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
               <div className="text-2xl font-bold text-blue-600">
                 {(
                   summary.totalPrice ||
-                  summary.depositAmount + summary.remainingAmount
+                  (summary.depositAmount ?? 0) + (summary.remainingAmount ?? 0)
                 ).toLocaleString()}{' '}
                 VND
               </div>
@@ -178,12 +178,12 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
                 <span className="text-sm text-gray-600">Remaining</span>
               </div>
               <div className="text-2xl font-bold text-orange-600">
-                {summary.remainingAmount?.toLocaleString()} VND
+                {(summary.remainingAmount ?? 0).toLocaleString()} VND
               </div>
             </div>
           </Col>
 
-          {summary.depositAmount > 0 && (
+          {(summary.depositAmount ?? 0) > 0 && (
             <Col xs={24} sm={12}>
               <div className="bg-purple-50 p-4 rounded-lg">
                 <div className="flex items-center gap-2 mb-2">
@@ -193,7 +193,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
                   </span>
                 </div>
                 <div className="text-2xl font-bold text-purple-600">
-                  {summary.depositAmount.toLocaleString()} VND
+                  {(summary.depositAmount ?? 0).toLocaleString()} VND
                 </div>
               </div>
             </Col>

@@ -10,7 +10,6 @@ import { serviceApi } from '@services/ServiceService';
 
 interface ServiceFormData {
   name: string;
-  slug?: string;
   description?: string;
   price?: number;
   isActive?: boolean;
@@ -108,7 +107,6 @@ export function useServiceManagement() {
     setSelectedService(service);
     editForm.setFieldsValue({
       name: service.name,
-      slug: service.slug || '',
       description: service.description || '',
       price: service.price,
       isActive: service.isActive,

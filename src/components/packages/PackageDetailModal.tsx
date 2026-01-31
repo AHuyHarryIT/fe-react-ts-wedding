@@ -29,10 +29,6 @@ export function PackageDetailModal({
           {packageItem.name}
         </Descriptions.Item>
 
-        <Descriptions.Item label="Slug" span={2}>
-          {packageItem.slug || '-'}
-        </Descriptions.Item>
-
         <Descriptions.Item label="Description" span={2}>
           {packageItem.description || '-'}
         </Descriptions.Item>

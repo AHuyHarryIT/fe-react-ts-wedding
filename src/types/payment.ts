@@ -3,16 +3,9 @@
  * Aligned with backend Order and Payment entities
  */
 
-export type PaymentStatus =
-  | 'PENDING'
-  | 'PAID'
-  | 'FAILED'
-  | 'EXPIRED'
-  | 'CANCELED';
-
 export interface PaymentStatusResponse {
   paymentId: string;
-  status: PaymentStatus;
+  status: string;
   amount: number;
   createdAt: string;
   updatedAt: string;

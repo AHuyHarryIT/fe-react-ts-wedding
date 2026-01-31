@@ -11,7 +11,6 @@ import { serviceApi } from '@services/ServiceService';
 
 interface PackageFormData {
   name: string;
-  slug?: string;
   description?: string;
   price?: number;
   isActive?: boolean;
@@ -116,7 +115,6 @@ export function usePackageManagement() {
     setSelectedPackage(pkg);
     editForm.setFieldsValue({
       name: pkg.name,
-      slug: pkg.slug || '',
       description: pkg.description || '',
       price: pkg.price,
       isActive: pkg.isActive,

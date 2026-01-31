@@ -4,7 +4,6 @@ import type { Service } from './service';
 export interface Package {
   id: string;
   name: string;
-  slug?: string;
   description?: string;
   price?: number;
   isActive: boolean;
@@ -22,7 +21,6 @@ export interface PackageService {
 
 export interface CreatePackageRequest {
   name: string;
-  slug?: string;
   description?: string;
   price?: number;
   isActive?: boolean;
@@ -31,7 +29,6 @@ export interface CreatePackageRequest {
 
 export interface UpdatePackageRequest {
   name?: string;
-  slug?: string;
   description?: string;
   price?: number;
   isActive?: boolean;

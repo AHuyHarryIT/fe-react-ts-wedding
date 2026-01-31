@@ -84,13 +84,13 @@ export const OrdersPage: React.FC = () => {
     },
     {
       title: 'Total Amount',
-      dataIndex: ['summary', 'totalAmount'],
-      key: 'totalAmount',
+      dataIndex: ['summary', 'totalPrice'],
+      key: 'totalPrice',
       render: (_: unknown, record: Order) => {
         const total =
           record.summary?.totalPrice ||
           record.totalPrice ||
-          record.depositAmount + record.remainingAmount;
+          (record.depositAmount ?? 0) + (record.remainingAmount ?? 0);
         return (
           <span className="font-semibold">{total.toLocaleString()} VND</span>
         );
@@ -98,10 +98,10 @@ export const OrdersPage: React.FC = () => {
     },
     {
       title: 'Paid',
-      dataIndex: ['summary', 'depositPaid'],
-      key: 'depositPaid',
+      dataIndex: ['summary', 'totalPaid'],
+      key: 'totalPaid',
       render: (_: unknown, record: Order) => {
-        const amount = record.summary?.depositPaid || 0;
+        const amount = record.summary?.totalPaid ?? 0;
         return (
           <span className="text-green-600">{amount.toLocaleString()} VND</span>
         );
@@ -113,7 +113,7 @@ export const OrdersPage: React.FC = () => {
       key: 'remainingAmount',
       render: (_: unknown, record: Order) => {
         const amount =
-          record.summary?.remainingAmount || record.remainingAmount;
+          record.summary?.remainingAmount ?? record.remainingAmount ?? 0;
         return (
           <span className="text-orange-600">{amount.toLocaleString()} VND</span>
         );
@@ -161,13 +161,10 @@ export const OrdersPage: React.FC = () => {
         sum +
         (o.summary?.totalPrice ||
           o.totalPrice ||
-          o.depositAmount + o.remainingAmount),
+          (o.depositAmount ?? 0) + (o.remainingAmount ?? 0)),
       0
     ),
-    totalPaid: orders.reduce(
-      (sum, o) => sum + (o.summary?.depositPaid || 0),
-      0
-    ),
+    totalPaid: orders.reduce((sum, o) => sum + (o.summary?.totalPaid ?? 0), 0),
     paidOrders: orders.filter((o) => o.status === 'PAID').length,
   };
 

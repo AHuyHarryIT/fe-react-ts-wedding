@@ -2,12 +2,10 @@ import {
   CalendarOutlined,
   CameraOutlined,
   DashboardOutlined,
-  DollarOutlined,
   FileImageOutlined,
   GiftOutlined,
   KeyOutlined,
   SafetyOutlined,
-  SettingOutlined,
   ShoppingOutlined,
   TagOutlined,
   TeamOutlined,
@@ -45,11 +43,11 @@ export function Sidebar({
       label: 'Bookings',
       onClick: () => navigate({ to: '/bookings' }),
     },
-    {
-      key: 'clients',
-      icon: <TeamOutlined />,
-      label: 'Clients',
-    },
+    // {
+    //   key: 'clients',
+    //   icon: <TeamOutlined />,
+    //   label: 'Clients',
+    // },
     {
       key: 'services',
       icon: <CameraOutlined />,
@@ -80,11 +78,11 @@ export function Sidebar({
       label: 'Albums',
       onClick: () => navigate({ to: '/albums' }),
     },
-    {
-      key: 'payments',
-      icon: <DollarOutlined />,
-      label: 'Payments',
-    },
+    // {
+    //   key: 'payments',
+    //   icon: <DollarOutlined />,
+    //   label: 'Payments',
+    // },
     {
       key: 'users',
       icon: <TeamOutlined />,
@@ -103,11 +101,11 @@ export function Sidebar({
       label: 'Permissions',
       onClick: () => navigate({ to: '/permissions' }),
     },
-    {
-      key: 'settings',
-      icon: <SettingOutlined />,
-      label: 'Settings',
-    },
+    // {
+    //   key: 'settings',
+    //   icon: <SettingOutlined />,
+    //   label: 'Settings',
+    // },
   ];
 
   return (

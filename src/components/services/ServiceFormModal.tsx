@@ -6,7 +6,6 @@ const { TextArea } = Input;
 
 interface ServiceFormData {
   name: string;
-  slug?: string;
   description?: string;
   price?: number;
   isActive?: boolean;
@@ -55,19 +54,6 @@ export function ServiceFormModal({
           ]}
         >
           <Input placeholder="e.g., Wedding Photography, Catering, etc." />
-        </Form.Item>
-
-        <Form.Item
-          name="slug"
-          label="Slug"
-          rules={[
-            {
-              max: 255,
-              message: 'Slug cannot exceed 255 characters',
-            },
-          ]}
-        >
-          <Input placeholder="e.g., wedding-photography" />
         </Form.Item>
 
         <Form.Item name="description" label="Description">

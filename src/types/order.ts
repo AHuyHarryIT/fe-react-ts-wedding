@@ -10,16 +10,24 @@ export type PaymentMethod =
   | 'E_WALLET'
   | 'MOMO';
 
-export type OrderPaymentStatus =
+export type PaymentStatus =
   | 'PENDING'
   | 'SUCCESSFUL'
   | 'FAILED'
+  | 'CANCELLED'
+  | 'ABANDONED'
   | 'REFUNDED'
-  | 'SUCCESS';
+  | 'PARTIAL_PAID';
+
+export type PaymentType =
+  | 'DEPOSIT'
+  | 'FULL'
+  | 'REMAINING'
+  | 'INSTALLMENT'
+  | 'ADJUSTMENT';
 
 export interface OrderSummary {
-  totalPrice?: number;
-  totalAmount?: number;
+  totalPrice: number;
   depositAmount: number;
   remainingAmount: number;
   depositPaid: number;
@@ -31,33 +39,33 @@ export interface OrderSummary {
 
 export interface Payment {
   id: string;
-  bookingId: string;
+  orderId: string;
   amount: number;
-  paymentMethod: PaymentMethod;
-  method?: PaymentMethod;
-  paymentType?: 'DEPOSIT' | 'FULL' | 'REMAINING';
-  status: OrderPaymentStatus;
-  txnId?: string;
-  note?: string;
-  paidAt?: string;
+  method: PaymentMethod;
+  paymentType?: PaymentType;
+  status: PaymentStatus;
+  description?: string;
+  notes?: string;
+  dueDate?: string;
   createdAt: string;
   updatedAt: string;
-  deletedAt?: string | null;
 }
 
 export interface Order {
+  id?: string;
   bookingId: Booking['id'];
+  referenceNumber?: string;
   totalPrice: number;
-  depositAmount: number;
-  remainingAmount: number;
-  depositPaid: number;
-  remainingPaid: number;
   status: OrderStatus;
   booking?: Booking;
   payments?: Payment[];
   summary?: OrderSummary;
-  createdAt: string;
-  updatedAt: string;
+  depositAmount?: number;
+  remainingAmount?: number;
+  depositPaid?: number;
+  remainingPaid?: number;
+  createdAt?: string;
+  updatedAt?: string;
   deletedAt?: string | null;
 }
 

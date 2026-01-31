@@ -15,7 +15,6 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
 
   const getStatusColor = (status: string) => {
     switch (status) {
-      case 'SUCCESS':
       case 'SUCCESSFUL':
         return 'green';
       case 'PENDING':
@@ -47,7 +46,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
       <Timeline
         items={sortedPayments.map((payment) => ({
           color:
-            payment.status === 'SUCCESS' || payment.status === 'SUCCESSFUL'
+            payment.status === 'SUCCESSFUL'
               ? 'green'
               : payment.status === 'PENDING'
                 ? 'orange'
@@ -78,21 +77,21 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
                 <Col xs={24}>
                   <span className="text-gray-600">Method:</span>{' '}
                   <span className="font-medium">
-                    {getMethodLabel(payment.paymentMethod)}
+                    {getMethodLabel(payment.method)}
                   </span>
                 </Col>
-                {payment.txnId && (
+                {payment.description && (
                   <Col xs={24}>
-                    <span className="text-gray-600">Transaction ID:</span>{' '}
+                    <span className="text-gray-600">Description:</span>{' '}
                     <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-                      {payment.txnId}
+                      {payment.description}
                     </code>
                   </Col>
                 )}
-                {payment.note && (
+                {payment.notes && (
                   <Col xs={24}>
                     <span className="text-gray-600">Note:</span>{' '}
-                    <span className="italic">{payment.note}</span>
+                    <span className="italic">{payment.notes}</span>
                   </Col>
                 )}
               </Row>
@@ -120,9 +119,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
             <div className="text-lg font-semibold">
               {payments.length > 0
                 ? `${Math.round(
-                    (payments.filter(
-                      (p) => p.status === 'SUCCESS' || p.status === 'SUCCESSFUL'
-                    ).length /
+                    (payments.filter((p) => p.status === 'SUCCESSFUL').length /
                       payments.length) *
                       100
                   )}%`

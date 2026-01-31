@@ -3,7 +3,6 @@ import type { PaginationParams } from './common';
 export interface Service {
   id: string;
   name: string;
-  slug?: string;
   description?: string;
   price?: number;
   isActive: boolean;
@@ -14,7 +13,6 @@ export interface Service {
 
 export interface CreateServiceRequest {
   name: string;
-  slug?: string;
   description?: string;
   price?: number;
   isActive?: boolean;
@@ -22,7 +20,6 @@ export interface CreateServiceRequest {
 
 export interface UpdateServiceRequest {
   name?: string;
-  slug?: string;
   description?: string;
   price?: number;
   isActive?: boolean;

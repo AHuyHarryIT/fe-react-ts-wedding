@@ -57,9 +57,9 @@ export function AlbumFormModal({
           <Input placeholder="e.g., Wedding Photos 2024" />
         </Form.Item>
 
-        <Form.Item name="ownerUserId" label="Owner User ID (Optional)">
+        {/* <Form.Item name="ownerUserId" label="Owner User ID (Optional)">
           <Input placeholder="Enter user ID" />
-        </Form.Item>
+        </Form.Item> */}
 
         <Form.Item name="description" label="Description">
           <TextArea
@@ -69,9 +69,9 @@ export function AlbumFormModal({
           />
         </Form.Item>
 
-        <Form.Item name="bookingId" label="Booking ID (Optional)">
+        {/* <Form.Item name="bookingId" label="Booking ID (Optional)">
           <Input placeholder="Link to booking" />
-        </Form.Item>
+        </Form.Item> */}
 
         <Form.Item name="isPublic" label="Public Album" valuePropName="checked">
           <Switch checkedChildren="Public" unCheckedChildren="Private" />
