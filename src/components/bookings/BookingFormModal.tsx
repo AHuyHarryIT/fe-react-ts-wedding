@@ -1,20 +1,21 @@
+import { DeleteOutlined } from '@ant-design/icons';
+import { useGenericSelect } from '@hooks/useGenericSelect';
+import type { Booking, BookingStatus, Package, Service } from '@types';
 import {
-  Modal,
+  Button,
+  Card,
+  DatePicker,
+  Empty,
   Form,
   Input,
   InputNumber,
-  Select,
-  DatePicker,
-  Button,
   List,
-  Card,
-  Empty,
-  Tag,
+  Modal,
+  Select,
   Space,
+  Tag,
+  type FormInstance,
 } from 'antd';
-import { type FormInstance } from 'antd';
-import type { Booking, User, Package, BookingStatus, Service } from '@types';
-import { DeleteOutlined } from '@ant-design/icons';
 import dayjs from 'dayjs';
 
 const { TextArea } = Input;
@@ -43,7 +44,6 @@ interface BookingFormModalProps {
   loading: boolean;
   selectedBooking: Booking | null;
   form: FormInstance<BookingFormData>;
-  customers: User[];
   packages: Package[];
   services: Service[];
   selectedItems: SelectedItem[];
@@ -59,13 +59,19 @@ interface BookingFormModalProps {
   calculateTotalPrice: () => number;
 }
 
+type CustomerExtra = {
+  id: string;
+  firstName: string;
+  lastName: string;
+  phoneNumber: string;
+};
+
 export function BookingFormModal({
   type,
   open,
   loading,
   selectedBooking,
   form,
-  customers,
   packages,
   services,
   selectedItems,
@@ -79,6 +85,10 @@ export function BookingFormModal({
   const isEditMode = type === 'edit' && selectedBooking;
   const title = isEditMode ? 'Edit Booking' : 'Create New Booking';
   const totalPrice = calculateTotalPrice();
+
+  const customerOptions = useGenericSelect<CustomerExtra>({
+    entity: 'customers',
+  });
 
   return (
     <Modal
@@ -116,11 +126,24 @@ export function BookingFormModal({
         >
           <Select
             placeholder="Select a customer"
-            showSearch={{ optionFilterProp: 'label' }}
-            options={customers.map((customer) => ({
+            showSearch={{
+              filterOption: false,
+              onSearch: customerOptions.onSearch,
+            }}
+            loading={customerOptions.loading}
+            options={customerOptions.options.map((customer) => ({
               label: `${customer.firstName} ${customer.lastName} (${customer.phoneNumber})`,
               value: customer.id,
             }))}
+            onPopupScroll={(e) => {
+              const target = e.target as HTMLDivElement;
+              if (
+                target.scrollTop + target.offsetHeight >=
+                target.scrollHeight - 8
+              ) {
+                customerOptions.loadMore();
+              }
+            }}
           />
         </Form.Item>
 

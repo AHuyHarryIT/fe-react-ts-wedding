@@ -1,52 +1,50 @@
-import { useState } from 'react';
-import { useQuery } from '@tanstack/react-query';
-import type { SelectionResponse } from '@types';
-import { api } from '@/api/client';
+import { selectionApi } from '@services/SelectionService';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import type { PaginatedResponse } from '@types';
+import { useMemo, useState } from 'react';
 
 interface UseGenericSelectParams {
   entity: string;
   limit?: number;
-  enabled?: boolean;
 }
 
 export function useGenericSelect<TExtra = unknown>({
   entity,
-  limit = 20,
-  enabled = true,
+  limit = 10,
 }: UseGenericSelectParams) {
   const [search, setSearch] = useState('');
-  const [page, setPage] = useState(1);
 
-  const query = useQuery<SelectionResponse<TExtra>>({
-    queryKey: ['selection', entity, search, page],
-    enabled,
-    queryFn: async () => {
-      const { data } = await api.get('/selections', {
-        params: { entity, search, page, limit },
+  const query = useInfiniteQuery<PaginatedResponse<TExtra>>({
+    queryKey: ['selection', entity, search],
+    initialPageParam: 1,
+    queryFn: async ({ pageParam }) => {
+      const data = await selectionApi.getAll<TExtra>({
+        entity,
+        search,
+        page: pageParam,
+        limit,
       });
       return data;
     },
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.hasNext ? lastPage.pagination.page + 1 : undefined,
   });
 
-  const options = query.data?.items ?? [];
-
-  const loadMore = () => {
-    if (query.data?.pagination.hasNext && !query.isFetching) {
-      setPage((p) => p + 1);
-    }
-  };
-
-  const onSearch = (value: string) => {
-    setSearch(value);
-    setPage(1);
-  };
+  const options = useMemo(
+    () => query.data?.pages.flatMap((p) => p.data) ?? [],
+    [query.data]
+  );
 
   return {
     options,
     loading: query.isFetching,
-    onSearch,
-    loadMore,
+    hasNext: query.hasNextPage,
+    onSearch: (value: string) => setSearch(value),
+    loadMore: () => {
+      if (query.hasNextPage && !query.isFetchingNextPage) {
+        query.fetchNextPage();
+      }
+    },
     refetch: query.refetch,
-    pagination: query.data?.pagination,
   };
 }

@@ -12,7 +12,6 @@ export function BookingsManagement() {
     loading,
     loadingBooking,
     total,
-    customers,
     packages,
     services,
     createForm,
@@ -101,7 +100,6 @@ export function BookingsManagement() {
         loading={false}
         selectedBooking={null}
         form={createForm}
-        customers={customers}
         packages={packages}
         services={services}
         selectedItems={createSelectedItems}
@@ -119,7 +117,6 @@ export function BookingsManagement() {
         loading={loadingBooking}
         selectedBooking={selectedBooking}
         form={editForm}
-        customers={customers}
         packages={packages}
         services={services}
         selectedItems={editSelectedItems}

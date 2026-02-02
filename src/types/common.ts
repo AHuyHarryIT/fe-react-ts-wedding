@@ -13,8 +13,8 @@ export interface PaginationInfo {
   page: number;
   limit: number;
   totalPages: number;
-  hasNextPage: boolean;
-  hasPrevPage: boolean;
+  hasNext: boolean;
+  hasPrev: boolean;
 }
 
 export interface PaginatedResponse<T> {
