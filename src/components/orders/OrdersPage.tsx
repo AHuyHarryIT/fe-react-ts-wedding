@@ -20,6 +20,7 @@ import {
 import type { Order } from '@types';
 import { ordersService } from '@services/OrdersService';
 import { OrderDetail } from './OrderDetail';
+import { formatMoneyVND } from '@utils/money';
 
 export const OrdersPage: React.FC = () => {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -91,9 +92,7 @@ export const OrdersPage: React.FC = () => {
           record.summary?.totalPrice ||
           record.totalPrice ||
           (record.depositAmount ?? 0) + (record.remainingAmount ?? 0);
-        return (
-          <span className="font-semibold">{total.toLocaleString()} VND</span>
-        );
+        return <span className="font-semibold">{formatMoneyVND(total)}</span>;
       },
     },
     {

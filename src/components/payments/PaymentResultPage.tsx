@@ -17,6 +17,7 @@ import {
 } from '@ant-design/icons';
 import { ordersService } from '@services/OrdersService';
 import type { Order } from '@types';
+import { formatMoneyVND } from '@utils/money';
 
 /**
  * Payment Result Page - Shows payment status after redirect from Momo
@@ -166,8 +167,7 @@ export const PaymentResultPage: React.FC = () => {
             <Col xs={24} sm={12}>
               <Statistic
                 title="Total Amount"
-                value={orderData.summary?.totalPrice}
-                suffix="VND"
+                value={formatMoneyVND(orderData.summary?.totalPrice || 0)}
                 prefix={<CheckCircleOutlined style={{ color: '#52c41a' }} />}
               />
             </Col>
@@ -202,9 +202,8 @@ export const PaymentResultPage: React.FC = () => {
             <Col xs={24} sm={12}>
               <Statistic
                 title="Paid Amount"
-                value={orderData.summary?.totalPaid}
-                suffix="VND"
-                valueStyle={{ color: '#52c41a' }}
+                value={formatMoneyVND(orderData.summary?.totalPaid || 0)}
+                styles={{ content: { color: '#52c41a' } }}
               />
             </Col>
             <Col xs={24} sm={12}>
@@ -286,8 +285,7 @@ export const PaymentResultPage: React.FC = () => {
                 <Col xs={24} sm={12}>
                   <Statistic
                     title="Expected Amount"
-                    value={orderData.summary?.totalPrice}
-                    suffix="VND"
+                    value={formatMoneyVND(orderData.summary?.totalPrice || 0)}
                   />
                 </Col>
                 <Col xs={24} sm={12}>
@@ -359,8 +357,7 @@ export const PaymentResultPage: React.FC = () => {
               <Col xs={24} sm={12}>
                 <Statistic
                   title="Expected Amount"
-                  value={orderData.summary?.totalPrice}
-                  suffix="VND"
+                  value={formatMoneyVND(orderData.summary?.totalPrice || 0)}
                 />
               </Col>
             </Row>

@@ -100,15 +100,14 @@ export function ProductFormModal({
 
         <Form.Item
           name="price"
-          label="Price ($)"
+          label="Price (VND)"
           rules={[{ type: 'number', min: 0 }]}
           initialValue={0}
         >
           <InputNumber
-            placeholder="0.00"
+            placeholder="0"
             min={0}
-            step={0.01}
-            precision={2}
+            step={1000}
             style={{ width: '100%' }}
           />
         </Form.Item>

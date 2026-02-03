@@ -1,5 +1,6 @@
 import { Modal, Descriptions, Tag, Divider, List, Empty } from 'antd';
 import type { Package } from '@types';
+import { formatMoneyVND } from '@utils/money';
 
 interface PackageDetailModalProps {
   open: boolean;
@@ -34,7 +35,7 @@ export function PackageDetailModal({
         </Descriptions.Item>
 
         <Descriptions.Item label="Price">
-          ${packageItem.price?.toFixed(2) || '0.00'}
+          {formatMoneyVND(packageItem.price || 0)}
         </Descriptions.Item>
 
         <Descriptions.Item label="Status">
@@ -69,8 +70,8 @@ export function PackageDetailModal({
                   title={item.service?.name || 'Unknown Service'}
                   description={
                     item.service?.description
-                      ? `$${item.service.price?.toFixed(2) || '0.00'} - ${item.service.description}`
-                      : `$${item.service?.price?.toFixed(2) || '0.00'}`
+                      ? `${formatMoneyVND(item.service.price || 0)} - ${item.service.description}`
+                      : `${formatMoneyVND(item.service?.price || 0)}`
                   }
                 />
               </List.Item>

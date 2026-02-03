@@ -15,6 +15,7 @@ import {
 import { useTheme } from '@hooks';
 import { albumApi } from '@services/AlbumService';
 import type { Product } from '@types';
+import { formatMoneyVND } from '@utils/money';
 
 const { Text } = Typography;
 
@@ -102,7 +103,7 @@ export function ProductTable({
       title: 'Price',
       dataIndex: 'price',
       key: 'price',
-      render: (price: number) => `$${price.toFixed(2)}`,
+      render: (price: number) => `${formatMoneyVND(price)}`,
       align: 'right' as const,
     },
     {

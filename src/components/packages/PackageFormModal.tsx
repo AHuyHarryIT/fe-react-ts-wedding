@@ -68,15 +68,10 @@ export function PackageFormModal({
 
         <Form.Item
           name="price"
-          label="Price ($)"
+          label="Price (VND)"
           rules={[{ type: 'number', min: 0 }]}
         >
-          <InputNumber
-            placeholder="0.00"
-            precision={2}
-            step={0.01}
-            style={{ width: '100%' }}
-          />
+          <InputNumber placeholder="0" step={1000} style={{ width: '100%' }} />
         </Form.Item>
 
         <Form.Item name="isActive" label="Active" valuePropName="checked">

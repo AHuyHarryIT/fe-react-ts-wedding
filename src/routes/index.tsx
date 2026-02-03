@@ -336,7 +336,7 @@ function Dashboard() {
                         }}
                       >
                         {user.firstName
-                          ? `${user.firstName} ${user.lastName || ''}`
+                          ? `${user.lastName} ${user.firstName || ''}`
                           : 'Admin User'}
                       </Title>
                       <Space direction="vertical" size={0}>

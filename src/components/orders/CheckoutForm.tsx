@@ -15,6 +15,7 @@ import {
 } from 'antd';
 import React, { useMemo, useState } from 'react';
 import momoLogo from '@/assets/icons/momo-logo.svg';
+import { formatMoneyVND } from '@utils/money';
 
 interface CheckoutFormProps {
   bookingId: string;
@@ -270,7 +271,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             <Col xs={24} sm={12}>
               <div className="text-gray-600">Total Price</div>
               <div className="text-xl font-semibold">
-                {totalPrice.toLocaleString()} VND
+                {formatMoneyVND(totalPrice)}
               </div>
             </Col>
           </Row>
@@ -320,7 +321,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                 <Col xs={24} sm={12}>
                   <div className="text-sm text-gray-600">Total price</div>
                   <div className="font-semibold text-lg text-green-600">
-                    {totalPrice.toLocaleString()} VND
+                    {formatMoneyVND(totalPrice)}
                   </div>
                 </Col>
               </Row>

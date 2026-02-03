@@ -1,14 +1,10 @@
 import { bookingApi } from '@services/BookingService';
-import { packageApi } from '@services/PackageService';
-import { serviceApi } from '@services/ServiceService';
-import { userApi } from '@services/UserService';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   Booking,
+  BookingStatus,
   CreateBookingRequest,
   UpdateBookingRequest,
-  Service,
-  BookingStatus,
 } from '@types';
 import { Form, message } from 'antd';
 import { useState } from 'react';
@@ -66,21 +62,6 @@ export function useBookingManagement() {
         includePackages: true,
         includeServices: true,
       }),
-  });
-
-  const { data: customersData } = useQuery({
-    queryKey: ['users'],
-    queryFn: () => userApi.getAll({ limit: 100 }),
-  });
-
-  const { data: packagesData } = useQuery({
-    queryKey: ['packages'],
-    queryFn: () => packageApi.getAll({ limit: 100, isActive: true }),
-  });
-
-  const { data: servicesData } = useQuery({
-    queryKey: ['services'],
-    queryFn: () => serviceApi.getAll({ limit: 100, isActive: true }),
   });
 
   // Mutations
@@ -360,9 +341,6 @@ export function useBookingManagement() {
     loading: bookingsLoading,
     loadingBooking: isLoadingBooking,
     total: bookingsData?.pagination?.total || 0,
-    customers: customersData?.data || [],
-    packages: packagesData?.data || [],
-    services: (servicesData?.data as Service[]) || [],
     createForm,
     editForm,
     isCreateModalOpen,

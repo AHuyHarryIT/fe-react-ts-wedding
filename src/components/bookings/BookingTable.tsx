@@ -2,6 +2,7 @@ import { Table, Button, Space, Popconfirm, Tag } from 'antd';
 import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Booking, BookingStatus } from '@types';
+import { formatMoneyVND } from '@utils/money';
 
 interface BookingTableProps {
   bookings: Booking[];
@@ -43,7 +44,7 @@ export function BookingTable({
       key: 'customer',
       width: 150,
       render: (_, record) =>
-        `${record.customer?.firstName || ''} ${record.customer?.lastName || ''}`.trim() ||
+        `${record.customer?.lastName || ''} ${record.customer?.firstName || ''}`.trim() ||
         record.customer?.phoneNumber ||
         '-',
     },
@@ -59,7 +60,7 @@ export function BookingTable({
       dataIndex: 'totalPrice',
       key: 'totalPrice',
       width: 120,
-      render: (price) => `$${price?.toFixed(2) || '0.00'}`,
+      render: (price: number) => `${formatMoneyVND(price)}`,
     },
     {
       title: 'Status',

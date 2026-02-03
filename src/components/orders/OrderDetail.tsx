@@ -7,6 +7,7 @@ import {
   CreditCardOutlined,
 } from '@ant-design/icons';
 import type { Order } from '@types';
+import { formatMoneyVND } from '@utils/money';
 
 interface OrderDetailProps {
   order: Order;
@@ -150,11 +151,11 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
                 <span className="text-sm text-gray-600">Total Amount</span>
               </div>
               <div className="text-2xl font-bold text-blue-600">
-                {(
+                {formatMoneyVND(
                   summary.totalPrice ||
-                  (summary.depositAmount ?? 0) + (summary.remainingAmount ?? 0)
-                ).toLocaleString()}{' '}
-                VND
+                    (summary.depositAmount ?? 0) +
+                      (summary.remainingAmount ?? 0)
+                )}
               </div>
             </div>
           </Col>
@@ -214,7 +215,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
           </div>
           <div className="w-full bg-gray-200 rounded-full h-2">
             <div
-              className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all"
+              className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full transition-all "
               style={{
                 width: `${Math.min(
                   (summary.totalPaid / (summary.totalPrice || 1)) * 100,
@@ -224,8 +225,8 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
             />
           </div>
           <div className="text-xs text-gray-500 mt-2">
-            {summary.totalPaid.toLocaleString()} /{' '}
-            {(summary.totalPrice || 0).toLocaleString()} VND
+            {formatMoneyVND(summary.totalPaid)} /{' '}
+            {formatMoneyVND(summary.totalPrice)}
           </div>
         </div>
       </Card>

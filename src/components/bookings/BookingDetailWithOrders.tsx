@@ -25,6 +25,7 @@ import {
 import { bookingApi } from '@services/BookingService';
 import { ordersService } from '@services/OrdersService';
 import { CheckoutForm, OrderDetail } from '@components/orders';
+import { formatMoneyVND } from '@utils/money';
 
 interface BookingDetailWithOrdersProps {
   open: boolean;
@@ -135,8 +136,7 @@ export const BookingDetailWithOrders: React.FC<
           <Col xs={24} sm={8}>
             <Statistic
               title="Total Price"
-              value={booking.totalPrice}
-              suffix="VND"
+              value={formatMoneyVND(booking.totalPrice)}
               styles={{ content: { color: '#1890ff', fontSize: '18px' } }}
             />
           </Col>
@@ -187,7 +187,7 @@ export const BookingDetailWithOrders: React.FC<
 
                     <Descriptions.Item label="Customer Name" span={1}>
                       {booking.customer
-                        ? `${booking.customer.firstName || ''} ${booking.customer.lastName || ''}`
+                        ? `${booking.customer.lastName || ''} ${booking.customer.firstName || ''}`
                         : '-'}
                     </Descriptions.Item>
 
@@ -271,7 +271,7 @@ export const BookingDetailWithOrders: React.FC<
                                   <div
                                     style={{ fontSize: '12px', color: '#666' }}
                                   >
-                                    {item.price?.toLocaleString()} VND ×{' '}
+                                    {formatMoneyVND(item.price)} ×{' '}
                                     {item.quantity}
                                   </div>
                                   <div
@@ -281,10 +281,9 @@ export const BookingDetailWithOrders: React.FC<
                                       color: '#1890ff',
                                     }}
                                   >
-                                    {(
+                                    {formatMoneyVND(
                                       (item.price || 0) * (item.quantity || 1)
-                                    ).toLocaleString()}{' '}
-                                    VND
+                                    )}
                                   </div>
                                 </div>
                               }
@@ -293,7 +292,7 @@ export const BookingDetailWithOrders: React.FC<
                                 avatar={<Tag color="blue">📦</Tag>}
                                 title={item.package?.name}
                                 description={
-                                  <div style={{ fontSize: '12px' }}>
+                                  <div className="text-xs">
                                     {item.package?.description}
                                   </div>
                                 }
@@ -320,7 +319,7 @@ export const BookingDetailWithOrders: React.FC<
                                   <div
                                     style={{ fontSize: '12px', color: '#666' }}
                                   >
-                                    {item.price?.toLocaleString()} VND ×{' '}
+                                    {formatMoneyVND(item.price)} ×{' '}
                                     {item.quantity}
                                   </div>
                                   <div
@@ -330,10 +329,9 @@ export const BookingDetailWithOrders: React.FC<
                                       color: '#52c41a',
                                     }}
                                   >
-                                    {(
+                                    {formatMoneyVND(
                                       (item.price || 0) * (item.quantity || 1)
-                                    ).toLocaleString()}{' '}
-                                    VND
+                                    )}
                                   </div>
                                 </div>
                               }

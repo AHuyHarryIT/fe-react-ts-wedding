@@ -12,8 +12,6 @@ export function BookingsManagement() {
     loading,
     loadingBooking,
     total,
-    packages,
-    services,
     createForm,
     editForm,
     isDetailModalOpen,
@@ -100,8 +98,6 @@ export function BookingsManagement() {
         loading={false}
         selectedBooking={null}
         form={createForm}
-        packages={packages}
-        services={services}
         selectedItems={createSelectedItems}
         onCancel={handleCloseCreateModal}
         onSubmit={handleCreate}
@@ -117,8 +113,6 @@ export function BookingsManagement() {
         loading={loadingBooking}
         selectedBooking={selectedBooking}
         form={editForm}
-        packages={packages}
-        services={services}
         selectedItems={editSelectedItems}
         onCancel={handleCloseEditModal}
         onSubmit={handleEdit}

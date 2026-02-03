@@ -1,6 +1,7 @@
 import { DeleteOutlined } from '@ant-design/icons';
 import { useGenericSelect } from '@hooks/useGenericSelect';
-import type { Booking, BookingStatus, Package, Service } from '@types';
+import type { Booking, BookingStatus } from '@types';
+import { formatMoneyVND } from '@utils/money';
 import {
   Button,
   Card,
@@ -44,8 +45,6 @@ interface BookingFormModalProps {
   loading: boolean;
   selectedBooking: Booking | null;
   form: FormInstance<BookingFormData>;
-  packages: Package[];
-  services: Service[];
   selectedItems: SelectedItem[];
   onCancel: () => void;
   onSubmit: (values: BookingFormData) => void;
@@ -66,14 +65,24 @@ type CustomerExtra = {
   phoneNumber: string;
 };
 
+type ServiceExtra = {
+  id: string;
+  name: string;
+  price: number;
+};
+
+type PackageExtra = {
+  id: string;
+  name: string;
+  price: number;
+};
+
 export function BookingFormModal({
   type,
   open,
   loading,
   selectedBooking,
   form,
-  packages,
-  services,
   selectedItems,
   onCancel,
   onSubmit,
@@ -88,6 +97,14 @@ export function BookingFormModal({
 
   const customerOptions = useGenericSelect<CustomerExtra>({
     entity: 'customers',
+  });
+
+  const serviceOptions = useGenericSelect<ServiceExtra>({
+    entity: 'services',
+  });
+
+  const packageOptions = useGenericSelect<PackageExtra>({
+    entity: 'packages',
   });
 
   return (
@@ -132,7 +149,7 @@ export function BookingFormModal({
             }}
             loading={customerOptions.loading}
             options={customerOptions.options.map((customer) => ({
-              label: `${customer.firstName} ${customer.lastName} (${customer.phoneNumber})`,
+              label: `${customer.lastName} ${customer.firstName} (${customer.phoneNumber})`,
               value: customer.id,
             }))}
             onPopupScroll={(e) => {
@@ -168,64 +185,113 @@ export function BookingFormModal({
         </Form.Item>
 
         <Form.Item label="Select Packages or Services (at least 1)" required>
-          <Select
-            placeholder="Select packages or services"
-            allowClear
-            showSearch={{ optionFilterProp: 'label' }}
-            options={[
-              ...packages
-                .filter(
-                  (pkg) =>
-                    !selectedItems.some(
-                      (item) => item.id === pkg.id && item.type === 'package'
-                    )
-                )
-                .map((pkg) => ({
-                  label: `📦 ${pkg.name} - $${pkg.price?.toFixed(2) || '0.00'}`,
-                  value: `package-${pkg.id}`,
-                })),
-              ...services
-                .filter(
-                  (svc) =>
-                    !selectedItems.some(
-                      (item) => item.id === svc.id && item.type === 'service'
-                    )
-                )
-                .map((svc) => ({
-                  label: `🎯 ${svc.name} - $${svc.price?.toFixed(2) || '0.00'}`,
-                  value: `service-${svc.id}`,
-                })),
-            ]}
-            onChange={(value) => {
-              if (!value) return;
+          <div className="grid grid-cols-[1fr_1fr] gap-4">
+            <Form.Item name="packages" label="Packages" noStyle>
+              <Select
+                placeholder="Select packages"
+                allowClear
+                showSearch={{
+                  filterOption: false,
+                  onSearch: packageOptions.onSearch,
+                }}
+                loading={packageOptions.loading}
+                options={packageOptions.options.map((pkg) => ({
+                  label: `${pkg.name} - ${formatMoneyVND(pkg.price)}`,
+                  value: pkg.id,
+                }))}
+                onPopupScroll={(e) => {
+                  const target = e.target as HTMLDivElement;
+                  if (
+                    target.scrollTop + target.offsetHeight >=
+                    target.scrollHeight - 8
+                  ) {
+                    packageOptions.loadMore();
+                  }
+                }}
+                onChange={(pkgId) => {
+                  if (!pkgId) return;
 
-              if (value.startsWith('package-')) {
-                const pkgId = value.replace('package-', '');
-                const pkg = packages.find((p) => p.id === pkgId);
-                if (pkg) {
-                  onItemAdd({
-                    id: pkg.id,
-                    type: 'package',
-                    name: pkg.name,
-                    price: pkg.price || 0,
-                    quantity: 1,
-                  });
-                }
-              } else if (value.startsWith('service-')) {
-                const svcId = value.replace('service-', '');
-                const svc = services.find((s) => s.id === svcId);
-                if (svc) {
-                  onItemAdd({
-                    id: svc.id,
-                    type: 'service',
-                    name: svc.name,
-                    price: svc.price || 0,
-                    quantity: 1,
-                  });
-                }
-              }
-            }}
-          />
+                  const existingItem = selectedItems.find(
+                    (item) => item.id === pkgId && item.type === 'package'
+                  );
+
+                  if (existingItem) {
+                    onItemQuantityChange(
+                      pkgId,
+                      'package',
+                      existingItem.quantity + 1
+                    );
+                  } else {
+                    const pkg = packageOptions.options.find(
+                      (p) => p.id === pkgId
+                    );
+                    if (pkg) {
+                      onItemAdd({
+                        id: pkg.id,
+                        type: 'package',
+                        name: pkg.name,
+                        price: pkg.price,
+                        quantity: 1,
+                      });
+                    }
+                  }
+                }}
+              />
+            </Form.Item>
+
+            <Form.Item name="services" label="Services" noStyle>
+              <Select
+                placeholder="Select services"
+                allowClear
+                showSearch={{
+                  filterOption: false,
+                  onSearch: serviceOptions.onSearch,
+                }}
+                loading={serviceOptions.loading}
+                options={serviceOptions.options.map((svc) => ({
+                  label: `${svc.name} - ${formatMoneyVND(svc.price)}`,
+                  value: svc.id,
+                }))}
+                onPopupScroll={(e) => {
+                  const target = e.target as HTMLDivElement;
+                  if (
+                    target.scrollTop + target.offsetHeight >=
+                    target.scrollHeight - 8
+                  ) {
+                    serviceOptions.loadMore();
+                  }
+                }}
+                onChange={(svcId) => {
+                  if (!svcId) return;
+
+                  const existingItem = selectedItems.find(
+                    (item) => item.id === svcId && item.type === 'service'
+                  );
+
+                  if (existingItem) {
+                    onItemQuantityChange(
+                      svcId,
+                      'service',
+                      existingItem.quantity + 1
+                    );
+                  } else {
+                    const svc = serviceOptions.options.find(
+                      (s) => s.id === svcId
+                    );
+                    if (svc) {
+                      onItemAdd({
+                        id: svc.id,
+                        type: 'service',
+                        name: svc.name,
+                        price: svc.price,
+                        quantity: 1,
+                      });
+                    }
+                  }
+                }}
+              />
+            </Form.Item>
+          </div>
         </Form.Item>
 
         {/* Selected Items Display */}
@@ -274,8 +340,10 @@ export function BookingFormModal({
                       description={
                         <div>
                           <div>
-                            ${item.price.toFixed(2)} × {item.quantity} = $
-                            {(item.price * item.quantity).toFixed(2)}
+                            {formatMoneyVND(item.price)} × {item.quantity} ={' '}
+                            {formatMoneyVND(
+                              (item.price || 0) * (item.quantity || 1)
+                            )}
                           </div>
                         </div>
                       }
@@ -296,8 +364,8 @@ export function BookingFormModal({
               borderWidth: 2,
             }}
           >
-            <div style={{ fontSize: 16, fontWeight: 'bold' }}>
-              Total Price: ${totalPrice.toFixed(2)}
+            <div className="font-bold text-lg">
+              Total Price: {formatMoneyVND(totalPrice)}
             </div>
           </Card>
         )}

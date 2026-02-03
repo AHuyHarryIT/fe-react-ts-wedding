@@ -42,7 +42,7 @@ export function UserRoleModal({
 
   return (
     <Modal
-      title={`Manage Roles for ${user?.firstName} ${user?.lastName}`}
+      title={`Manage Roles for ${user?.lastName} ${user?.firstName}`}
       open={open}
       onCancel={onCancel}
       footer={null}

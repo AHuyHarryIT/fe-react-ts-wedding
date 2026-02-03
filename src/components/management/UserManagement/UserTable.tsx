@@ -38,7 +38,7 @@ export function UserTable({
       key: 'name',
       width: 150,
       render: (_, record) => {
-        const fullName = [record.firstName, record.lastName]
+        const fullName = [record.lastName, record.firstName]
           .filter(Boolean)
           .join(' ');
         return fullName || '-';

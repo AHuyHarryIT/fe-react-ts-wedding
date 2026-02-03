@@ -2,6 +2,7 @@ import { Table, Button, Space, Popconfirm } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import type { Service } from '@types';
+import { formatMoneyVND } from '@utils/money';
 
 interface ServiceTableProps {
   services: Service[];
@@ -46,7 +47,7 @@ export function ServiceTable({
       dataIndex: 'price',
       key: 'price',
       width: 100,
-      render: (price) => `$${price?.toFixed(2) || '0.00'}`,
+      render: (price: number) => `${formatMoneyVND(price)}`,
     },
     {
       title: 'Status',
