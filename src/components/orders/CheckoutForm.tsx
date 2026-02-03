@@ -70,12 +70,9 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
           return;
         }
 
-        // Calculate remaining amount from order data
-        const totalPrice = existingOrder.totalPrice || 0;
-        const totalPaid =
-          (existingOrder.summary?.totalPaid ?? 0) ||
-          (existingOrder.depositPaid || 0) + (existingOrder.remainingPaid || 0);
-        const remainingAmount = Math.max(0, totalPrice - totalPaid);
+        // Calculate remaining amount from API summary
+        const remainingAmount =
+          existingOrder.summary?.remainingAmount ?? calculateRemaining();
 
         if (remainingAmount <= 0) {
           message.error('No remaining balance to pay');
@@ -253,13 +250,30 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
     setQrCodeData(null);
   };
 
-  // Calculate remaining amount
+  // Calculate remaining amount from API data
   const calculateRemaining = () => {
     if (!existingOrder) return 0;
+    // Use summary data from API first, fallback to calculated values
+    if (existingOrder.summary?.remainingAmount !== undefined) {
+      return existingOrder.summary.remainingAmount;
+    }
     const total = existingOrder.totalPrice || 0;
     const paid =
+      existingOrder.summary?.totalPaid ??
       (existingOrder.depositPaid || 0) + (existingOrder.remainingPaid || 0);
     return Math.max(0, total - paid);
+  };
+
+  // Get total paid from API data
+  const getTotalPaid = () => {
+    if (!existingOrder) return 0;
+    // Use summary data from API first, fallback to calculated values
+    if (existingOrder.summary?.totalPaid !== undefined) {
+      return existingOrder.summary.totalPaid;
+    }
+    return (
+      (existingOrder.depositPaid || 0) + (existingOrder.remainingPaid || 0)
+    );
   };
 
   return (
@@ -271,7 +285,9 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             <Col xs={24} sm={12}>
               <div className="text-gray-600">Total Price</div>
               <div className="text-xl font-semibold">
-                {formatMoneyVND(totalPrice)}
+                {formatMoneyVND(
+                  existingOrder.summary?.totalPrice ?? existingOrder.totalPrice
+                )}
               </div>
             </Col>
           </Row>
@@ -279,7 +295,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
           <Col xs={24} sm={12}>
             <div className="text-gray-600">Total Paid</div>
             <div className="text-lg text-green-600">
-              {(existingOrder.depositPaid ?? 0).toLocaleString()} VND
+              {formatMoneyVND(getTotalPaid())}
             </div>
           </Col>
           <Divider />
@@ -287,7 +303,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             <Col xs={24} sm={12}>
               <div className="text-gray-600">Remaining Balance</div>
               <div className="text-xl font-semibold text-red-600">
-                {calculateRemaining().toLocaleString()} VND
+                {formatMoneyVND(calculateRemaining())}
               </div>
             </Col>
           </Row>
@@ -302,13 +318,13 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
                     Deposit Amount (30%)
                   </div>
                   <div className="font-semibold text-lg text-blue-600">
-                    {depositCalculations.depositAmount?.toLocaleString()} VND
+                    {formatMoneyVND(depositCalculations.depositAmount ?? 0)}
                   </div>
                 </Col>
                 <Col xs={24} sm={12}>
                   <div className="text-sm text-gray-600">Remaining to Pay</div>
                   <div className="font-semibold text-lg">
-                    {depositCalculations.remainingAmount?.toLocaleString()} VND
+                    {formatMoneyVND(depositCalculations.remainingAmount ?? 0)}
                   </div>
                 </Col>
               </Row>
@@ -431,7 +447,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
         width={500}
       >
         <div className="text-center p-5">
-          <h3>Amount: {(qrCodeData?.amount || 0).toLocaleString()} VND</h3>
+          <h3>Amount: {formatMoneyVND(qrCodeData?.amount || 0)}</h3>
           <p className="text-gray-600 mb-5">
             Scan QR code with MoMo app to complete payment
           </p>
@@ -462,7 +478,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
               <strong>Payment Details:</strong>
             </p>
             <p>Order ID: {qrCodeData?.orderId}</p>
-            <p>Amount: {(qrCodeData?.amount || 0).toLocaleString()} VND</p>
+            <p>Amount: {formatMoneyVND(qrCodeData?.amount || 0)}</p>
             <p className="mt-3 text-gray-600">
               ℹ️ Please complete the payment in your MoMo app. The payment
               status will be updated automatically.

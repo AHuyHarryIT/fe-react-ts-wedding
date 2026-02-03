@@ -1,6 +1,7 @@
 import React from 'react';
 import { Card, Row, Col, Tag, Empty, Timeline } from 'antd';
 import type { Payment } from '@types';
+import { formatMoneyVND } from '@utils/money';
 
 interface PaymentHistoryProps {
   payments?: Payment[];
@@ -56,7 +57,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
               <div className="flex justify-between items-start mb-2">
                 <div>
                   <div className="font-semibold text-base">
-                    {payment.amount.toLocaleString()} VND
+                    {formatMoneyVND(payment.amount)}
                   </div>
                   <div className="text-xs text-gray-500">
                     {new Date(payment.createdAt).toLocaleDateString('vi-VN', {
@@ -110,8 +111,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
           <Col xs={24} sm={8}>
             <div className="text-sm text-gray-600">Total Paid</div>
             <div className="text-lg font-semibold text-green-600">
-              {payments.reduce((sum, p) => sum + p.amount, 0).toLocaleString()}{' '}
-              VND
+              {formatMoneyVND(payments.reduce((sum, p) => sum + p.amount, 0))}
             </div>
           </Col>
           <Col xs={24} sm={8}>

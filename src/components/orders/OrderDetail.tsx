@@ -22,25 +22,15 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
     return <Empty description="No order information" />;
   }
 
-  // Ensure we have all the fields we need
-  const totalPrice =
-    order.totalPrice ||
-    (order.depositAmount || 0) + (order.remainingAmount || 0);
-  const totalPaid = (order.depositPaid || 0) + (order.remainingPaid || 0);
-  const remainingAmount = Math.max(0, totalPrice - totalPaid);
-
+  // Use API summary data directly
   const summary = order.summary || {
-    ...order,
-    totalPrice,
+    totalPrice: order.totalPrice || 0,
+    depositAmount: order.depositAmount || 0,
+    remainingAmount: order.remainingAmount || 0,
     depositPaid: order.depositPaid || 0,
-    totalPaid,
-    remainingAmount,
+    remainingPaid: order.remainingPaid || 0,
+    totalPaid: (order.depositPaid || 0) + (order.remainingPaid || 0),
   };
-
-  // Ensure the summary has remainingAmount
-  if (!summary.remainingAmount) {
-    summary.remainingAmount = remainingAmount;
-  }
 
   const isFullyPaid = order.status === 'PAID';
   const isPartiallyPaid = order.status === 'PARTIAL';
@@ -78,7 +68,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
       title: 'Amount',
       dataIndex: 'amount',
       key: 'amount',
-      render: (amount: number) => `${amount.toLocaleString()} VND`,
+      render: (amount: number) => `${formatMoneyVND(amount)}`,
       align: 'right' as const,
     },
     {
@@ -167,7 +157,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
                 <span className="text-sm text-gray-600">Total Paid</span>
               </div>
               <div className="text-2xl font-bold text-green-600">
-                {summary.totalPaid?.toLocaleString() || 0} VND
+                {formatMoneyVND(summary.totalPaid || 0)}
               </div>
             </div>
           </Col>
@@ -179,7 +169,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
                 <span className="text-sm text-gray-600">Remaining</span>
               </div>
               <div className="text-2xl font-bold text-orange-600">
-                {(summary.remainingAmount ?? 0).toLocaleString()} VND
+                {formatMoneyVND(summary.remainingAmount ?? 0)}
               </div>
             </div>
           </Col>
@@ -194,7 +184,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
                   </span>
                 </div>
                 <div className="text-2xl font-bold text-purple-600">
-                  {(summary.depositAmount ?? 0).toLocaleString()} VND
+                  {formatMoneyVND(summary.depositAmount ?? 0)}
                 </div>
               </div>
             </Col>

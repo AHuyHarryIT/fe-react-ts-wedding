@@ -209,8 +209,7 @@ export const PaymentResultPage: React.FC = () => {
             <Col xs={24} sm={12}>
               <Statistic
                 title="Remaining Balance"
-                value={orderData.summary?.remainingAmount}
-                suffix="VND"
+                value={formatMoneyVND(orderData.summary?.remainingAmount || 0)}
                 valueStyle={{ color: '#faad14' }}
               />
             </Col>

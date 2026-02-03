@@ -101,9 +101,7 @@ export const OrdersPage: React.FC = () => {
       key: 'totalPaid',
       render: (_: unknown, record: Order) => {
         const amount = record.summary?.totalPaid ?? 0;
-        return (
-          <span className="text-green-600">{amount.toLocaleString()} VND</span>
-        );
+        return <span className="text-green-600">{formatMoneyVND(amount)}</span>;
       },
     },
     {
@@ -114,7 +112,7 @@ export const OrdersPage: React.FC = () => {
         const amount =
           record.summary?.remainingAmount ?? record.remainingAmount ?? 0;
         return (
-          <span className="text-orange-600">{amount.toLocaleString()} VND</span>
+          <span className="text-orange-600">{formatMoneyVND(amount)}</span>
         );
       },
     },
