@@ -4,6 +4,7 @@ import {
   SearchBar,
 } from '@components/management';
 import { AlbumGrid } from './AlbumGrid';
+import { AlbumDeletedGrid } from './AlbumDeletedGrid';
 import { AlbumFormModal } from './AlbumFormModal';
 import { AlbumDetailsModal } from './AlbumDetailsModal';
 import { AlbumShareModal } from './AlbumShareModal';
@@ -22,6 +23,13 @@ function AlbumManagement() {
     searchText,
     currentPage,
     pageSize,
+    uploadProgress,
+    showTrash,
+    showDeletedAlbums,
+    deletedAlbumsData,
+    deletedAlbumsLoading,
+    deletedFilesData,
+    deletedFilesLoading,
     albumsData,
     albumsLoading,
     albumDetailsData,
@@ -38,12 +46,18 @@ function AlbumManagement() {
     setSearchText,
     setCurrentPage,
     setPageSize,
+    setShowTrash,
+    setShowDeletedAlbums,
     handleCreate,
     handleEdit,
     handleDelete,
+    handleRestoreAlbum,
+    handleForceDeleteAlbum,
     handleOpenEdit,
     handleOpenDetails,
     handleRemoveFiles,
+    handleRestoreFiles,
+    handleForceDeleteFiles,
     handleGenerateShareToken,
     handleRevokeShareToken,
     handleCloseCreateModal,
@@ -51,6 +65,8 @@ function AlbumManagement() {
     handleCloseDetailsModal,
     handleCloseShareModal,
     handleUploadImage,
+    handleCancelUpload,
+    handleRefreshAlbumDetails,
   } = useAlbumManagement();
 
   return (
@@ -59,34 +75,81 @@ function AlbumManagement() {
       <ManagementLayout
         header={
           <ManagementHeader
-            title="Album Management"
-            subtitle="Manage photo albums and collections"
-            onCreateClick={() => setIsCreateModalOpen(true)}
+            title={showDeletedAlbums ? '🗑️ Deleted Albums' : 'Album Management'}
+            subtitle={
+              showDeletedAlbums
+                ? 'View and manage deleted albums'
+                : 'Manage photo albums and collections'
+            }
+            onCreateClick={
+              showDeletedAlbums ? undefined : () => setIsCreateModalOpen(true)
+            }
+            extra={
+              <button
+                onClick={() => {
+                  setShowDeletedAlbums(!showDeletedAlbums);
+                  setCurrentPage(1);
+                }}
+                style={{
+                  padding: '6px 16px',
+                  borderRadius: 6,
+                  border: '1px solid',
+                  borderColor: showDeletedAlbums ? '#52c41a' : '#ff4d4f',
+                  background: showDeletedAlbums ? '#f6ffed' : '#fff2f0',
+                  color: showDeletedAlbums ? '#52c41a' : '#ff4d4f',
+                  cursor: 'pointer',
+                  fontWeight: 500,
+                  fontSize: 14,
+                }}
+              >
+                {showDeletedAlbums ? '← Back to Albums' : '🗑️ View Deleted'}
+              </button>
+            }
           />
         }
         searchBar={
           <SearchBar
             value={searchText}
             onChange={setSearchText}
-            placeholder="Search albums..."
+            placeholder={
+              showDeletedAlbums
+                ? 'Search deleted albums...'
+                : 'Search albums...'
+            }
           />
         }
         table={
-          <AlbumGrid
-            data={albumsData?.data || []}
-            loading={albumsLoading}
-            currentPage={currentPage}
-            pageSize={pageSize}
-            total={albumsData?.pagination?.total || 0}
-            onEdit={handleOpenEdit}
-            onDelete={handleDelete}
-            onViewDetails={handleOpenDetails}
-            onShare={(album) => handleGenerateShareToken(album)}
-            onPageChange={(page, size) => {
-              setCurrentPage(page);
-              setPageSize(size);
-            }}
-          />
+          showDeletedAlbums ? (
+            <AlbumDeletedGrid
+              data={deletedAlbumsData?.data || []}
+              loading={deletedAlbumsLoading}
+              currentPage={currentPage}
+              pageSize={pageSize}
+              total={deletedAlbumsData?.pagination?.total || 0}
+              onRestore={handleRestoreAlbum}
+              onForceDelete={handleForceDeleteAlbum}
+              onPageChange={(page: number, size: number) => {
+                setCurrentPage(page);
+                setPageSize(size);
+              }}
+            />
+          ) : (
+            <AlbumGrid
+              data={albumsData?.data || []}
+              loading={albumsLoading}
+              currentPage={currentPage}
+              pageSize={pageSize}
+              total={albumsData?.pagination?.total || 0}
+              onEdit={handleOpenEdit}
+              onDelete={handleDelete}
+              onViewDetails={handleOpenDetails}
+              onShare={(album) => handleGenerateShareToken(album)}
+              onPageChange={(page, size) => {
+                setCurrentPage(page);
+                setPageSize(size);
+              }}
+            />
+          )
         }
         createModal={
           <AlbumFormModal
@@ -118,8 +181,17 @@ function AlbumManagement() {
         fetching={albumDetailsFetching}
         album={selectedAlbum}
         albumWithFiles={albumDetailsData?.data || null}
+        uploadProgress={uploadProgress}
+        showTrash={showTrash}
+        deletedFiles={deletedFilesData?.data || []}
+        deletedFilesLoading={deletedFilesLoading}
         onCancel={handleCloseDetailsModal}
         onRemoveFile={(fileId) => handleRemoveFiles([fileId])}
+        onRestoreFile={(fileId) => handleRestoreFiles([fileId])}
+        onForceDeleteFile={(fileId) => handleForceDeleteFiles([fileId])}
+        onToggleTrash={setShowTrash}
+        onRefresh={handleRefreshAlbumDetails}
+        onCancelUpload={handleCancelUpload}
         onUploadImage={(files, caption, sortOrder) => {
           if (selectedAlbum) {
             handleUploadImage(files, caption, sortOrder);

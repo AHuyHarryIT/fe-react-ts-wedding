@@ -21,6 +21,7 @@ export interface Album {
   };
   createdAt: string;
   updatedAt: string;
+  deletedAt?: string;
   _count?: {
     files: number;
   };

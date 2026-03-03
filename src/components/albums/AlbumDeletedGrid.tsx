@@ -1,61 +1,54 @@
-import type { Album } from '@/types';
 import {
-  ClockCircleOutlined,
-  DeleteOutlined,
-  EditOutlined,
-  GlobalOutlined,
-  LockOutlined,
-  PictureOutlined,
-  ShareAltOutlined,
-} from '@ant-design/icons';
-import { useTheme } from '@hooks';
-import {
-  Button,
   Card,
-  Col,
-  Empty,
-  Pagination,
-  Popconfirm,
   Row,
+  Col,
+  Button,
   Space,
-  Tag,
+  Popconfirm,
   Tooltip,
   Typography,
+  Tag,
+  Empty,
+  Pagination,
 } from 'antd';
+import {
+  DeleteOutlined,
+  UndoOutlined,
+  PictureOutlined,
+  ClockCircleOutlined,
+} from '@ant-design/icons';
+import { useTheme } from '@hooks';
+import type { Album } from '@/types';
 
 const { Text } = Typography;
 
-interface AlbumGridProps {
+interface AlbumDeletedGridProps {
   data: Album[];
   loading: boolean;
   currentPage: number;
   pageSize: number;
   total: number;
-  onEdit: (album: Album) => void;
-  onDelete: (id: string) => void;
-  onViewDetails: (album: Album) => void;
-  onShare: (album: Album) => void;
+  onRestore: (id: string) => void;
+  onForceDelete: (id: string) => void;
   onPageChange: (page: number, pageSize: number) => void;
 }
 
-export function AlbumGrid({
+export function AlbumDeletedGrid({
   data,
   loading,
   currentPage,
   pageSize,
   total,
-  onEdit,
-  onDelete,
-  onViewDetails,
-  onShare,
+  onRestore,
+  onForceDelete,
   onPageChange,
-}: AlbumGridProps) {
+}: AlbumDeletedGridProps) {
   const { darkMode: isDark } = useTheme();
 
   if (!loading && data.length === 0) {
     return (
       <Empty
-        description="No albums found"
+        description="No deleted albums"
         image={Empty.PRESENTED_IMAGE_SIMPLE}
       />
     );
@@ -77,44 +70,58 @@ export function AlbumGrid({
                     alignItems: 'center',
                     justifyContent: 'center',
                     background: isDark
-                      ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      ? 'linear-gradient(135deg, #434343 0%, #000000 100%)'
+                      : 'linear-gradient(135deg, #bdc3c7 0%, #95a5a6 100%)',
+                    position: 'relative',
                   }}
-                  onClick={() => onViewDetails(album)}
                 >
                   <PictureOutlined
                     style={{
                       fontSize: 64,
                       color: 'white',
-                      opacity: 0.8,
+                      opacity: 0.5,
                     }}
                   />
+                  <Tag
+                    color="red"
+                    style={{
+                      position: 'absolute',
+                      top: 8,
+                      right: 8,
+                      fontWeight: 600,
+                    }}
+                  >
+                    DELETED
+                  </Tag>
                 </div>
               }
               actions={[
-                <Tooltip key="edit" title="Edit">
-                  <Button
-                    type="text"
-                    icon={<EditOutlined />}
-                    onClick={() => onEdit(album)}
-                  />
-                </Tooltip>,
-                <Tooltip key="share" title="Share">
-                  <Button
-                    type="text"
-                    icon={<ShareAltOutlined />}
-                    onClick={() => onShare(album)}
-                  />
-                </Tooltip>,
                 <Popconfirm
-                  key="delete"
-                  title="Delete Album"
-                  description="Are you sure you want to delete this album?"
-                  onConfirm={() => onDelete(album.id)}
-                  okText="Yes"
-                  cancelText="No"
+                  key="restore"
+                  title="Restore Album"
+                  description="Restore this album from trash?"
+                  onConfirm={() => onRestore(album.id)}
+                  okText="Restore"
+                  cancelText="Cancel"
                 >
-                  <Tooltip title="Delete">
+                  <Tooltip title="Restore">
+                    <Button
+                      type="text"
+                      icon={<UndoOutlined />}
+                      style={{ color: '#52c41a' }}
+                    />
+                  </Tooltip>
+                </Popconfirm>,
+                <Popconfirm
+                  key="force-delete"
+                  title="Permanently Delete Album"
+                  description="This will permanently delete the album and all its files from OneDrive. This action cannot be undone!"
+                  onConfirm={() => onForceDelete(album.id)}
+                  okText="Delete Forever"
+                  okButtonProps={{ danger: true }}
+                  cancelText="Cancel"
+                >
+                  <Tooltip title="Delete Forever">
                     <Button type="text" danger icon={<DeleteOutlined />} />
                   </Tooltip>
                 </Popconfirm>,
@@ -122,18 +129,9 @@ export function AlbumGrid({
             >
               <Card.Meta
                 title={
-                  <Space
-                    style={{ width: '100%', justifyContent: 'space-between' }}
-                  >
-                    <Text ellipsis style={{ flex: 1 }}>
-                      {album.title}
-                    </Text>
-                    {album.isPublic ? (
-                      <GlobalOutlined style={{ color: '#52c41a' }} />
-                    ) : (
-                      <LockOutlined style={{ color: '#faad14' }} />
-                    )}
-                  </Space>
+                  <Text ellipsis style={{ opacity: 0.7 }} delete>
+                    {album.title}
+                  </Text>
                 }
                 description={
                   <div>
@@ -154,19 +152,21 @@ export function AlbumGrid({
                       <Space>
                         <ClockCircleOutlined />
                         <Text type="secondary" style={{ fontSize: 12 }}>
+                          Created:{' '}
                           {new Date(album.createdAt).toLocaleDateString()}
                         </Text>
                       </Space>
-                      {album.expiresAt && (
-                        <Tag color="orange" style={{ marginTop: 4 }}>
-                          Expires:{' '}
-                          {new Date(album.expiresAt).toLocaleDateString()}
-                        </Tag>
-                      )}
-                      {album.share_token && (
-                        <Tag color="blue" style={{ marginTop: 4 }}>
-                          Shared
-                        </Tag>
+                      {album.deletedAt && (
+                        <Space>
+                          <DeleteOutlined style={{ color: '#ff4d4f' }} />
+                          <Text
+                            type="secondary"
+                            style={{ fontSize: 12, color: '#ff4d4f' }}
+                          >
+                            Deleted:{' '}
+                            {new Date(album.deletedAt).toLocaleDateString()}
+                          </Text>
+                        </Space>
                       )}
                     </Space>
                   </div>
@@ -183,7 +183,7 @@ export function AlbumGrid({
           pageSize={pageSize}
           total={total}
           showSizeChanger
-          showTotal={(total) => `Total ${total} albums`}
+          showTotal={(total) => `Total ${total} deleted albums`}
           onChange={onPageChange}
         />
       </div>

@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Form, message } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
@@ -10,7 +10,7 @@ import type {
   RemoveFilesFromAlbumRequest,
   UpdateAlbumRequest,
 } from '@/types';
-import { albumApi } from '@services/AlbumService';
+import { albumApi, type UploadProgress } from '@services/AlbumService';
 
 interface AlbumFormData {
   ownerUserId?: string;
@@ -26,8 +26,13 @@ const albumKeys = {
   all: ['albums'] as const,
   lists: () => [...albumKeys.all, 'list'] as const,
   list: (params?: PaginationParams) => [...albumKeys.lists(), params] as const,
+  deletedAlbums: () => [...albumKeys.all, 'deleted-albums'] as const,
+  deletedAlbumsList: (params?: PaginationParams) =>
+    [...albumKeys.deletedAlbums(), params] as const,
   details: () => [...albumKeys.all, 'detail'] as const,
   detail: (id: string) => [...albumKeys.details(), id] as const,
+  deletedFiles: (id: string) =>
+    [...albumKeys.all, 'deleted-files', id] as const,
   public: () => [...albumKeys.all, 'public'] as const,
   shareToken: (token: string) => [...albumKeys.all, 'share', token] as const,
 };
@@ -46,6 +51,10 @@ export function useAlbumManagement() {
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(12);
+  const [uploadProgress, setUploadProgress] = useState<UploadProgress[]>([]);
+  const [showTrash, setShowTrash] = useState(false);
+  const [showDeletedAlbums, setShowDeletedAlbums] = useState(false);
+  const uploadAbortRef = useRef<AbortController | null>(null);
 
   // Queries
   const { data: albumsData, isLoading: albumsLoading } = useQuery({
@@ -63,6 +72,24 @@ export function useAlbumManagement() {
     staleTime: 30000,
   });
 
+  const { data: deletedAlbumsData, isLoading: deletedAlbumsLoading } = useQuery(
+    {
+      queryKey: albumKeys.deletedAlbumsList({
+        page: currentPage,
+        limit: pageSize,
+        search: searchText || undefined,
+      }),
+      queryFn: () =>
+        albumApi.getDeleted({
+          page: currentPage,
+          limit: pageSize,
+          search: searchText || undefined,
+        }),
+      enabled: showDeletedAlbums,
+      staleTime: 30000,
+    }
+  );
+
   const {
     data: albumDetailsData,
     isLoading: albumDetailsLoading,
@@ -71,6 +98,13 @@ export function useAlbumManagement() {
     queryKey: albumKeys.detail(selectedAlbum?.id || ''),
     queryFn: () => albumApi.getOne(selectedAlbum!.id),
     enabled: !!selectedAlbum && isDetailsModalOpen,
+    staleTime: 30000,
+  });
+
+  const { data: deletedFilesData, isLoading: deletedFilesLoading } = useQuery({
+    queryKey: albumKeys.deletedFiles(selectedAlbum?.id || ''),
+    queryFn: () => albumApi.getDeletedFiles(selectedAlbum!.id),
+    enabled: !!selectedAlbum && isDetailsModalOpen && showTrash,
     staleTime: 30000,
   });
 
@@ -108,10 +142,35 @@ export function useAlbumManagement() {
     mutationFn: (id: string) => albumApi.delete(id),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: albumKeys.deletedAlbums() });
       message.success(response.message || 'Album deleted successfully');
     },
     onError: (error) => {
       message.error(error.message || 'Failed to delete album');
+    },
+  });
+
+  const restoreAlbumMutation = useMutation({
+    mutationFn: (id: string) => albumApi.restore(id),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: albumKeys.deletedAlbums() });
+      message.success(response.message || 'Album restored successfully');
+    },
+    onError: (error) => {
+      message.error(error.message || 'Failed to restore album');
+    },
+  });
+
+  const forceDeleteAlbumMutation = useMutation({
+    mutationFn: (id: string) => albumApi.forceDelete(id),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
+      queryClient.invalidateQueries({ queryKey: albumKeys.deletedAlbums() });
+      message.success(response.message || 'Album permanently deleted');
+    },
+    onError: (error) => {
+      message.error(error.message || 'Failed to permanently delete album');
     },
   });
 
@@ -142,13 +201,60 @@ export function useAlbumManagement() {
       queryClient.invalidateQueries({
         queryKey: albumKeys.detail(variables.id),
       });
+      queryClient.invalidateQueries({
+        queryKey: albumKeys.deletedFiles(variables.id),
+      });
       queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
-      message.success(
-        response.message || 'Files removed from album successfully'
-      );
+      message.success(response.message || 'Files moved to trash');
     },
     onError: (error) => {
       message.error(error.message || 'Failed to remove files');
+    },
+  });
+
+  const restoreFilesMutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: RemoveFilesFromAlbumRequest;
+    }) => albumApi.restoreFiles(id, data),
+    onSuccess: (response, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: albumKeys.detail(variables.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: albumKeys.deletedFiles(variables.id),
+      });
+      queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
+      message.success(response.message || 'Files restored successfully');
+    },
+    onError: (error) => {
+      message.error(error.message || 'Failed to restore files');
+    },
+  });
+
+  const forceDeleteFilesMutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: RemoveFilesFromAlbumRequest;
+    }) => albumApi.forceDeleteFiles(id, data),
+    onSuccess: (response, variables) => {
+      queryClient.invalidateQueries({
+        queryKey: albumKeys.detail(variables.id),
+      });
+      queryClient.invalidateQueries({
+        queryKey: albumKeys.deletedFiles(variables.id),
+      });
+      queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
+      message.success(response.message || 'Files permanently deleted');
+    },
+    onError: (error) => {
+      message.error(error.message || 'Failed to delete files permanently');
     },
   });
 
@@ -194,25 +300,49 @@ export function useAlbumManagement() {
       files: File[];
       caption?: string;
       sortOrder?: number;
-    }) => albumApi.uploadImages(id, files, caption, sortOrder),
-    onSuccess: (response, variables) => {
-      // Manually update the album details cache with the new files
-      // This avoids refetching and reloading the entire list
-      const previousData = queryClient.getQueryData(
-        albumKeys.detail(variables.id)
+    }) => {
+      const controller = new AbortController();
+      uploadAbortRef.current = controller;
+      return albumApi.uploadImages(
+        id,
+        files,
+        caption,
+        sortOrder,
+        (progress) => {
+          setUploadProgress(progress);
+        },
+        controller.signal
       );
+    },
+    onSuccess: (response, variables) => {
+      // Invalidate album detail query to fetch updated data
+      queryClient.invalidateQueries({
+        queryKey: albumKeys.detail(variables.id),
+      });
+      // Also invalidate the albums list to update thumbnail and file count
+      queryClient.invalidateQueries({
+        queryKey: albumKeys.lists(),
+      });
 
-      if (previousData && response.data) {
-        queryClient.setQueryData(albumKeys.detail(variables.id), {
-          ...previousData,
-          files: response.data.files,
-        });
+      // Check if any files failed (partial success)
+      const hasFailed = uploadProgress.some((p) => p.status === 'failed');
+      if (hasFailed) {
+        message.warning(response.message || 'Some images failed to upload');
+      } else {
+        message.success(response.message || 'Images uploaded successfully');
       }
 
-      message.success(response.message || 'Images uploaded successfully');
+      // Keep progress visible for 2s so user can see final status
+      setTimeout(() => {
+        setUploadProgress([]);
+      }, 2000);
     },
     onError: (error) => {
       message.error(error.message || 'Failed to upload images');
+      // Keep progress visible for 3s so user can see which files failed
+      setTimeout(() => {
+        setUploadProgress([]);
+      }, 3000);
     },
   });
 
@@ -257,6 +387,14 @@ export function useAlbumManagement() {
     deleteMutation.mutate(id);
   };
 
+  const handleRestoreAlbum = (id: string) => {
+    restoreAlbumMutation.mutate(id);
+  };
+
+  const handleForceDeleteAlbum = (id: string) => {
+    forceDeleteAlbumMutation.mutate(id);
+  };
+
   const handleOpenEdit = (album: Album) => {
     setSelectedAlbum(album);
     editForm.setFieldsValue({
@@ -288,6 +426,24 @@ export function useAlbumManagement() {
     if (!selectedAlbum) return;
 
     removeFilesMutation.mutate({
+      id: selectedAlbum.id,
+      data: { fileIds },
+    });
+  };
+
+  const handleRestoreFiles = (fileIds: string[]) => {
+    if (!selectedAlbum) return;
+
+    restoreFilesMutation.mutate({
+      id: selectedAlbum.id,
+      data: { fileIds },
+    });
+  };
+
+  const handleForceDeleteFiles = (fileIds: string[]) => {
+    if (!selectedAlbum) return;
+
+    forceDeleteFilesMutation.mutate({
       id: selectedAlbum.id,
       data: { fileIds },
     });
@@ -333,6 +489,7 @@ export function useAlbumManagement() {
   const handleCloseDetailsModal = () => {
     setIsDetailsModalOpen(false);
     setSelectedAlbum(null);
+    setShowTrash(false);
   };
 
   const handleCloseShareModal = () => {
@@ -355,8 +512,27 @@ export function useAlbumManagement() {
     });
   };
 
+  const handleCancelUpload = () => {
+    if (uploadAbortRef.current) {
+      uploadAbortRef.current.abort();
+      uploadAbortRef.current = null;
+      message.warning('Upload cancelled');
+    }
+  };
+
+  const handleRefreshAlbumDetails = () => {
+    if (!selectedAlbum) return;
+    queryClient.invalidateQueries({
+      queryKey: albumKeys.detail(selectedAlbum.id),
+    });
+    if (showTrash) {
+      queryClient.invalidateQueries({
+        queryKey: albumKeys.deletedFiles(selectedAlbum.id),
+      });
+    }
+  };
+
   return {
-    // State
     // State
     isCreateModalOpen,
     isEditModalOpen,
@@ -372,6 +548,13 @@ export function useAlbumManagement() {
     albumDetailsData,
     albumDetailsLoading,
     albumDetailsFetching,
+    uploadProgress,
+    showTrash,
+    showDeletedAlbums,
+    deletedAlbumsData,
+    deletedAlbumsLoading,
+    deletedFilesData,
+    deletedFilesLoading,
     createForm,
     editForm,
     messageApi,
@@ -381,8 +564,12 @@ export function useAlbumManagement() {
     createMutation,
     updateMutation,
     deleteMutation,
+    restoreAlbumMutation,
+    forceDeleteAlbumMutation,
     addFilesMutation,
     removeFilesMutation,
+    restoreFilesMutation,
+    forceDeleteFilesMutation,
     generateShareTokenMutation,
     revokeShareTokenMutation,
     uploadImageMutation,
@@ -392,13 +579,19 @@ export function useAlbumManagement() {
     setSearchText,
     setCurrentPage,
     setPageSize,
+    setShowTrash,
+    setShowDeletedAlbums,
     handleCreate,
     handleEdit,
     handleDelete,
+    handleRestoreAlbum,
+    handleForceDeleteAlbum,
     handleOpenEdit,
     handleOpenDetails,
     handleAddFiles,
     handleRemoveFiles,
+    handleRestoreFiles,
+    handleForceDeleteFiles,
     handleGenerateShareToken,
     handleRevokeShareToken,
     handleCloseCreateModal,
@@ -406,5 +599,7 @@ export function useAlbumManagement() {
     handleCloseDetailsModal,
     handleCloseShareModal,
     handleUploadImage,
+    handleCancelUpload,
+    handleRefreshAlbumDetails,
   };
 }

@@ -24,8 +24,13 @@ export const authApi = {
 
   // Logout (clears cookies)
   logout: async (): Promise<MessageResponse> => {
-    const response = await api.post<MessageResponse>('/auth/logout');
-    return response.data;
+    try {
+      const response = await api.post<MessageResponse>('/auth/logout');
+      return response.data;
+    } finally {
+      // Always clear cookies on client side after logout
+      await clearAuthCookies();
+    }
   },
 
   // Get current user (alternative endpoint to /auth/profile)
@@ -62,4 +67,17 @@ export const authApi = {
     const response = await api.post<MessageResponse>('/auth/refresh');
     return response.data;
   },
+};
+
+/**
+ * Clear auth cookies from the client
+ * Note: HttpOnly cookies are cleared by the server on logout
+ */
+export const clearAuthCookies = async (): Promise<void> => {
+  // Clear auth state
+  const { useAuthStore } = await import('@stores/authStore');
+  useAuthStore.getState().clearAuth();
+
+  // Remove any auth-related data from sessionStorage
+  sessionStorage.clear();
 };

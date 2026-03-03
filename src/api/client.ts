@@ -31,56 +31,76 @@ const processQueue = (error: unknown = null) => {
   failedQueue = [];
 };
 
-// Request interceptor - refresh token before each request
-api.interceptors.request.use(
-  async (config) => {
-    // Skip token refresh for login, register, and refresh endpoints
-    const skipRefresh = ['/auth/login', '/auth/register', '/auth/refresh'].some(
-      (path) => config.url?.includes(path)
-    );
-
-    if (!skipRefresh) {
-      try {
-        // If a refresh is already in progress, wait for it
-        if (isRefreshing) {
-          await new Promise((resolve, reject) => {
-            failedQueue.push({ resolve, reject });
-          });
-        } else {
-          // Refresh the token before making the request
-          isRefreshing = true;
-          await api.post('/auth/refresh');
-          isRefreshing = false;
-          processQueue();
-        }
-      } catch (error) {
-        isRefreshing = false;
-        processQueue(error);
-        logError(error, 'Token Refresh');
-        // If refresh fails, redirect to login
-        window.location.href = '/login';
-        return Promise.reject(error);
-      }
-    }
-
-    return config;
-  },
-  (error) => {
-    logError(error, 'Request Interceptor');
-    return Promise.reject(error);
-  }
-);
-
 // Response interceptor to handle errors
 api.interceptors.response.use(
   (response) => response,
-  (error) => {
+  async (error) => {
     const axiosError = error as AxiosError<ApiErrorData>;
     const errorMessage = extractErrorMessage(error);
     const statusCode = axiosError.response?.status;
     const url = axiosError.config?.url;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const originalRequest = axiosError.config as any;
 
     logError({ statusCode, url, message: errorMessage }, 'Response Error');
+
+    // Handle 401 with automatic token refresh
+    if (
+      statusCode === 401 &&
+      !url?.includes('/auth/login') &&
+      !url?.includes('/auth/register')
+    ) {
+      // If server says refresh token is expired, logout immediately
+      const tokenExpired = axiosError.response?.headers?.['x-token-expired'];
+      if (tokenExpired === 'true') {
+        const { useAuthStore } = await import('@stores/authStore');
+        useAuthStore.getState().clearAuth();
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      // Prevent infinite retry — only retry once
+      if (originalRequest._retry) {
+        const { useAuthStore } = await import('@stores/authStore');
+        useAuthStore.getState().clearAuth();
+        window.location.href = '/login';
+        return Promise.reject(error);
+      }
+
+      if (!isRefreshing) {
+        isRefreshing = true;
+        originalRequest._retry = true;
+
+        try {
+          // Retry the original request (middleware will auto-refresh the token)
+          const retryResponse = await api(originalRequest);
+          isRefreshing = false;
+          processQueue();
+          return retryResponse;
+        } catch (refreshError) {
+          isRefreshing = false;
+          processQueue(refreshError);
+          logError(refreshError, 'Request retry failed');
+
+          // Clear auth state and redirect to login
+          const { useAuthStore } = await import('@stores/authStore');
+          useAuthStore.getState().clearAuth();
+          window.location.href = '/login';
+          return Promise.reject(refreshError);
+        }
+      } else {
+        // If refresh is already in progress, queue this request
+        return new Promise((resolve, reject) => {
+          failedQueue.push({
+            resolve: () => {
+              originalRequest._retry = true;
+              api(originalRequest).then(resolve).catch(reject);
+            },
+            reject,
+          });
+        });
+      }
+    }
 
     // Handle specific HTTP error codes
     switch (statusCode) {
@@ -90,14 +110,6 @@ api.interceptors.response.use(
           '[Validation Error]',
           axiosError.response?.data?.error?.details
         );
-        break;
-
-      case 401:
-        // Unauthorized - token expired or invalid
-        if (!url?.includes('/login') && !url?.includes('/register')) {
-          // Clear auth state and redirect to login
-          window.location.href = '/login';
-        }
         break;
 
       case 403:

@@ -1,23 +1,35 @@
-import {
-  Table,
-  Button,
-  Space,
-  Popconfirm,
-  Tooltip,
-  Typography,
-  Image,
-} from 'antd';
+import { Table, Button, Space, Popconfirm, Tooltip, Typography } from 'antd';
 import {
   EditOutlined,
   DeleteOutlined,
   ShoppingOutlined,
+  PictureOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '@hooks';
 import { albumApi } from '@services/AlbumService';
+import { LazyImage } from '@/components/partials/LazyImage';
 import type { Product } from '@types';
 import { formatMoneyVND } from '@utils/money';
 
 const { Text } = Typography;
+
+// Default placeholder element
+const DEFAULT_IMAGE_PLACEHOLDER = (
+  <div
+    style={{
+      width: '60px',
+      height: '60px',
+      background: '#f0f0f0',
+      borderRadius: '4px',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      color: '#8c8c8c',
+    }}
+  >
+    <PictureOutlined style={{ fontSize: '20px' }} />
+  </div>
+);
 
 interface ProductTableProps {
   data: Product[];
@@ -50,28 +62,16 @@ export function ProductTable({
       width: 80,
       render: (fileId: string) =>
         fileId ? (
-          <Image
-            src={albumApi.getFileUrl(fileId)}
+          <LazyImage
+            src={albumApi.getThumbnailUrl(fileId)}
+            cacheKey={fileId}
             alt="Product"
             width={60}
             height={60}
-            style={{ objectFit: 'cover', borderRadius: '4px' }}
+            preview={false}
           />
         ) : (
-          <div
-            style={{
-              width: '60px',
-              height: '60px',
-              background: '#f0f0f0',
-              borderRadius: '4px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#8c8c8c',
-            }}
-          >
-            No Image
-          </div>
+          DEFAULT_IMAGE_PLACEHOLDER
         ),
     },
     {

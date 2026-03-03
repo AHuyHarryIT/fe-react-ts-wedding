@@ -11,6 +11,7 @@ interface ManagementHeaderProps {
   createButtonText?: string;
   onCreateClick?: () => void;
   icon?: React.ReactNode;
+  extra?: React.ReactNode;
 }
 
 /**
@@ -23,6 +24,7 @@ export function ManagementHeader({
   createButtonText,
   onCreateClick,
   icon,
+  extra,
 }: ManagementHeaderProps) {
   const { darkMode: isDark } = useTheme();
 
@@ -38,18 +40,21 @@ export function ManagementHeader({
         </Title>
         <Text type="secondary">{subtitle}</Text>
       </Col>
-      {showCreateButton && onCreateClick && (
-        <Col>
-          <Button
-            type="primary"
-            icon={icon || <PlusOutlined />}
-            onClick={onCreateClick}
-            size="large"
-          >
-            {createButtonText || `Create ${title.replace(' Management', '')}`}
-          </Button>
-        </Col>
-      )}
+      <Col>
+        <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+          {extra}
+          {showCreateButton && onCreateClick && (
+            <Button
+              type="primary"
+              icon={icon || <PlusOutlined />}
+              onClick={onCreateClick}
+              size="large"
+            >
+              {createButtonText || `Create ${title.replace(' Management', '')}`}
+            </Button>
+          )}
+        </div>
+      </Col>
     </Row>
   );
 }
