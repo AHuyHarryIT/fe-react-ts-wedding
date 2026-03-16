@@ -5,6 +5,7 @@ import {
   FileImageOutlined,
   GiftOutlined,
   KeyOutlined,
+  MessageOutlined,
   SafetyOutlined,
   ShoppingOutlined,
   TagOutlined,
@@ -100,6 +101,12 @@ export function Sidebar({
       icon: <KeyOutlined />,
       label: 'Permissions',
       onClick: () => navigate({ to: '/permissions' }),
+    },
+    {
+      key: 'chat',
+      icon: <MessageOutlined />,
+      label: 'Chat',
+      onClick: () => navigate({ to: '/chat' }),
     },
     // {
     //   key: 'settings',
