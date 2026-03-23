@@ -1,7 +1,7 @@
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { Layout, message } from 'antd';
-import { useState, type ReactNode } from 'react';
+import { useEffect, useState, type ReactNode } from 'react';
 import { useTheme } from '@hooks';
 import { AntdProvider } from '@providers/AntdProvider';
 import { useAuthStore } from '@stores/authStore';
@@ -22,10 +22,30 @@ export function AdminLayout({
   selectedKey = 'dashboard',
 }: AdminLayoutProps) {
   const { darkMode, setDarkMode } = useTheme();
-  const { user, clearAuth } = useAuthStore();
+  const { user, isAuthenticated, setAuth, clearAuth } = useAuthStore();
   const navigate = useNavigate();
   const [messageApi, contextHolder] = message.useMessage();
   const [collapsed, setCollapsed] = useState(false);
+
+  useEffect(() => {
+    if (!isAuthenticated || user?.id) {
+      return;
+    }
+
+    const hydrateUser = async () => {
+      try {
+        const currentUser = await authApi.getCurrentUser();
+        if (currentUser?.id) {
+          setAuth(currentUser);
+        }
+      } catch {
+        clearAuth();
+        navigate({ to: '/login' });
+      }
+    };
+
+    void hydrateUser();
+  }, [isAuthenticated, user?.id, setAuth, clearAuth, navigate]);
 
   const logoutMutation = useMutation({
     mutationFn: () => authApi.logout(),

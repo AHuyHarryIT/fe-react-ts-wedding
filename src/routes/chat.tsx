@@ -1,4 +1,4 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, redirect } from '@tanstack/react-router';
 import { ChatPage } from '@components/chat/ChatPage';
 import { AdminLayout } from '@components/layouts/AdminLayout';
 import { useAuthStore } from '@stores/authStore';
@@ -8,7 +8,7 @@ export const Route = createFileRoute('/chat')({
     // Check if user is authenticated
     const isAuthenticated = useAuthStore.getState().isAuthenticated;
     if (!isAuthenticated) {
-      throw new Error('Not authenticated');
+      throw redirect({ to: '/login' });
     }
   },
   component: ChatPageRoute,

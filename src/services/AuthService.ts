@@ -9,17 +9,40 @@ import type {
   MessageResponse,
 } from '@types';
 
+type ApiEnvelope<T> = {
+  success?: boolean;
+  message?: string;
+  data?: T;
+};
+
+const unwrapApiData = <T>(payload: T | ApiEnvelope<T>): T => {
+  if (payload && typeof payload === 'object' && 'data' in (payload as object)) {
+    const wrapped = payload as ApiEnvelope<T>;
+    if (wrapped.data !== undefined) {
+      return wrapped.data;
+    }
+  }
+
+  return payload as T;
+};
+
 export const authApi = {
   // Login with phone number and password
   login: async (data: LoginRequest): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/login', data);
-    return response.data;
+    const response = await api.post<AuthResponse | ApiEnvelope<AuthResponse>>(
+      '/auth/login',
+      data
+    );
+    return unwrapApiData<AuthResponse>(response.data);
   },
 
   // Register new user
   register: async (data: RegisterRequest): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse>('/auth/register', data);
-    return response.data;
+    const response = await api.post<AuthResponse | ApiEnvelope<AuthResponse>>(
+      '/auth/register',
+      data
+    );
+    return unwrapApiData<AuthResponse>(response.data);
   },
 
   // Logout (clears cookies)
@@ -35,20 +58,23 @@ export const authApi = {
 
   // Get current user (alternative endpoint to /auth/profile)
   getCurrentUser: async (): Promise<User> => {
-    const response = await api.get<User>('/auth/me');
-    return response.data;
+    const response = await api.get<User | ApiEnvelope<User>>('/auth/me');
+    return unwrapApiData<User>(response.data);
   },
 
   // Get user profile
   getProfile: async (): Promise<User> => {
-    const response = await api.get<User>('/auth/profile');
-    return response.data;
+    const response = await api.get<User | ApiEnvelope<User>>('/auth/profile');
+    return unwrapApiData<User>(response.data);
   },
 
   // Update user profile
   updateProfile: async (data: UpdateProfileRequest): Promise<User> => {
-    const response = await api.put<User>('/auth/profile', data);
-    return response.data;
+    const response = await api.put<User | ApiEnvelope<User>>(
+      '/auth/profile',
+      data
+    );
+    return unwrapApiData<User>(response.data);
   },
 
   // Change password

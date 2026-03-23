@@ -10,6 +10,12 @@ export interface Chat {
   isArchived: boolean;
   createdAt: Date;
   updatedAt: Date;
+  customer?: {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+    email?: string;
+  };
 }
 
 export interface Message {

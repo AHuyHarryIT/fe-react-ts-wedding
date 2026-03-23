@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import ChatService from '../services/ChatService';
 import type { Chat, Message } from '../services/ChatService';
@@ -32,10 +32,62 @@ export const useChat = (userId: string): UseChatReturn => {
   const [socket, setSocket] = useState<Socket | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
+  const currentChatIdRef = useRef<string | null>(null);
+
+  const promoteChat = (
+    chatId: string,
+    updates: { lastMessageAt?: Date | string; lastMessage?: string }
+  ) => {
+    setChats((prevChats) => {
+      const targetIndex = prevChats.findIndex((chat) => chat.id === chatId);
+      if (targetIndex === -1) {
+        return prevChats;
+      }
+
+      const targetChat = prevChats[targetIndex];
+      const updatedChat: Chat = {
+        ...targetChat,
+        lastMessageAt: updates.lastMessageAt
+          ? new Date(updates.lastMessageAt)
+          : targetChat.lastMessageAt,
+      };
+
+      if (updates.lastMessage) {
+        (updatedChat as Chat & { lastMessage?: string }).lastMessage =
+          updates.lastMessage;
+      }
+
+      const remainingChats = prevChats.filter((chat) => chat.id !== chatId);
+      return [updatedChat, ...remainingChats];
+    });
+  };
+
+  const refreshChats = async () => {
+    const data = await ChatService.getChatsByStaff();
+    setChats(data);
+  };
+
+  const updateChatsWithMessage = (incomingMessage: Message) => {
+    promoteChat(incomingMessage.chatId, {
+      lastMessageAt: incomingMessage.createdAt,
+      lastMessage: incomingMessage.content,
+    });
+  };
+
+  useEffect(() => {
+    currentChatIdRef.current = currentChat?.id || null;
+  }, [currentChat?.id]);
 
   // Initialize WebSocket connection
   useEffect(() => {
-    const apiUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+    if (!userId) {
+      return;
+    }
+
+    const apiUrl =
+      typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
+        ? 'http://127.0.0.1:3000'
+        : import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
     const newSocket = io(`${apiUrl}/chat`, {
       auth: {
         userId: userId,
@@ -48,10 +100,25 @@ export const useChat = (userId: string): UseChatReturn => {
 
     setSocket(newSocket);
 
-    // Listen for incoming messages
-    newSocket.on('message_received', (data) => {
-      setMessages((prev) => [...prev, data]);
-    });
+    // Listen for incoming messages with deduplication
+    const handleMessageReceived = (data: Message) => {
+      updateChatsWithMessage(data);
+
+      // Only append message in the currently opened chat thread.
+      if (data.chatId !== currentChatIdRef.current) {
+        return;
+      }
+
+      setMessages((prev) => {
+        const messageExists = prev.some((msg) => msg.id === data.id);
+        if (messageExists) {
+          return prev;
+        }
+        return [...prev, data];
+      });
+    };
+
+    newSocket.on('message_received', handleMessageReceived);
 
     // Listen for typing indicators
     newSocket.on('user_typing', (data) => {
@@ -72,8 +139,25 @@ export const useChat = (userId: string): UseChatReturn => {
     });
 
     // Listen for notifications
-    newSocket.on('new_message_notification', (data) => {
+    newSocket.on('new_message_notification', async (data) => {
       console.log('New message notification:', data);
+
+      // Optimistically refresh sidebar row instantly before API roundtrip.
+      if (data?.chatId) {
+        promoteChat(data.chatId, {
+          lastMessageAt: new Date().toISOString(),
+          lastMessage: 'New message',
+        });
+      }
+
+      try {
+        await refreshChats();
+      } catch (refreshError) {
+        console.error(
+          'Failed to refresh chats after notification:',
+          refreshError
+        );
+      }
     });
 
     // Listen for errors (but only connection errors, not message send errors)
@@ -86,17 +170,30 @@ export const useChat = (userId: string): UseChatReturn => {
     });
 
     return () => {
+      newSocket.off('message_received', handleMessageReceived);
+      newSocket.off('user_typing');
+      newSocket.off('messages_marked_read');
+      newSocket.off('new_message_notification');
+      newSocket.off('error');
       newSocket.close();
     };
   }, [userId]);
 
   // Load chats on mount
   useEffect(() => {
+    if (!userId) {
+      return;
+    }
+
     const loadChats = async () => {
       try {
         setLoading(true);
-        const data = await ChatService.getChats();
+        const data = await ChatService.getChatsByStaff();
         setChats(data);
+        // Auto-select the first chat
+        if (data.length > 0) {
+          await selectChat(data[0].id);
+        }
         setError(null);
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to load chats');
@@ -106,7 +203,7 @@ export const useChat = (userId: string): UseChatReturn => {
     };
 
     loadChats();
-  }, []);
+  }, [userId]);
 
   const createChat = async (
     customerId: string,
@@ -137,10 +234,15 @@ export const useChat = (userId: string): UseChatReturn => {
     try {
       setLoading(true);
       const chat = await ChatService.getChat(chatId);
+
+      // First, load messages from REST API before joining the chat room
+      // This prevents messages from being added twice when we join
       const chatMessages = await ChatService.getMessages(chatId);
       setCurrentChat(chat);
       setMessages(chatMessages);
 
+      // Now join the chat room to listen for NEW messages only
+      // The REST API already provided us with historical messages
       if (socket) {
         socket.emit('join_chat', { chatId });
       }
@@ -159,18 +261,22 @@ export const useChat = (userId: string): UseChatReturn => {
     if (!currentChat) return;
 
     try {
-      // Send via REST API (more reliable)
-      const newMessage = await ChatService.sendMessage(currentChat.id, content);
-      setMessages((prev) => [...prev, newMessage]);
+      // Send via REST API - the backend will emit Socket.IO event to all clients
+      const sentMessage = await ChatService.sendMessage(
+        currentChat.id,
+        content
+      );
       setIsTyping(false);
 
-      // Emit via WebSocket for real-time updates to other users
-      if (socket) {
-        socket.emit('send_message', {
-          chatId: currentChat.id,
-          content,
-        });
-      }
+      // Fallback in case socket event is delayed or dropped.
+      setMessages((prev) => {
+        const messageExists = prev.some((msg) => msg.id === sentMessage.id);
+        if (messageExists) {
+          return prev;
+        }
+        return [...prev, sentMessage];
+      });
+      updateChatsWithMessage(sentMessage);
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to send message');
     }
