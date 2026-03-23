@@ -1,23 +1,17 @@
 import { useState } from 'react';
-import { Form, message } from 'antd';
+import { Form, notification } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   Service,
   CreateServiceRequest,
   UpdateServiceRequest,
+  ServiceFormData,
 } from '@types';
 import { serviceApi } from '@services/ServiceService';
 
-interface ServiceFormData {
-  name: string;
-  description?: string;
-  price?: number;
-  isActive?: boolean;
-}
-
 export function useServiceManagement() {
   const queryClient = useQueryClient();
-  const [messageApi, contextHolder] = message.useMessage();
+  const [notificationApi, contextHolder] = notification.useNotification();
   const [createForm] = Form.useForm<ServiceFormData>();
   const [editForm] = Form.useForm<ServiceFormData>();
 
@@ -43,7 +37,10 @@ export function useServiceManagement() {
   const createMutation = useMutation({
     mutationFn: (data: CreateServiceRequest) => serviceApi.create(data),
     onSuccess: () => {
-      messageApi.success('Service created successfully');
+      notificationApi.success({
+        message: 'Success',
+        description: 'Service created successfully',
+      });
       setIsCreateModalOpen(false);
       createForm.resetFields();
       queryClient.invalidateQueries({ queryKey: ['services'] });
@@ -52,7 +49,10 @@ export function useServiceManagement() {
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || 'Failed to create service';
-      messageApi.error(errorMessage);
+      notificationApi.error({
+        message: 'Error',
+        description: errorMessage,
+      });
     },
   });
 
@@ -60,7 +60,10 @@ export function useServiceManagement() {
     mutationFn: ({ id, data }: { id: string; data: UpdateServiceRequest }) =>
       serviceApi.update(id, data),
     onSuccess: () => {
-      messageApi.success('Service updated successfully');
+      notificationApi.success({
+        message: 'Success',
+        description: 'Service updated successfully',
+      });
       setIsEditModalOpen(false);
       setSelectedService(null);
       editForm.resetFields();
@@ -70,21 +73,30 @@ export function useServiceManagement() {
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || 'Failed to update service';
-      messageApi.error(errorMessage);
+      notificationApi.error({
+        message: 'Error',
+        description: errorMessage,
+      });
     },
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => serviceApi.delete(id),
     onSuccess: () => {
-      messageApi.success('Service deleted successfully');
+      notificationApi.success({
+        message: 'Success',
+        description: 'Service deleted successfully',
+      });
       queryClient.invalidateQueries({ queryKey: ['services'] });
     },
     onError: (error: unknown) => {
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || 'Failed to delete service';
-      messageApi.error(errorMessage);
+      notificationApi.error({
+        message: 'Error',
+        description: errorMessage,
+      });
     },
   });
 

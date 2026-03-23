@@ -9,6 +9,7 @@ export function ServicesManagement() {
     services,
     loading,
     total,
+    contextHolder,
     createForm,
     editForm,
     isCreateModalOpen,
@@ -31,6 +32,7 @@ export function ServicesManagement() {
 
   return (
     <div style={{ padding: '24px' }}>
+      {contextHolder}
       <Card
         title="Services Management"
         extra={

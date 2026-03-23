@@ -1,15 +1,9 @@
 import { Modal, Form, Input, InputNumber, Switch } from 'antd';
 import { type FormInstance } from 'antd';
-import type { Service } from '@types';
+import type { Service, ServiceFormData } from '@types';
+import { ImageUpload } from '@components/ui/ImageUpload';
 
 const { TextArea } = Input;
-
-interface ServiceFormData {
-  name: string;
-  description?: string;
-  price?: number;
-  isActive?: boolean;
-}
 
 interface ServiceFormModalProps {
   type: 'create' | 'edit';
@@ -71,6 +65,13 @@ export function ServiceFormModal({
         <Form.Item name="isActive" label="Active">
           <Switch />
         </Form.Item>
+
+        <ImageUpload
+          form={form}
+          currentImageUrl={isEditMode ? selectedService?.imageUrl : undefined}
+          maxCount={1}
+          maxSizeMB={5}
+        />
       </Form>
     </Modal>
   );

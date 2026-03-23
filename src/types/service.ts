@@ -9,6 +9,8 @@ export interface Service {
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
+  imageUrl?: string | null;
+  cloudinaryPublicId?: string | null;
 }
 
 export interface CreateServiceRequest {
@@ -16,6 +18,11 @@ export interface CreateServiceRequest {
   description?: string;
   price?: number;
   isActive?: boolean;
+  image?: File;
+}
+
+export interface ServiceFormData extends CreateServiceRequest {
+  image?: File;
 }
 
 export interface UpdateServiceRequest {
@@ -23,6 +30,7 @@ export interface UpdateServiceRequest {
   description?: string;
   price?: number;
   isActive?: boolean;
+  image?: File;
 }
 
 export interface QueryServiceParams extends PaginationParams {

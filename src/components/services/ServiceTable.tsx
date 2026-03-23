@@ -1,5 +1,6 @@
 import { Table, Button, Space, Popconfirm } from 'antd';
 import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Image } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 import type { Service } from '@types';
 import { formatMoneyVND } from '@utils/money';
@@ -41,6 +42,16 @@ export function ServiceTable({
       width: 250,
       render: (description) => description || '-',
       ellipsis: true,
+    },
+    {
+      title: 'Image',
+      dataIndex: 'imageUrl',
+      key: 'imageUrl',
+      width: 100,
+      render: (imageUrl: string | null | undefined) => {
+        if (!imageUrl) return '-';
+        return <Image src={imageUrl} width={50} height={50} />;
+      },
     },
     {
       title: 'Price',
