@@ -33,7 +33,8 @@ export function ServiceFormModal({
       open={open}
       onCancel={onCancel}
       onOk={() => form.submit()}
-      confirmLoading={loading}
+      loading={loading}
+      destroyOnHidden
     >
       <Form<ServiceFormData> form={form} layout="vertical" onFinish={onSubmit}>
         <Form.Item

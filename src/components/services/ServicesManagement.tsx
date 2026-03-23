@@ -8,6 +8,8 @@ export function ServicesManagement() {
   const {
     services,
     loading,
+    createLoading,
+    updateLoading,
     total,
     contextHolder,
     createForm,
@@ -78,7 +80,7 @@ export function ServicesManagement() {
       <ServiceFormModal
         type="create"
         open={isCreateModalOpen}
-        loading={false}
+        loading={createLoading}
         selectedService={null}
         form={createForm}
         onCancel={handleCloseCreateModal}
@@ -88,7 +90,7 @@ export function ServicesManagement() {
       <ServiceFormModal
         type="edit"
         open={isEditModalOpen}
-        loading={false}
+        loading={updateLoading}
         selectedService={selectedService}
         form={editForm}
         onCancel={handleCloseEditModal}

@@ -140,6 +140,8 @@ export function useServiceManagement() {
   return {
     services: servicesData?.data || [],
     loading: servicesLoading,
+    createLoading: createMutation.isPending,
+    updateLoading: updateMutation.isPending,
     total: servicesData?.pagination?.total || 0,
     createForm,
     editForm,
