@@ -10,7 +10,7 @@ import {
 } from 'antd';
 import type { Package } from '@types';
 import { formatMoneyVND } from '@utils/money';
-import { CloudinaryImage } from '@components/ui/CloudinaryImage';
+import { CloudinaryImage } from '@components/ui';
 
 interface PackageDetailModalProps {
   open: boolean;

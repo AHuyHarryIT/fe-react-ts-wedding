@@ -1,7 +1,8 @@
-import { Table, Button, Space, Popconfirm, Tooltip, Typography } from 'antd';
-import { EditOutlined, DeleteOutlined, TagOutlined } from '@ant-design/icons';
-import { useTheme } from '@hooks';
 import type { Category } from '@/types';
+import { TagOutlined } from '@ant-design/icons';
+import { ActionButton } from '@components/ui';
+import { useTheme } from '@hooks';
+import { Space, Table, Typography } from 'antd';
 
 const { Text } = Typography;
 
@@ -68,24 +69,20 @@ export function CategoryTable({
       key: 'actions',
       render: (_: unknown, record: Category) => (
         <Space>
-          <Tooltip title="Edit">
-            <Button
-              type="link"
-              icon={<EditOutlined />}
-              onClick={() => onEdit(record)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Delete Category"
-            description="Are you sure you want to delete this category?"
-            onConfirm={() => onDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Tooltip title="Delete">
-              <Button type="link" danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
+          <ActionButton
+            action="edit"
+            buttonType="link"
+            showIcon={true}
+            onClick={() => onEdit(record)}
+          />
+          <ActionButton
+            action="delete"
+            buttonType="link"
+            showIcon={true}
+            popconfirmTitle="Delete Category"
+            popconfirmDescription="Are you sure you want to delete this category?"
+            onClick={() => onDelete(record.id)}
+          />
         </Space>
       ),
     },

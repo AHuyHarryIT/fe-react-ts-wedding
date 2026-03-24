@@ -1,19 +1,4 @@
-import {
-  Modal,
-  Form,
-  Input,
-  InputNumber,
-  Switch,
-  Select,
-  Space,
-  List,
-  Typography,
-} from 'antd';
-import { type FormInstance } from 'antd';
-import type { Package, Service } from '@types';
-import { useEffect, useState } from 'react';
-import { ImageUpload } from '@components/ui/ImageUpload';
-import { CloudinaryImage } from '@components/ui/CloudinaryImage';
+import { CloudinaryImage, ImageUpload } from '@components/ui';
 import {
   DndContext,
   PointerSensor,
@@ -29,6 +14,20 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import type { Package, Service } from '@types';
+import {
+  Form,
+  Input,
+  InputNumber,
+  List,
+  Modal,
+  Select,
+  Space,
+  Switch,
+  Typography,
+  type FormInstance,
+} from 'antd';
+import { useEffect, useState } from 'react';
 
 const { TextArea } = Input;
 

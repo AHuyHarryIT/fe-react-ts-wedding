@@ -1,9 +1,8 @@
-import { Table, Button, Space, Popconfirm } from 'antd';
-import { EditOutlined, DeleteOutlined } from '@ant-design/icons';
-import { Image } from 'antd';
-import type { ColumnsType } from 'antd/es/table';
+import { ActionButton } from '@components/ui';
 import type { Service } from '@types';
 import { formatMoneyVND } from '@utils/money';
+import { Image, Space, Table } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 
 interface ServiceTableProps {
   services: Service[];
@@ -77,25 +76,18 @@ export function ServiceTable({
       width: 150,
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="primary"
+          <ActionButton
+            action="edit"
             size="small"
-            icon={<EditOutlined />}
             onClick={() => onEdit(record)}
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Delete Service"
-            description="Are you sure you want to delete this service?"
-            onConfirm={() => onDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button danger size="small" icon={<DeleteOutlined />}>
-              Delete
-            </Button>
-          </Popconfirm>
+          />
+          <ActionButton
+            action="delete"
+            size="small"
+            popconfirmTitle="Delete Service"
+            popconfirmDescription="Are you sure you want to delete this service?"
+            onClick={() => onDelete(record.id)}
+          />
         </Space>
       ),
     },

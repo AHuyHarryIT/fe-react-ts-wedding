@@ -1,5 +1,5 @@
-import { Table, Button, Space, Popconfirm, Tag } from 'antd';
-import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
+import { Table, Space, Tag } from 'antd';
+import { ActionButton } from '@components/ui';
 import type { ColumnsType } from 'antd/es/table';
 import type { Booking, BookingStatus } from '@types';
 import { formatMoneyVND } from '@utils/money';
@@ -86,35 +86,25 @@ export function BookingTable({
         const isPending = record.status === 'PENDING';
         return (
           <Space size="small">
-            <Button
-              type="primary"
+            <ActionButton
+              action="view"
               size="small"
-              icon={<EyeOutlined />}
               onClick={() => onView(record)}
-            >
-              View
-            </Button>
+            />
             {isPending && (
               <>
-                <Button
-                  type="primary"
+                <ActionButton
+                  action="edit"
                   size="small"
-                  icon={<EditOutlined />}
                   onClick={() => onEdit(record)}
-                >
-                  Edit
-                </Button>
-                <Popconfirm
-                  title="Delete Booking"
-                  description="Are you sure you want to delete this booking?"
-                  onConfirm={() => onDelete(record.id)}
-                  okText="Yes"
-                  cancelText="No"
-                >
-                  <Button danger size="small" icon={<DeleteOutlined />}>
-                    Delete
-                  </Button>
-                </Popconfirm>
+                />
+                <ActionButton
+                  action="delete"
+                  size="small"
+                  popconfirmTitle="Delete Booking"
+                  popconfirmDescription="Are you sure you want to delete this booking?"
+                  onClick={() => onDelete(record.id)}
+                />
               </>
             )}
           </Space>

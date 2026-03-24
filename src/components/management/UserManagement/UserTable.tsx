@@ -1,7 +1,8 @@
-import { Table, Button, Space, Popconfirm, Badge, Tooltip, Empty } from 'antd';
-import { EditOutlined, DeleteOutlined, LockOutlined } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
+import { LockOutlined } from '@ant-design/icons';
+import { ActionButton } from '@components/ui';
 import type { User } from '@types';
+import { Badge, Empty, Space, Table } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 
 interface UserTableProps {
   data: User[];
@@ -76,33 +77,26 @@ export function UserTable({
       width: 200,
       render: (_, record) => (
         <Space size="small">
-          <Tooltip title="Edit user">
-            <Button
-              type="primary"
-              size="small"
-              icon={<EditOutlined />}
-              onClick={() => onEdit(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Manage roles">
-            <Button
-              type="default"
-              size="small"
-              icon={<LockOutlined />}
-              onClick={() => onManageRoles(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Delete user">
-            <Popconfirm
-              title="Delete user"
-              description="Are you sure you want to delete this user?"
-              onConfirm={() => onDelete(record.id)}
-              okText="Yes"
-              cancelText="No"
-            >
-              <Button danger size="small" icon={<DeleteOutlined />} />
-            </Popconfirm>
-          </Tooltip>
+          <ActionButton
+            action="edit"
+            size="small"
+            onClick={() => onEdit(record)}
+          />
+          <ActionButton
+            action="custom"
+            icon={<LockOutlined />}
+            size="small"
+            label="Role"
+            showIcon={true}
+            onClick={() => onManageRoles(record)}
+          />
+          <ActionButton
+            action="delete"
+            size="small"
+            popconfirmTitle="Delete user"
+            popconfirmDescription="Are you sure you want to delete this user?"
+            onClick={() => onDelete(record.id)}
+          />
         </Space>
       ),
     },

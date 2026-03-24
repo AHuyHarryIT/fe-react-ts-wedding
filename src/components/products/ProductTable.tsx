@@ -1,15 +1,11 @@
-import { Table, Button, Space, Popconfirm, Tooltip, Typography } from 'antd';
-import {
-  EditOutlined,
-  DeleteOutlined,
-  ShoppingOutlined,
-  PictureOutlined,
-} from '@ant-design/icons';
+import { LazyImage } from '@/components/partials/LazyImage';
+import { PictureOutlined, ShoppingOutlined } from '@ant-design/icons';
+import { ActionButton } from '@components/ui';
 import { useTheme } from '@hooks';
 import { albumApi } from '@services/AlbumService';
-import { LazyImage } from '@/components/partials/LazyImage';
 import type { Product } from '@types';
 import { formatMoneyVND } from '@utils/money';
+import { Space, Table, Typography } from 'antd';
 
 const { Text } = Typography;
 
@@ -134,24 +130,20 @@ export function ProductTable({
       key: 'actions',
       render: (_: unknown, record: Product) => (
         <Space>
-          <Tooltip title="Edit">
-            <Button
-              type="link"
-              icon={<EditOutlined />}
-              onClick={() => onEdit(record)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Delete Product"
-            description="Are you sure you want to delete this product?"
-            onConfirm={() => onDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Tooltip title="Delete">
-              <Button type="link" danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
+          <ActionButton
+            action="edit"
+            buttonType="link"
+            showIcon={true}
+            onClick={() => onEdit(record)}
+          />
+          <ActionButton
+            action="delete"
+            buttonType="link"
+            showIcon={true}
+            popconfirmTitle="Delete Product"
+            popconfirmDescription="Are you sure you want to delete this product?"
+            onClick={() => onDelete(record.id)}
+          />
         </Space>
       ),
     },

@@ -1,7 +1,7 @@
 import { Modal, Form, Input, InputNumber, Switch } from 'antd';
 import { type FormInstance } from 'antd';
 import type { Service, ServiceFormData } from '@types';
-import { ImageUpload } from '@components/ui/ImageUpload';
+import { ImageUpload } from '@components/ui';
 
 const { TextArea } = Input;
 

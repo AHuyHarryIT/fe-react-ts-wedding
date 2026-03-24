@@ -1,19 +1,8 @@
-import {
-  Table,
-  Button,
-  Space,
-  Popconfirm,
-  Tooltip,
-  Typography,
-  Tag,
-} from 'antd';
-import {
-  EditOutlined,
-  DeleteOutlined,
-  SafetyOutlined,
-} from '@ant-design/icons';
-import { useTheme } from '@hooks';
 import type { Role } from '@/types';
+import { SafetyOutlined } from '@ant-design/icons';
+import { ActionButton } from '@components/ui';
+import { useTheme } from '@hooks';
+import { Space, Table, Tag, Typography } from 'antd';
 
 const { Text } = Typography;
 
@@ -94,31 +83,28 @@ export function RoleTable({
       key: 'actions',
       render: (_: unknown, record: Role) => (
         <Space>
-          <Tooltip title="Manage Permissions">
-            <Button
-              type="link"
-              icon={<SafetyOutlined />}
-              onClick={() => onManagePermissions(record)}
-            />
-          </Tooltip>
-          <Tooltip title="Edit">
-            <Button
-              type="link"
-              icon={<EditOutlined />}
-              onClick={() => onEdit(record)}
-            />
-          </Tooltip>
-          <Popconfirm
-            title="Delete Role"
-            description="Are you sure you want to delete this role?"
-            onConfirm={() => onDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Tooltip title="Delete">
-              <Button type="link" danger icon={<DeleteOutlined />} />
-            </Tooltip>
-          </Popconfirm>
+          <ActionButton
+            action="custom"
+            icon={<SafetyOutlined />}
+            buttonType="link"
+            label="Permissions"
+            showIcon={true}
+            onClick={() => onManagePermissions(record)}
+          />
+          <ActionButton
+            action="edit"
+            buttonType="link"
+            showIcon={true}
+            onClick={() => onEdit(record)}
+          />
+          <ActionButton
+            action="delete"
+            buttonType="link"
+            showIcon={true}
+            popconfirmTitle="Delete Role"
+            popconfirmDescription="Are you sure you want to delete this role?"
+            onClick={() => onDelete(record.id)}
+          />
         </Space>
       ),
     },

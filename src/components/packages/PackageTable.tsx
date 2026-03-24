@@ -1,8 +1,7 @@
-import { DeleteOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
-import { CloudinaryImage } from '@components/ui/CloudinaryImage';
+import { ActionButton, CloudinaryImage } from '@components/ui';
 import type { Package } from '@types';
 import { formatMoneyVND } from '@utils/money';
-import { Button, Popconfirm, Space, Table } from 'antd';
+import { Space, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 interface PackageTableProps {
@@ -87,33 +86,23 @@ export function PackageTable({
       width: 200,
       render: (_, record) => (
         <Space size="small">
-          <Button
-            type="primary"
+          <ActionButton
+            action="view"
             size="small"
-            icon={<EyeOutlined />}
             onClick={() => onView(record)}
-          >
-            View
-          </Button>
-          <Button
-            type="primary"
+          />
+          <ActionButton
+            action="edit"
             size="small"
-            icon={<EditOutlined />}
             onClick={() => onEdit(record)}
-          >
-            Edit
-          </Button>
-          <Popconfirm
-            title="Delete Package"
-            description="Are you sure you want to delete this package?"
-            onConfirm={() => onDelete(record.id)}
-            okText="Yes"
-            cancelText="No"
-          >
-            <Button danger size="small" icon={<DeleteOutlined />}>
-              Delete
-            </Button>
-          </Popconfirm>
+          />
+          <ActionButton
+            action="delete"
+            size="small"
+            popconfirmTitle="Delete Package"
+            popconfirmDescription="Are you sure you want to delete this package?"
+            onClick={() => onDelete(record.id)}
+          />
         </Space>
       ),
     },
