@@ -32,9 +32,32 @@ export const packageApi = {
   create: async (
     data: CreatePackageRequest
   ): Promise<StandardResponse<Package>> => {
+    const formData = new FormData();
+    formData.append('name', data.name);
+    if (data.description) formData.append('description', data.description);
+    if (data.price !== undefined) formData.append('price', String(data.price));
+    if (data.isActive !== undefined)
+      formData.append('isActive', String(data.isActive));
+    if (data.serviceIds && data.serviceIds.length > 0) {
+      formData.append('serviceIds', JSON.stringify(data.serviceIds));
+    }
+    if (data.coverImage) {
+      formData.append('coverImage', data.coverImage);
+    }
+    if (data.galleryImages && data.galleryImages.length > 0) {
+      data.galleryImages.forEach((file) =>
+        formData.append('galleryImages', file)
+      );
+    }
+
     const response = await api.post<StandardResponse<Package>>(
       '/packages',
-      data
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
     );
     return response.data;
   },
@@ -44,9 +67,35 @@ export const packageApi = {
     id: string,
     data: UpdatePackageRequest
   ): Promise<StandardResponse<Package>> => {
+    const formData = new FormData();
+    if (data.name) formData.append('name', data.name);
+    if (data.description) formData.append('description', data.description);
+    if (data.price !== undefined) formData.append('price', String(data.price));
+    if (data.isActive !== undefined)
+      formData.append('isActive', String(data.isActive));
+    if (data.serviceIds && data.serviceIds.length > 0) {
+      formData.append('serviceIds', JSON.stringify(data.serviceIds));
+    }
+    if (data.coverImage) {
+      formData.append('coverImage', data.coverImage);
+    }
+    if (data.galleryImages && data.galleryImages.length > 0) {
+      data.galleryImages.forEach((file) =>
+        formData.append('galleryImages', file)
+      );
+    }
+    if (data.galleryOrder && data.galleryOrder.length > 0) {
+      formData.append('galleryOrder', JSON.stringify(data.galleryOrder));
+    }
+
     const response = await api.patch<StandardResponse<Package>>(
       `/packages/${id}`,
-      data
+      formData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      }
     );
     return response.data;
   },

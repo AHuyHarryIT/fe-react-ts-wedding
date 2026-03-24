@@ -14,6 +14,8 @@ export function PackagesManagement() {
   const {
     packages,
     loading,
+    createLoading,
+    updateLoading,
     total,
     services,
     createForm,
@@ -94,7 +96,7 @@ export function PackagesManagement() {
       <PackageFormModal
         type="create"
         open={isCreateModalOpen}
-        loading={false}
+        loading={createLoading}
         selectedPackage={null}
         form={createForm}
         services={services}
@@ -105,7 +107,7 @@ export function PackagesManagement() {
       <PackageFormModal
         type="edit"
         open={isEditModalOpen}
-        loading={false}
+        loading={updateLoading}
         selectedPackage={selectedPackage}
         form={editForm}
         services={services}

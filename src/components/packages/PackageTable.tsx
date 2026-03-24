@@ -1,8 +1,9 @@
-import { Table, Button, Space, Popconfirm } from 'antd';
-import { EditOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
-import type { ColumnsType } from 'antd/es/table';
+import { DeleteOutlined, EditOutlined, EyeOutlined } from '@ant-design/icons';
+import { CloudinaryImage } from '@components/ui/CloudinaryImage';
 import type { Package } from '@types';
 import { formatMoneyVND } from '@utils/money';
+import { Button, Popconfirm, Space, Table } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 
 interface PackageTableProps {
   packages: Package[];
@@ -30,6 +31,24 @@ export function PackageTable({
   onPageSizeChange,
 }: PackageTableProps) {
   const columns: ColumnsType<Package> = [
+    {
+      title: 'Cover',
+      dataIndex: 'coverImageUrl',
+      key: 'coverImageUrl',
+      width: 110,
+      render: (coverImageUrl?: string | null) =>
+        coverImageUrl ? (
+          <CloudinaryImage
+            src={coverImageUrl}
+            alt="Package cover"
+            width={72}
+            height={72}
+            style={{ objectFit: 'cover', borderRadius: 8 }}
+          />
+        ) : (
+          '-'
+        ),
+    },
     {
       title: 'Name',
       dataIndex: 'name',

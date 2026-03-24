@@ -1,6 +1,16 @@
-import { Modal, Descriptions, Tag, Divider, List, Empty } from 'antd';
+import {
+  Modal,
+  Descriptions,
+  Tag,
+  Divider,
+  List,
+  Empty,
+  Image,
+  Space,
+} from 'antd';
 import type { Package } from '@types';
 import { formatMoneyVND } from '@utils/money';
+import { CloudinaryImage } from '@components/ui/CloudinaryImage';
 
 interface PackageDetailModalProps {
   open: boolean;
@@ -44,6 +54,19 @@ export function PackageDetailModal({
           </Tag>
         </Descriptions.Item>
 
+        <Descriptions.Item label="Cover Image" span={2}>
+          {packageItem.coverImageUrl ? (
+            <CloudinaryImage
+              src={packageItem.coverImageUrl}
+              alt="Package cover"
+              width={200}
+              style={{ borderRadius: 8 }}
+            />
+          ) : (
+            '-'
+          )}
+        </Descriptions.Item>
+
         <Descriptions.Item label="Created At" span={2}>
           {new Date(packageItem.createdAt).toLocaleString()}
         </Descriptions.Item>
@@ -58,6 +81,28 @@ export function PackageDetailModal({
           </Descriptions.Item>
         )}
       </Descriptions>
+
+      {packageItem.images && packageItem.images.length > 0 && (
+        <>
+          <Divider>Gallery Images (Display Order)</Divider>
+          <Image.PreviewGroup>
+            <Space wrap size={12}>
+              {[...packageItem.images]
+                .sort((a, b) => a.sortOrder - b.sortOrder)
+                .map((image) => (
+                  <CloudinaryImage
+                    key={image.id}
+                    src={image.imageUrl}
+                    alt={`Gallery ${image.sortOrder + 1}`}
+                    width={120}
+                    height={120}
+                    style={{ objectFit: 'cover', borderRadius: 8 }}
+                  />
+                ))}
+            </Space>
+          </Image.PreviewGroup>
+        </>
+      )}
 
       {packageItem.services && packageItem.services.length > 0 && (
         <>

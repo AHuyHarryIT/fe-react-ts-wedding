@@ -69,6 +69,8 @@ export function ServiceFormModal({
 
         <ImageUpload
           form={form}
+          fieldName="image"
+          label="Service Image"
           currentImageUrl={isEditMode ? selectedService?.imageUrl : undefined}
           maxCount={1}
           maxSizeMB={5}

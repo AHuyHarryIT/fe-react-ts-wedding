@@ -7,10 +7,20 @@ export interface Package {
   description?: string;
   price?: number;
   isActive: boolean;
+  coverImageUrl?: string | null;
+  coverImagePublicId?: string | null;
+  images?: PackageImage[];
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
   services?: PackageService[];
+}
+
+export interface PackageImage {
+  id: string;
+  imageUrl: string;
+  cloudinaryPublicId: string;
+  sortOrder: number;
 }
 
 export interface PackageService {
@@ -25,6 +35,8 @@ export interface CreatePackageRequest {
   price?: number;
   isActive?: boolean;
   serviceIds?: Service['id'][];
+  coverImage?: File;
+  galleryImages?: File[];
 }
 
 export interface UpdatePackageRequest {
@@ -32,6 +44,10 @@ export interface UpdatePackageRequest {
   description?: string;
   price?: number;
   isActive?: boolean;
+  serviceIds?: Service['id'][];
+  coverImage?: File;
+  galleryImages?: File[];
+  galleryOrder?: string[];
 }
 
 export interface UpdatePackageServicesRequest {

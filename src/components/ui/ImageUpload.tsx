@@ -1,9 +1,9 @@
 import { PlusOutlined } from '@ant-design/icons';
 import { Form, Upload, Image, type UploadFile } from 'antd';
 import type { FormInstance } from 'antd';
-import type { ServiceFormData } from '@types';
 import type { UploadChangeParam, UploadProps } from 'antd/es/upload';
 import { useState } from 'react';
+import { CloudinaryImage } from './CloudinaryImage';
 
 const ALLOWED_IMAGE_TYPES = new Set([
   'image/jpeg',
@@ -14,24 +14,43 @@ const ALLOWED_IMAGE_TYPES = new Set([
 ]);
 const ALLOWED_IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.gif', '.webp'];
 
-interface ImageUploadProps {
-  form: FormInstance<ServiceFormData>;
+interface ImageUploadProps<T extends object> {
+  form: FormInstance<T>;
+  fieldName: string;
+  label?: string;
   currentImageUrl?: string | null;
   maxCount?: number;
   maxSizeMB?: number;
+  multiple?: boolean;
+  uploadText?: string;
+  showInlinePreview?: boolean;
 }
 
-export function ImageUpload({
+export function ImageUpload<T extends object>({
   form,
+  fieldName,
+  label = 'Image',
   currentImageUrl,
   maxCount = 1,
   maxSizeMB = 5,
-}: ImageUploadProps) {
+  multiple = false,
+  uploadText = 'Upload Image',
+  showInlinePreview = true,
+}: ImageUploadProps<T>) {
   const [previewImage, setPreviewImage] = useState<string | undefined>();
   const [imageList, setImageList] = useState<UploadFile[]>([]);
   const [previewOpen, setPreviewOpen] = useState(false);
   const [previewUploadImage, setPreviewUploadImage] = useState('');
   const maxImageSizeBytes = maxSizeMB * 1024 * 1024;
+  const fieldPath = fieldName as unknown as Parameters<
+    FormInstance<T>['setFieldValue']
+  >[0];
+  const validationPaths = [fieldName] as unknown as Parameters<
+    FormInstance<T>['validateFields']
+  >[0];
+  const formFieldName = fieldName as unknown as Parameters<
+    FormInstance<T>['setFields']
+  >[0][number]['name'];
 
   const getBase64 = (file: File): Promise<string> =>
     new Promise((resolve, reject) => {
@@ -63,6 +82,10 @@ export function ImageUpload({
   };
 
   const validateImage = (_: unknown, file?: File) => {
+    if (multiple) {
+      return Promise.resolve();
+    }
+
     const error = getImageValidationError(file);
     if (error) {
       return Promise.reject(new Error(error));
@@ -76,18 +99,27 @@ export function ImageUpload({
     if (error) {
       setImageList([]);
       setPreviewImage(undefined);
-      form.setFieldValue('image', undefined);
-      form.setFields([{ name: 'image', errors: [error] }]);
+      form.setFieldValue(fieldPath, undefined);
+      form.setFields([{ name: formFieldName, errors: [error] }]);
       return Upload.LIST_IGNORE;
     }
 
-    form.setFields([{ name: 'image', errors: [] }]);
+    form.setFields([{ name: formFieldName, errors: [] }]);
     return false;
   };
 
   const handleUploadChange = (info: UploadChangeParam) => {
     const nextFileList = info.fileList.slice(-maxCount);
     setImageList(nextFileList);
+    if (multiple) {
+      const files = nextFileList
+        .map((item) => item.originFileObj)
+        .filter((file) => file instanceof File) as File[];
+      form.setFieldValue(fieldPath, files);
+      void form.validateFields(validationPaths);
+      return;
+    }
+
     if (nextFileList.length > 0) {
       const file = nextFileList[nextFileList.length - 1].originFileObj;
       if (file instanceof File) {
@@ -96,13 +128,13 @@ export function ImageUpload({
           setPreviewImage(e.target?.result as string);
         };
         reader.readAsDataURL(file);
-        form.setFieldValue('image', file);
-        void form.validateFields(['image']);
+        form.setFieldValue(fieldPath, file);
+        void form.validateFields(validationPaths);
       }
     } else {
       setPreviewImage(undefined);
-      form.setFieldValue('image', undefined);
-      void form.validateFields(['image']);
+      form.setFieldValue(fieldPath, undefined);
+      void form.validateFields(validationPaths);
     }
   };
 
@@ -120,12 +152,13 @@ export function ImageUpload({
   return (
     <>
       <Form.Item
-        name="image"
-        label="Service Image"
+        name={fieldName as never}
+        label={label}
         rules={[{ validator: validateImage }]}
       >
         <Upload
           listType="picture-card"
+          multiple={multiple}
           maxCount={maxCount}
           beforeUpload={handleBeforeUpload}
           accept="image/*"
@@ -135,24 +168,30 @@ export function ImageUpload({
           {imageList.length < maxCount && (
             <div>
               <PlusOutlined />
-              <div className="mt-2">Upload Image</div>
+              <div className="mt-2">{uploadText}</div>
             </div>
           )}
         </Upload>
       </Form.Item>
 
-      {previewImage && (
+      {showInlinePreview && previewImage && (
         <Form.Item label="Preview">
-          <Image width={200} src={previewImage} alt="Service preview" />
+          <CloudinaryImage
+            width={200}
+            src={previewImage}
+            alt="Service preview"
+            cloudinaryCropMode="fit"
+          />
         </Form.Item>
       )}
 
       {currentImageUrl && !previewImage && (
         <Form.Item label="Current Image">
-          <Image
+          <CloudinaryImage
             width={200}
             src={currentImageUrl}
             alt="Current service image"
+            cloudinaryCropMode="fit"
           />
         </Form.Item>
       )}

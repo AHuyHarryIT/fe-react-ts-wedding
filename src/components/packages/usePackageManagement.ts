@@ -15,6 +15,9 @@ interface PackageFormData {
   price?: number;
   isActive?: boolean;
   serviceIds?: string[];
+  coverImage?: File;
+  galleryImages?: File[];
+  galleryOrder?: string[];
 }
 
 export function usePackageManagement() {
@@ -119,6 +122,10 @@ export function usePackageManagement() {
       price: pkg.price,
       isActive: pkg.isActive,
       serviceIds: pkg.services?.map((s) => s.serviceId) || [],
+      galleryOrder:
+        pkg.images
+          ?.sort((a, b) => a.sortOrder - b.sortOrder)
+          .map((image) => image.id) || [],
     });
     setIsEditModalOpen(true);
   };
@@ -137,6 +144,8 @@ export function usePackageManagement() {
   return {
     packages: packagesData?.data || [],
     loading: packagesLoading,
+    createLoading: createMutation.isPending,
+    updateLoading: updateMutation.isPending,
     total: packagesData?.pagination?.total || 0,
     services: servicesData?.data || [],
     createForm,
