@@ -53,7 +53,7 @@ const AdminLogin: React.FC = () => {
     <AntdProvider darkMode={darkMode}>
       {contextHolder}
       <div
-        className={`min-h-screen flex items-center justify-center p-4 ${
+        className={`min-h-screen flex items-center justify-center p-4 sm:p-6 ${
           darkMode
             ? 'bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900'
             : 'bg-gradient-to-br from-slate-50 via-blue-50/30 to-pink-50/20'
@@ -62,36 +62,36 @@ const AdminLogin: React.FC = () => {
         {/* Background Pattern */}
         <div className="absolute inset-0 overflow-hidden pointer-events-none">
           <div
-            className={`absolute top-0 -left-4 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob ${
+            className={`absolute top-0 -left-4 hidden h-72 w-72 rounded-full mix-blend-multiply opacity-20 blur-xl md:block ${
               darkMode ? 'bg-pink-500' : 'bg-pink-300'
             }`}
           />
           <div
-            className={`absolute top-0 -right-4 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-2000 ${
+            className={`absolute top-0 -right-4 hidden h-72 w-72 rounded-full mix-blend-multiply opacity-20 blur-xl md:block ${
               darkMode ? 'bg-rose-500' : 'bg-rose-300'
             }`}
           />
           <div
-            className={`absolute -bottom-8 left-20 w-72 h-72 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-blob animation-delay-4000 ${
+            className={`absolute -bottom-8 left-20 hidden h-72 w-72 rounded-full mix-blend-multiply opacity-20 blur-xl lg:block ${
               darkMode ? 'bg-purple-500' : 'bg-purple-300'
             }`}
           />
         </div>
 
         <motion.div
-          className="w-full max-w-md relative z-10"
+          className="relative z-10 w-full max-w-md"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.6 }}
         >
           <Card
-            className={`shadow-2xl border-none ${
+            className={`border-none shadow-2xl ${
               darkMode
                 ? 'bg-gray-800/90 backdrop-blur-lg'
                 : 'bg-white/90 backdrop-blur-lg'
             }`}
             styles={{
-              body: { padding: '3rem' },
+              body: { padding: 'clamp(1.5rem, 4vw, 3rem)' },
             }}
           >
             {/* Logo & Header */}
@@ -272,7 +272,7 @@ const AdminLogin: React.FC = () => {
                   onClick={() => setDarkMode(!darkMode)}
                   className={`text-sm ${darkMode ? 'text-gray-400 hover:text-gray-200' : 'text-slate-500 hover:text-slate-700'}`}
                 >
-                  {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
+                  {darkMode ? 'Light mode' : 'Dark mode'}
                 </Button>
               </div>
             </motion.div>

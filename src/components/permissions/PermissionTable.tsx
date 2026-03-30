@@ -1,6 +1,8 @@
+import { StaffTableScroll } from '@components/ui';
 import { Table, Tag, Typography } from 'antd';
 import { useTheme } from '@hooks';
 import type { Permission } from '@/types';
+import type { ColumnsType } from 'antd/es/table';
 
 const { Text } = Typography;
 
@@ -23,7 +25,7 @@ export function PermissionTable({
 }: PermissionTableProps) {
   const { darkMode } = useTheme();
 
-  const columns = [
+  const columns: ColumnsType<Permission> = [
     {
       title: 'Key',
       dataIndex: 'key',
@@ -63,22 +65,25 @@ export function PermissionTable({
   ];
 
   return (
-    <Table
-      columns={columns}
-      dataSource={data}
-      rowKey="id"
-      loading={loading}
-      pagination={{
-        current: currentPage,
-        pageSize: pageSize,
-        total: total,
-        onChange: onPageChange,
-        showSizeChanger: true,
-        showTotal: (total) => `Total ${total} permissions`,
-      }}
-      style={{
-        background: 'transparent',
-      }}
-    />
+    <StaffTableScroll minWidth={900}>
+      <Table
+        className="staff-table"
+        columns={columns}
+        dataSource={data}
+        rowKey="id"
+        loading={loading}
+        pagination={{
+          current: currentPage,
+          pageSize: pageSize,
+          total: total,
+          onChange: onPageChange,
+          showSizeChanger: true,
+          showTotal: (total) => `Total ${total} permissions`,
+        }}
+        style={{
+          background: 'transparent',
+        }}
+      />
+    </StaffTableScroll>
   );
 }

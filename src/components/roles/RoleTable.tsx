@@ -1,8 +1,9 @@
 import type { Role } from '@/types';
 import { SafetyOutlined } from '@ant-design/icons';
-import { ActionButton } from '@components/ui';
+import { ActionButton, StaffTableScroll } from '@components/ui';
 import { useTheme } from '@hooks';
 import { Space, Table, Tag, Typography } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 
 const { Text } = Typography;
 
@@ -31,7 +32,7 @@ export function RoleTable({
 }: RoleTableProps) {
   const { darkMode: isDark } = useTheme();
 
-  const columns = [
+  const columns: ColumnsType<Role> = [
     {
       title: 'Name',
       dataIndex: 'name',
@@ -86,20 +87,20 @@ export function RoleTable({
           <ActionButton
             action="custom"
             icon={<SafetyOutlined />}
-            buttonType="link"
+            variant="link"
             label="Permissions"
             showIcon={true}
             onClick={() => onManagePermissions(record)}
           />
           <ActionButton
             action="edit"
-            buttonType="link"
+            variant="link"
             showIcon={true}
             onClick={() => onEdit(record)}
           />
           <ActionButton
             action="delete"
-            buttonType="link"
+            variant="link"
             showIcon={true}
             popconfirmTitle="Delete Role"
             popconfirmDescription="Are you sure you want to delete this role?"
@@ -111,19 +112,22 @@ export function RoleTable({
   ];
 
   return (
-    <Table
-      columns={columns}
-      dataSource={data}
-      rowKey="id"
-      loading={loading}
-      pagination={{
-        current: currentPage,
-        pageSize: pageSize,
-        total: total,
-        showSizeChanger: true,
-        showTotal: (total) => `Total ${total} roles`,
-        onChange: onPageChange,
-      }}
-    />
+    <StaffTableScroll minWidth={980}>
+      <Table
+        className="staff-table"
+        columns={columns}
+        dataSource={data}
+        rowKey="id"
+        loading={loading}
+        pagination={{
+          current: currentPage,
+          pageSize: pageSize,
+          total: total,
+          showSizeChanger: true,
+          showTotal: (total) => `Total ${total} roles`,
+          onChange: onPageChange,
+        }}
+      />
+    </StaffTableScroll>
   );
 }

@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
-import { Layout, message } from 'antd';
+import { Grid, Layout, message } from 'antd';
 import { useEffect, useState, type ReactNode } from 'react';
 import { useTheme } from '@hooks';
 import { AntdProvider } from '@providers/AntdProvider';
@@ -11,6 +11,7 @@ import { Sidebar } from '@components/partials/Sidebar';
 import { authApi } from '@services/AuthService';
 
 const { Content } = Layout;
+const { useBreakpoint } = Grid;
 
 interface AdminLayoutProps {
   children: ReactNode;
@@ -26,6 +27,9 @@ export function AdminLayout({
   const navigate = useNavigate();
   const [messageApi, contextHolder] = message.useMessage();
   const [collapsed, setCollapsed] = useState(false);
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
+  const screens = useBreakpoint();
+  const isMobile = !screens.lg;
 
   useEffect(() => {
     if (isAuthenticated || user?.id) {
@@ -46,6 +50,12 @@ export function AdminLayout({
 
     void hydrateUser();
   }, [isAuthenticated, user?.id, setAuth, clearAuth, navigate]);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setMobileSidebarOpen(false);
+    }
+  }, [isMobile]);
 
   const logoutMutation = useMutation({
     mutationFn: () => authApi.logout(),
@@ -69,46 +79,62 @@ export function AdminLayout({
   return (
     <AntdProvider darkMode={darkMode}>
       {contextHolder}
-      <Layout className="min-h-screen">
-        {/* Header at Top */}
-        <Header
-          collapsed={collapsed}
-          onToggleCollapse={() => setCollapsed(!collapsed)}
-          darkMode={darkMode}
-          onToggleTheme={() => setDarkMode(!darkMode)}
-          userName={user?.firstName}
-          onLogout={handleLogout}
-          logoutLoading={logoutMutation.isPending}
-        />
-
-        {/* Body with Sidebar and Content */}
-        <Layout style={{ background: darkMode ? '#1f2937' : '#f9fafb' }}>
+      <Layout className="staff-app-shell min-h-screen">
+        <Layout
+          className="staff-app-shell"
+          style={{ background: darkMode ? '#0f172a' : '#f8fafc' }}
+        >
           {/* Sidebar */}
           <Sidebar
             collapsed={collapsed}
             onCollapse={setCollapsed}
             selectedKey={selectedKey}
             darkMode={darkMode}
+            mobile={isMobile}
+            open={mobileSidebarOpen}
+            onClose={() => setMobileSidebarOpen(false)}
           />
 
           {/* Main Layout */}
           <Layout
             style={{
-              marginLeft: collapsed ? 80 : 250,
-              transition: 'margin-left 0.2s',
-              background: darkMode ? '#1f2937' : '#f9fafb',
+              marginLeft: isMobile ? 0 : collapsed ? 92 : 280,
+              transition: 'margin-left 0.2s ease',
+              background: 'transparent',
             }}
           >
+            <Header
+              collapsed={isMobile ? mobileSidebarOpen : collapsed}
+              onToggleCollapse={() => {
+                if (isMobile) {
+                  setMobileSidebarOpen((open) => !open);
+                  return;
+                }
+
+                setCollapsed(!collapsed);
+              }}
+              darkMode={darkMode}
+              onToggleTheme={() => setDarkMode(!darkMode)}
+              userName={user?.firstName}
+              onLogout={handleLogout}
+              logoutLoading={logoutMutation.isPending}
+            />
+
             {/* Content */}
             <Content
               style={{
                 display: 'flex',
                 flexDirection: 'column',
-                minHeight: 'calc(100vh - 64px)',
-                background: darkMode ? '#1f2937' : '#f9fafb',
+                minHeight: 'calc(100vh - 88px)',
+                background: 'transparent',
               }}
             >
-              <div style={{ flex: 1 }}>{children}</div>
+              <div
+                style={{ flex: 1 }}
+                className="px-0 pb-4 pt-2 md:pb-6 md:pt-3"
+              >
+                {children}
+              </div>
 
               {/* Footer */}
               <Footer darkMode={darkMode} />

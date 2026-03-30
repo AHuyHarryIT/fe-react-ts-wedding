@@ -1,13 +1,15 @@
-import { Card, Input, Button, Space } from 'antd';
+import { Input, Typography } from 'antd';
 import { SearchOutlined, ReloadOutlined } from '@ant-design/icons';
-import { useTheme } from '@hooks';
+import { StaffButton, StaffPanel } from '@components/ui';
+import type { ReactNode } from 'react';
 
 interface SearchBarProps {
   value: string;
   onChange: (value: string) => void;
   onRefresh?: () => void;
   placeholder?: string;
-  width?: number;
+  helperText?: string;
+  extra?: ReactNode;
 }
 
 /**
@@ -18,47 +20,43 @@ export function SearchBar({
   onChange,
   onRefresh,
   placeholder = 'Search...',
-  width = 300,
+  helperText,
+  extra,
 }: SearchBarProps) {
-  const { darkMode: isDark } = useTheme();
-
   return (
-    <Card
-      style={{
-        marginBottom: '24px',
-        backgroundColor: isDark ? '#1f2937' : '#fff',
-        borderColor: isDark ? '#374151' : '#d9d9d9',
-      }}
-    >
-      <Space>
+    <StaffPanel bodyPadding={20} className="mb-6">
+      <div className="staff-toolbar">
         <Input
+          id="management-search"
+          name="management-search"
           placeholder={placeholder}
           prefix={<SearchOutlined />}
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          size="large"
           allowClear
-          style={{
-            width,
-            backgroundColor: isDark ? '#111827' : '#fff',
-            color: isDark ? '#fff' : '#000',
-            borderColor: isDark ? '#374151' : '#d9d9d9',
-          }}
+          autoComplete="off"
+          className="staff-search-input !h-11 !rounded-2xl"
         />
-        {onRefresh && (
-          <Button
-            icon={<ReloadOutlined />}
-            onClick={onRefresh}
-            style={{
-              backgroundColor: isDark ? '#111827' : '#fff',
-              color: isDark ? '#fff' : '#000',
-              borderColor: isDark ? '#374151' : '#d9d9d9',
-            }}
-          >
-            Refresh
-          </Button>
-        )}
-      </Space>
-    </Card>
+
+        <div className="flex flex-wrap items-center gap-3">
+          {extra}
+          {onRefresh && (
+            <StaffButton
+              variant="secondary"
+              icon={<ReloadOutlined />}
+              onClick={onRefresh}
+            >
+              Refresh
+            </StaffButton>
+          )}
+        </div>
+      </div>
+
+      {helperText && (
+        <Typography.Text className="staff-search-helper">
+          {helperText}
+        </Typography.Text>
+      )}
+    </StaffPanel>
   );
 }

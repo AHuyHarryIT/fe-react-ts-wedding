@@ -1,4 +1,9 @@
-import { ActionButton, CloudinaryImage } from '@components/ui';
+import {
+  ActionButton,
+  CloudinaryImage,
+  StaffTableScroll,
+  StatusChip,
+} from '@components/ui';
 import type { Package } from '@types';
 import { formatMoneyVND } from '@utils/money';
 import { Space, Table } from 'antd';
@@ -75,15 +80,15 @@ export function PackageTable({
       key: 'isActive',
       width: 100,
       render: (isActive) => (
-        <span style={{ color: isActive ? '#22c55e' : '#ef4444' }}>
-          {isActive ? '●' : '●'} {isActive ? 'Active' : 'Inactive'}
-        </span>
+        <StatusChip tone={isActive ? 'green' : 'red'}>
+          {isActive ? 'Active' : 'Inactive'}
+        </StatusChip>
       ),
     },
     {
       title: 'Actions',
       key: 'actions',
-      width: 200,
+      width: 160,
       render: (_, record) => (
         <Space size="small">
           <ActionButton
@@ -109,20 +114,23 @@ export function PackageTable({
   ];
 
   return (
-    <Table
-      columns={columns}
-      dataSource={packages}
-      rowKey="id"
-      loading={loading}
-      pagination={{
-        current: currentPage,
-        pageSize,
-        total,
-        onChange: onPageChange,
-        onShowSizeChange: (_, size) => onPageSizeChange(size),
-        showSizeChanger: true,
-        showTotal: (total) => `Total ${total} packages`,
-      }}
-    />
+    <StaffTableScroll minWidth={960}>
+      <Table
+        className="staff-table"
+        columns={columns}
+        dataSource={packages}
+        rowKey="id"
+        loading={loading}
+        pagination={{
+          current: currentPage,
+          pageSize,
+          total,
+          onChange: onPageChange,
+          onShowSizeChange: (_, size) => onPageSizeChange(size),
+          showSizeChanger: true,
+          showTotal: (total) => `Total ${total} packages`,
+        }}
+      />
+    </StaffTableScroll>
   );
 }

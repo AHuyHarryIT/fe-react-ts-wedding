@@ -6,10 +6,11 @@ import {
   SaveOutlined,
   StopOutlined,
 } from '@ant-design/icons';
-import { Button, Popconfirm } from 'antd';
+import { Popconfirm } from 'antd';
 import type { ComponentProps, ReactNode } from 'react';
+import { StaffButton } from './StaffButton';
 
-type AntdButtonProps = ComponentProps<typeof Button>;
+type AntdButtonProps = ComponentProps<typeof StaffButton>;
 
 export type ActionType =
   | 'view'
@@ -23,7 +24,7 @@ export type ActionType =
 interface ActionButtonProps extends Omit<AntdButtonProps, 'type'> {
   action: ActionType;
   label?: ReactNode;
-  buttonType?: AntdButtonProps['type'];
+  variant?: ComponentProps<typeof StaffButton>['variant'];
   popconfirmTitle?: string;
   popconfirmDescription?: string;
   showIcon?: boolean;
@@ -34,47 +35,47 @@ const ACTION_DEFAULTS: Record<
   {
     label: string;
     icon: ReactNode;
-    type?: AntdButtonProps['type'];
+    variant?: ComponentProps<typeof StaffButton>['variant'];
     danger?: boolean;
   }
 > = {
   view: {
     label: 'View',
     icon: <EyeOutlined />,
-    type: 'primary',
+    variant: 'secondary',
   },
   edit: {
     label: 'Edit',
     icon: <EditOutlined />,
-    type: 'primary',
+    variant: 'secondary',
   },
   delete: {
     label: 'Delete',
     icon: <DeleteOutlined />,
-    danger: true,
+    variant: 'danger',
   },
   create: {
     label: 'Create',
     icon: <PlusOutlined />,
-    type: 'primary',
+    variant: 'primary',
   },
   save: {
     label: 'Save',
     icon: <SaveOutlined />,
-    type: 'primary',
+    variant: 'primary',
   },
   cancel: {
     label: 'Cancel',
     icon: <StopOutlined />,
+    variant: 'ghost',
   },
 };
 
 export function ActionButton({
   action,
   label,
-  buttonType,
+  variant,
   icon,
-  danger,
   children,
   popconfirmTitle,
   popconfirmDescription,
@@ -89,14 +90,13 @@ export function ActionButton({
     const { onClick, ...restButtonProps } = buttonProps;
 
     const deleteButton = (
-      <Button
-        type={buttonType ?? actionDefaults?.type}
-        danger={danger ?? actionDefaults?.danger}
+      <StaffButton
+        variant={variant ?? actionDefaults?.variant}
         icon={displayIcon}
         {...restButtonProps}
       >
         {children ?? label ?? actionDefaults?.label}
-      </Button>
+      </StaffButton>
     );
 
     return (
@@ -119,13 +119,12 @@ export function ActionButton({
   }
 
   return (
-    <Button
-      type={buttonType ?? actionDefaults?.type}
-      danger={danger ?? actionDefaults?.danger}
+    <StaffButton
+      variant={variant ?? actionDefaults?.variant}
       icon={displayIcon}
       {...buttonProps}
     >
       {children ?? label ?? actionDefaults?.label}
-    </Button>
+    </StaffButton>
   );
 }

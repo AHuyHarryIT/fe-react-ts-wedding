@@ -1,7 +1,7 @@
 import { LockOutlined } from '@ant-design/icons';
-import { ActionButton } from '@components/ui';
+import { ActionButton, StaffTableScroll, StatusChip } from '@components/ui';
 import type { User } from '@types';
-import { Badge, Empty, Space, Table } from 'antd';
+import { Empty, Space, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 interface UserTableProps {
@@ -58,10 +58,9 @@ export function UserTable({
       key: 'isActive',
       width: 100,
       render: (isActive: boolean) => (
-        <Badge
-          status={isActive ? 'success' : 'error'}
-          text={isActive ? 'Active' : 'Inactive'}
-        />
+        <StatusChip tone={isActive ? 'green' : 'red'}>
+          {isActive ? 'Active' : 'Inactive'}
+        </StatusChip>
       ),
     },
     {
@@ -103,22 +102,25 @@ export function UserTable({
   ];
 
   return (
-    <Table
-      columns={columns}
-      dataSource={data}
-      loading={loading}
-      rowKey="id"
-      pagination={{
-        current: currentPage,
-        pageSize: pageSize,
-        total: total,
-        pageSizeOptions: ['10', '20', '50', '100'],
-        showSizeChanger: true,
-        onChange: onPageChange,
-      }}
-      locale={{
-        emptyText: <Empty description="No users found" />,
-      }}
-    />
+    <StaffTableScroll minWidth={940}>
+      <Table
+        className="staff-table"
+        columns={columns}
+        dataSource={data}
+        loading={loading}
+        rowKey="id"
+        pagination={{
+          current: currentPage,
+          pageSize: pageSize,
+          total: total,
+          pageSizeOptions: ['10', '20', '50', '100'],
+          showSizeChanger: true,
+          onChange: onPageChange,
+        }}
+        locale={{
+          emptyText: <Empty description="No users found" />,
+        }}
+      />
+    </StaffTableScroll>
   );
 }

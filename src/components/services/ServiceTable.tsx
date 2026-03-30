@@ -1,4 +1,4 @@
-import { ActionButton } from '@components/ui';
+import { ActionButton, StaffTableScroll, StatusChip } from '@components/ui';
 import type { Service } from '@types';
 import { formatMoneyVND } from '@utils/money';
 import { Image, Space, Table } from 'antd';
@@ -65,15 +65,15 @@ export function ServiceTable({
       key: 'isActive',
       width: 100,
       render: (isActive) => (
-        <span style={{ color: isActive ? '#22c55e' : '#ef4444' }}>
-          {isActive ? '●' : '●'} {isActive ? 'Active' : 'Inactive'}
-        </span>
+        <StatusChip tone={isActive ? 'green' : 'red'}>
+          {isActive ? 'Active' : 'Inactive'}
+        </StatusChip>
       ),
     },
     {
       title: 'Actions',
       key: 'actions',
-      width: 150,
+      width: 190,
       render: (_, record) => (
         <Space size="small">
           <ActionButton
@@ -94,20 +94,23 @@ export function ServiceTable({
   ];
 
   return (
-    <Table
-      columns={columns}
-      dataSource={services}
-      rowKey="id"
-      loading={loading}
-      pagination={{
-        current: currentPage,
-        pageSize,
-        total,
-        onChange: onPageChange,
-        onShowSizeChange: (_, size) => onPageSizeChange(size),
-        showSizeChanger: true,
-        showTotal: (total) => `Total ${total} services`,
-      }}
-    />
+    <StaffTableScroll minWidth={900}>
+      <Table
+        className="staff-table"
+        columns={columns}
+        dataSource={services}
+        rowKey="id"
+        loading={loading}
+        pagination={{
+          current: currentPage,
+          pageSize,
+          total,
+          onChange: onPageChange,
+          onShowSizeChange: (_, size) => onPageSizeChange(size),
+          showSizeChanger: true,
+          showTotal: (total) => `Total ${total} services`,
+        }}
+      />
+    </StaffTableScroll>
   );
 }

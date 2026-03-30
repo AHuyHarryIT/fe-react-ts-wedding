@@ -1,41 +1,64 @@
-import { createFileRoute } from '@tanstack/react-router';
+import { createFileRoute, useNavigate } from '@tanstack/react-router';
 import {
-  Button,
-  Card,
-  Row,
-  Col,
-  Statistic,
-  Avatar,
-  Space,
-  Typography,
-} from 'antd';
-import {
-  UserOutlined,
+  ArrowRightOutlined,
   CalendarOutlined,
-  ShoppingOutlined,
-  DollarOutlined,
   CameraOutlined,
+  ShoppingOutlined,
   TeamOutlined,
+  UserOutlined,
 } from '@ant-design/icons';
-import { motion } from 'motion/react';
+import { AdminLayout } from '@components/layouts/AdminLayout';
+import { StatCard } from '@components/ui/StatCard';
 import { useTheme } from '@hooks';
 import { useAuthStore } from '@stores/authStore';
-import { AdminLayout } from '@components/layouts/AdminLayout';
 import { requireStaffAuth } from '@utils/authGuard';
+import { motion } from 'motion/react';
+import { Avatar, Button, Card, Col, Row, Space, Typography } from 'antd';
 
-const { Title, Text } = Typography;
+const { Text, Title } = Typography;
 
 function Dashboard() {
   const { darkMode } = useTheme();
   const { user } = useAuthStore();
+  const navigate = useNavigate();
 
-  // Mock statistics data - replace with real API calls later
   const stats = {
     totalBookings: 42,
     totalRevenue: 125000000,
     activeClients: 28,
     upcomingSessions: 15,
   };
+
+  const overviewCards = [
+    {
+      key: 'total-bookings',
+      title: 'Total Bookings',
+      value: `${stats.totalBookings}`,
+      accent: '#2563eb',
+      icon: <CalendarOutlined />,
+    },
+    {
+      key: 'total-revenue',
+      title: 'Total Revenue',
+      value: `${stats.totalRevenue.toLocaleString('vi-VN')} ₫`,
+      accent: '#16a34a',
+      icon: <ShoppingOutlined />,
+    },
+    {
+      key: 'active-clients',
+      title: 'Active Clients',
+      value: `${stats.activeClients}`,
+      accent: '#7c3aed',
+      icon: <TeamOutlined />,
+    },
+    {
+      key: 'upcoming-sessions',
+      title: 'Upcoming Sessions',
+      value: `${stats.upcomingSessions}`,
+      accent: '#e11d48',
+      icon: <CameraOutlined />,
+    },
+  ];
 
   const recentActivities = [
     { id: 1, text: 'New booking from Nguyen Van A', time: '2 hours ago' },
@@ -45,190 +68,97 @@ function Dashboard() {
 
   return (
     <AdminLayout selectedKey="dashboard">
-      <div className="px-6 py-8">
-        {/* Welcome Section */}
+      <div className="staff-page">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5 }}
-          className="mb-8"
+          transition={{ duration: 0.45 }}
+          className="staff-page-header"
         >
-          <Title
-            level={2}
-            className="!mb-2"
-            style={{ color: darkMode ? '#f9fafb' : '#111827' }}
-          >
-            Welcome back, {user?.firstName || 'Admin'}! 👋
-          </Title>
-          <Text
-            style={{
-              fontSize: '16px',
-              color: darkMode ? '#9ca3af' : '#64748b',
-            }}
-          >
-            Here's what's happening with your studio today.
-          </Text>
+          <div className="min-w-0">
+            <div className="staff-kicker">Studio overview</div>
+            <h1 className="staff-title mt-4">
+              Welcome back, {user?.firstName || 'Admin'}
+            </h1>
+            <p className="staff-subtitle mt-3">
+              Track bookings, revenue, and team workload from a dashboard that
+              stays readable on mobile and desktop.
+            </p>
+          </div>
+
+          <div className="staff-surface flex w-full flex-col gap-3 rounded-3xl p-4 md:w-auto">
+            <Text strong style={{ color: darkMode ? '#f8fafc' : '#0f172a' }}>
+              Today&apos;s focus
+            </Text>
+            <Text style={{ color: darkMode ? '#cbd5e1' : '#475569' }}>
+              Review recent inquiries, confirm deposits, and keep sessions on
+              schedule.
+            </Text>
+          </div>
         </motion.div>
 
-        {/* Statistics Cards */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.1 }}
+          transition={{ duration: 0.45, delay: 0.1 }}
         >
-          <Row gutter={[16, 16]} className="mb-8">
-            <Col xs={24} sm={12} lg={6}>
-              <Card
-                style={{
-                  background: darkMode
-                    ? 'rgba(31, 41, 55, 0.5)'
-                    : 'rgba(255, 255, 255, 0.9)',
-                  backdropFilter: 'blur(12px)',
-                  border: 'none',
-                }}
-                className="shadow-lg hover:shadow-xl transition-shadow"
-              >
-                <Statistic
-                  title={
-                    <span style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>
-                      Total Bookings
-                    </span>
-                  }
-                  value={stats.totalBookings}
-                  prefix={<CalendarOutlined className="text-blue-500" />}
-                  valueStyle={{ color: darkMode ? '#fff' : '#1f2937' }}
+          <Row gutter={[16, 16]}>
+            {overviewCards.map((card) => (
+              <Col key={card.key} xs={24} sm={12} xl={6} className="flex">
+                <StatCard
+                  title={card.title}
+                  value={card.value}
+                  icon={card.icon}
+                  accent={card.accent}
+                  darkMode={darkMode}
                 />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card
-                style={{
-                  background: darkMode
-                    ? 'rgba(31, 41, 55, 0.5)'
-                    : 'rgba(255, 255, 255, 0.9)',
-                  backdropFilter: 'blur(12px)',
-                  border: 'none',
-                }}
-                className="shadow-lg hover:shadow-xl transition-shadow"
-              >
-                <Statistic
-                  title={
-                    <span style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>
-                      Total Revenue
-                    </span>
-                  }
-                  value={stats.totalRevenue}
-                  prefix={<DollarOutlined className="text-green-500" />}
-                  suffix="₫"
-                  valueStyle={{ color: darkMode ? '#fff' : '#1f2937' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card
-                style={{
-                  background: darkMode
-                    ? 'rgba(31, 41, 55, 0.5)'
-                    : 'rgba(255, 255, 255, 0.9)',
-                  backdropFilter: 'blur(12px)',
-                  border: 'none',
-                }}
-                className="shadow-lg hover:shadow-xl transition-shadow"
-              >
-                <Statistic
-                  title={
-                    <span style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>
-                      Active Clients
-                    </span>
-                  }
-                  value={stats.activeClients}
-                  prefix={<TeamOutlined className="text-purple-500" />}
-                  valueStyle={{ color: darkMode ? '#fff' : '#1f2937' }}
-                />
-              </Card>
-            </Col>
-            <Col xs={24} sm={12} lg={6}>
-              <Card
-                style={{
-                  background: darkMode
-                    ? 'rgba(31, 41, 55, 0.5)'
-                    : 'rgba(255, 255, 255, 0.9)',
-                  backdropFilter: 'blur(12px)',
-                  border: 'none',
-                }}
-                className="shadow-lg hover:shadow-xl transition-shadow"
-              >
-                <Statistic
-                  title={
-                    <span style={{ color: darkMode ? '#9ca3af' : '#6b7280' }}>
-                      Upcoming Sessions
-                    </span>
-                  }
-                  value={stats.upcomingSessions}
-                  prefix={<CameraOutlined className="text-pink-500" />}
-                  valueStyle={{ color: darkMode ? '#fff' : '#1f2937' }}
-                />
-              </Card>
-            </Col>
+              </Col>
+            ))}
           </Row>
         </motion.div>
 
-        {/* Quick Actions & Recent Activity */}
-        <Row gutter={[16, 16]}>
-          {/* Quick Actions */}
-          <Col xs={24} lg={12}>
+        <Row gutter={[16, 16]} className="mt-6">
+          <Col xs={24} xl={14}>
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
+              transition={{ duration: 0.45, delay: 0.2 }}
             >
               <Card
+                className="staff-surface !border-0"
                 title={
                   <span style={{ color: darkMode ? '#f9fafb' : '#111827' }}>
                     Quick Actions
                   </span>
                 }
-                style={{
-                  background: darkMode
-                    ? 'rgba(31, 41, 55, 0.5)'
-                    : 'rgba(255, 255, 255, 0.9)',
-                  backdropFilter: 'blur(12px)',
-                  border: 'none',
-                  height: '100%',
-                }}
-                className="shadow-lg"
               >
-                <div className="flex w-full flex-col gap-4">
+                <div className="grid gap-3 md:grid-cols-3">
                   <Button
                     type="primary"
                     icon={<CalendarOutlined />}
-                    block
                     size="large"
-                    className="bg-gradient-to-r from-blue-500 to-blue-600 border-none"
+                    className="!h-11 !rounded-2xl !border-none"
+                    style={{
+                      background:
+                        'linear-gradient(135deg, rgba(236,72,153,0.96), rgba(225,29,72,0.92))',
+                    }}
+                    onClick={() => navigate({ to: '/bookings' })}
                   >
                     New Booking
                   </Button>
                   <Button
                     icon={<UserOutlined />}
-                    block
                     size="large"
-                    style={{
-                      background: darkMode ? '#374151' : '#ffffff',
-                      color: darkMode ? '#ffffff' : '#111827',
-                      borderColor: darkMode ? '#4b5563' : '#d1d5db',
-                    }}
+                    className="!h-11 !rounded-2xl"
+                    onClick={() => navigate({ to: '/users' })}
                   >
                     Manage Clients
                   </Button>
                   <Button
                     icon={<ShoppingOutlined />}
-                    block
                     size="large"
-                    style={{
-                      background: darkMode ? '#374151' : '#ffffff',
-                      color: darkMode ? '#ffffff' : '#111827',
-                      borderColor: darkMode ? '#4b5563' : '#d1d5db',
-                    }}
+                    className="!h-11 !rounded-2xl"
+                    onClick={() => navigate({ to: '/services' })}
                   >
                     View Services
                   </Button>
@@ -237,58 +167,63 @@ function Dashboard() {
             </motion.div>
           </Col>
 
-          {/* Recent Activity */}
-          <Col xs={24} lg={12}>
+          <Col xs={24} xl={10}>
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
+              transition={{ duration: 0.45, delay: 0.3 }}
             >
               <Card
+                className="staff-surface !border-0"
                 title={
                   <span style={{ color: darkMode ? '#f9fafb' : '#111827' }}>
                     Recent Activity
                   </span>
                 }
-                style={{
-                  background: darkMode
-                    ? 'rgba(31, 41, 55, 0.5)'
-                    : 'rgba(255, 255, 255, 0.9)',
-                  backdropFilter: 'blur(12px)',
-                  border: 'none',
-                  height: '100%',
-                }}
-                className="shadow-lg"
               >
                 <div className="flex w-full flex-col gap-4">
                   {recentActivities.map((activity) => (
                     <div
                       key={activity.id}
+                      className="flex items-start gap-3 rounded-2xl border p-3"
                       style={{
-                        padding: '12px',
-                        borderRadius: '8px',
+                        borderColor: darkMode ? '#334155' : '#e2e8f0',
                         background: darkMode
-                          ? 'rgba(55, 65, 81, 0.5)'
-                          : '#f8fafc',
+                          ? 'rgba(15, 23, 42, 0.42)'
+                          : 'rgba(248, 250, 252, 0.85)',
                       }}
                     >
-                      <Text
+                      <Avatar
+                        size="small"
+                        icon={<CalendarOutlined />}
                         style={{
-                          display: 'block',
-                          marginBottom: '4px',
-                          color: darkMode ? '#e5e7eb' : '#1e293b',
+                          background:
+                            'linear-gradient(135deg, #3b82f6, #1d4ed8)',
+                          flexShrink: 0,
                         }}
-                      >
-                        {activity.text}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: '12px',
-                          color: darkMode ? '#9ca3af' : '#64748b',
-                        }}
-                      >
-                        {activity.time}
-                      </Text>
+                      />
+                      <div className="min-w-0 flex-1">
+                        <Text
+                          style={{
+                            display: 'block',
+                            marginBottom: '4px',
+                            color: darkMode ? '#e5e7eb' : '#1e293b',
+                          }}
+                        >
+                          {activity.text}
+                        </Text>
+                        <Text
+                          style={{
+                            fontSize: '12px',
+                            color: darkMode ? '#9ca3af' : '#64748b',
+                          }}
+                        >
+                          {activity.time}
+                        </Text>
+                      </div>
+                      <ArrowRightOutlined
+                        style={{ color: darkMode ? '#64748b' : '#94a3b8' }}
+                      />
                     </div>
                   ))}
                 </div>
@@ -297,32 +232,24 @@ function Dashboard() {
           </Col>
         </Row>
 
-        {/* User Profile Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: 0.4 }}
-          className="mt-8"
+          transition={{ duration: 0.45, delay: 0.4 }}
+          className="mt-6"
         >
           <Card
+            className="staff-surface !border-0"
             title={
               <span style={{ color: darkMode ? '#f9fafb' : '#111827' }}>
                 Profile Information
               </span>
             }
-            style={{
-              background: darkMode
-                ? 'rgba(31, 41, 55, 0.5)'
-                : 'rgba(255, 255, 255, 0.9)',
-              backdropFilter: 'blur(12px)',
-              border: 'none',
-            }}
-            className="shadow-lg"
           >
             {user && (
-              <Row gutter={[16, 16]}>
-                <Col span={24}>
-                  <Space size="large">
+              <Row gutter={[16, 16]} align="middle">
+                <Col xs={24} lg={16}>
+                  <Space size="large" className="items-start">
                     <Avatar
                       size={64}
                       className="bg-gradient-to-br from-pink-500 to-rose-600"
@@ -340,13 +267,13 @@ function Dashboard() {
                           ? `${user.lastName} ${user.firstName || ''}`
                           : 'Admin User'}
                       </Title>
-                      <div className="flex flex-col gap-0">
+                      <div className="flex flex-col gap-1">
                         <Text
                           style={{
                             color: darkMode ? '#9ca3af' : '#64748b',
                           }}
                         >
-                          📱 {user.phoneNumber}
+                          {user.phoneNumber}
                         </Text>
                         {user.email && (
                           <Text
@@ -354,12 +281,29 @@ function Dashboard() {
                               color: darkMode ? '#9ca3af' : '#64748b',
                             }}
                           >
-                            ✉️ {user.email}
+                            {user.email}
                           </Text>
                         )}
                       </div>
                     </div>
                   </Space>
+                </Col>
+                <Col xs={24} lg={8}>
+                  <div className="rounded-3xl border border-slate-200/80 bg-slate-50/80 p-4 dark:border-slate-700 dark:bg-slate-900/40">
+                    <Text
+                      className="!text-xs !font-semibold !uppercase !tracking-[0.18em]"
+                      style={{ color: darkMode ? '#94a3b8' : '#64748b' }}
+                    >
+                      Access level
+                    </Text>
+                    <div className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-50">
+                      Staff administrator
+                    </div>
+                    <Text style={{ color: darkMode ? '#cbd5e1' : '#475569' }}>
+                      Use the sidebar to manage bookings, orders, and account
+                      permissions from any device size.
+                    </Text>
+                  </div>
                 </Col>
               </Row>
             )}

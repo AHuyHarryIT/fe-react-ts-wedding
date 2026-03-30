@@ -1,6 +1,5 @@
 import type { ReactNode } from 'react';
-import { Card } from 'antd';
-import { useTheme } from '@hooks';
+import { StaffPanel } from '@components/ui';
 
 interface ManagementLayoutProps {
   header: ReactNode;
@@ -9,6 +8,7 @@ interface ManagementLayoutProps {
   createModal?: ReactNode;
   editModal?: ReactNode;
   additionalModals?: ReactNode[];
+  className?: string;
 }
 
 /**
@@ -26,34 +26,13 @@ export function ManagementLayout({
   createModal,
   editModal,
   additionalModals,
+  className = '',
 }: ManagementLayoutProps) {
-  const { darkMode: isDark } = useTheme();
-
   return (
-    <div
-      style={{
-        padding: '24px',
-        minHeight: '100vh',
-        backgroundColor: isDark ? '#111827' : '#f9fafb',
-      }}
-    >
-      {/* Header Section */}
+    <div className={`staff-page ${className}`.trim()}>
       {header}
-
-      {/* Search Section */}
       {searchBar}
-
-      {/* Table Section */}
-      <Card
-        style={{
-          backgroundColor: isDark ? '#1f2937' : '#fff',
-          borderColor: isDark ? '#374151' : '#d9d9d9',
-        }}
-      >
-        {table}
-      </Card>
-
-      {/* Modals */}
+      <StaffPanel bodyClassName="staff-table-wrap">{table}</StaffPanel>
       {createModal}
       {editModal}
       {additionalModals &&

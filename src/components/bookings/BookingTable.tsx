@@ -1,5 +1,5 @@
-import { Table, Space, Tag } from 'antd';
-import { ActionButton } from '@components/ui';
+import { Table, Space } from 'antd';
+import { ActionButton, StaffTableScroll, StatusChip } from '@components/ui';
 import type { ColumnsType } from 'antd/es/table';
 import type { Booking, BookingStatus } from '@types';
 import { formatMoneyVND } from '@utils/money';
@@ -17,7 +17,10 @@ interface BookingTableProps {
   onPageSizeChange: (size: number) => void;
 }
 
-const statusColorMap: Record<BookingStatus, string> = {
+const statusToneMap: Record<
+  BookingStatus,
+  'orange' | 'blue' | 'green' | 'red' | 'purple'
+> = {
   PENDING: 'orange',
   CONFIRMED: 'blue',
   COMPLETED: 'green',
@@ -42,7 +45,7 @@ export function BookingTable({
       title: 'Customer',
       dataIndex: ['customer', 'firstName'],
       key: 'customer',
-      width: 150,
+      width: 180,
       render: (_, record) =>
         `${record.customer?.lastName || ''} ${record.customer?.firstName || ''}`.trim() ||
         record.customer?.phoneNumber ||
@@ -68,7 +71,7 @@ export function BookingTable({
       key: 'status',
       width: 120,
       render: (status: BookingStatus) => (
-        <Tag color={statusColorMap[status]}>{status}</Tag>
+        <StatusChip tone={statusToneMap[status]}>{status}</StatusChip>
       ),
     },
     {
@@ -114,20 +117,24 @@ export function BookingTable({
   ];
 
   return (
-    <Table
-      columns={columns}
-      dataSource={bookings}
-      rowKey="id"
-      loading={loading}
-      pagination={{
-        current: currentPage,
-        pageSize,
-        total,
-        onChange: onPageChange,
-        onShowSizeChange: (_, size) => onPageSizeChange(size),
-        showSizeChanger: true,
-        showTotal: (total) => `Total ${total} bookings`,
-      }}
-    />
+    <StaffTableScroll minWidth={760}>
+      <Table
+        className="staff-table"
+        columns={columns}
+        dataSource={bookings}
+        rowKey="id"
+        loading={loading}
+        pagination={{
+          current: currentPage,
+          pageSize,
+          total,
+          onChange: onPageChange,
+          onShowSizeChange: (_, size) => onPageSizeChange(size),
+          showSizeChanger: true,
+          showTotal: (total) => `Total ${total} bookings`,
+          size: 'small',
+        }}
+      />
+    </StaffTableScroll>
   );
 }

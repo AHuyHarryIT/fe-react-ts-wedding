@@ -1,5 +1,9 @@
-import { Card, Button, Space, Input, Row, Col } from 'antd';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
+import { PlusOutlined } from '@ant-design/icons';
+import {
+  ManagementHeader,
+  ManagementLayout,
+  SearchBar,
+} from '@components/management';
 import { ServiceFormModal } from '@components/services/ServiceFormModal';
 import { ServiceTable } from '@components/services/ServiceTable';
 import { useServiceManagement } from './useServiceManagement';
@@ -33,36 +37,41 @@ export function ServicesManagement() {
   } = useServiceManagement();
 
   return (
-    <div style={{ padding: '24px' }}>
+    <>
       {contextHolder}
-      <Card
-        title="Services Management"
-        extra={
-          <Button
-            type="primary"
+      <ManagementLayout
+        header={
+          <ManagementHeader
+            kicker="Service catalog"
+            title="Services"
+            subtitle="Keep standalone services, imagery, and pricing polished for the whole staff workflow."
+            createButtonText="Add Service"
             icon={<PlusOutlined />}
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            Add Service
-          </Button>
+            onCreateClick={() => setIsCreateModalOpen(true)}
+            summary={
+              <div className="staff-surface rounded-3xl px-4 py-3">
+                <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
+                  Active records
+                </div>
+                <div className="text-lg font-semibold text-slate-900 dark:text-slate-50">
+                  {total} services
+                </div>
+              </div>
+            }
+          />
         }
-      >
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <Row gutter={16}>
-            <Col span={8}>
-              <Input
-                placeholder="Search services..."
-                prefix={<SearchOutlined />}
-                value={searchText}
-                onChange={(e) => {
-                  setSearchText(e.target.value);
-                  setCurrentPage(1);
-                }}
-                allowClear
-              />
-            </Col>
-          </Row>
-
+        searchBar={
+          <SearchBar
+            value={searchText}
+            onChange={(value) => {
+              setSearchText(value);
+              setCurrentPage(1);
+            }}
+            placeholder="Search services..."
+            helperText="Refine the service list quickly, then edit or retire offerings without leaving the table."
+          />
+        }
+        table={
           <ServiceTable
             services={services}
             loading={loading}
@@ -74,28 +83,30 @@ export function ServicesManagement() {
             onPageChange={setCurrentPage}
             onPageSizeChange={setPageSize}
           />
-        </Space>
-      </Card>
-
-      <ServiceFormModal
-        type="create"
-        open={isCreateModalOpen}
-        loading={createLoading}
-        selectedService={null}
-        form={createForm}
-        onCancel={handleCloseCreateModal}
-        onSubmit={handleCreate}
+        }
+        createModal={
+          <ServiceFormModal
+            type="create"
+            open={isCreateModalOpen}
+            loading={createLoading}
+            selectedService={null}
+            form={createForm}
+            onCancel={handleCloseCreateModal}
+            onSubmit={handleCreate}
+          />
+        }
+        editModal={
+          <ServiceFormModal
+            type="edit"
+            open={isEditModalOpen}
+            loading={updateLoading}
+            selectedService={selectedService}
+            form={editForm}
+            onCancel={handleCloseEditModal}
+            onSubmit={handleEdit}
+          />
+        }
       />
-
-      <ServiceFormModal
-        type="edit"
-        open={isEditModalOpen}
-        loading={updateLoading}
-        selectedService={selectedService}
-        form={editForm}
-        onCancel={handleCloseEditModal}
-        onSubmit={handleEdit}
-      />
-    </div>
+    </>
   );
 }

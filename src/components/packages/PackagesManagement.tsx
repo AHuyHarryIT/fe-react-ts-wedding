@@ -1,11 +1,15 @@
-import { Card, Button, Space, Input, Row, Col } from 'antd';
-import { PlusOutlined, SearchOutlined } from '@ant-design/icons';
-import { useState } from 'react';
+import { PlusOutlined } from '@ant-design/icons';
+import {
+  ManagementHeader,
+  ManagementLayout,
+  SearchBar,
+} from '@components/management';
+import { PackageDetailModal } from '@components/packages/PackageDetailModal';
 import { PackageFormModal } from '@components/packages/PackageFormModal';
 import { PackageTable } from '@components/packages/PackageTable';
-import { PackageDetailModal } from '@components/packages/PackageDetailModal';
 import { usePackageManagement } from '@components/packages/usePackageManagement';
 import type { Package } from '@types';
+import { useState } from 'react';
 
 export function PackagesManagement() {
   const [detailPackage, setDetailPackage] = useState<Package | null>(null);
@@ -49,77 +53,74 @@ export function PackagesManagement() {
   };
 
   return (
-    <div style={{ padding: '24px' }}>
-      <Card
-        title="Packages Management"
-        extra={
-          <Button
-            type="primary"
-            icon={<PlusOutlined />}
-            onClick={() => setIsCreateModalOpen(true)}
-          >
-            Add Package
-          </Button>
-        }
-      >
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
-          <Row gutter={16}>
-            <Col span={8}>
-              <Input
-                placeholder="Search packages..."
-                prefix={<SearchOutlined />}
-                value={searchText}
-                onChange={(e) => {
-                  setSearchText(e.target.value);
-                  setCurrentPage(1);
-                }}
-                allowClear
-              />
-            </Col>
-          </Row>
-
-          <PackageTable
-            packages={packages}
-            loading={loading}
-            currentPage={currentPage}
-            pageSize={pageSize}
-            total={total}
-            onView={handleViewPackage}
-            onEdit={handleOpenEdit}
-            onDelete={handleDelete}
-            onPageChange={setCurrentPage}
-            onPageSizeChange={setPageSize}
-          />
-        </Space>
-      </Card>
-
-      <PackageFormModal
-        type="create"
-        open={isCreateModalOpen}
-        loading={createLoading}
-        selectedPackage={null}
-        form={createForm}
-        services={services}
-        onCancel={handleCloseCreateModal}
-        onSubmit={handleCreate}
-      />
-
-      <PackageFormModal
-        type="edit"
-        open={isEditModalOpen}
-        loading={updateLoading}
-        selectedPackage={selectedPackage}
-        form={editForm}
-        services={services}
-        onCancel={handleCloseEditModal}
-        onSubmit={handleEdit}
-      />
-
-      <PackageDetailModal
-        open={isDetailModalOpen}
-        package={detailPackage}
-        onClose={handleCloseDetailModal}
-      />
-    </div>
+    <ManagementLayout
+      header={
+        <ManagementHeader
+          kicker="Catalog operations"
+          title="Packages"
+          subtitle="Maintain package bundles, pricing, and the details staff needs before checkout."
+          createButtonText="Add Package"
+          icon={<PlusOutlined />}
+          onCreateClick={() => setIsCreateModalOpen(true)}
+        />
+      }
+      searchBar={
+        <SearchBar
+          value={searchText}
+          onChange={(value) => {
+            setSearchText(value);
+            setCurrentPage(1);
+          }}
+          placeholder="Search packages..."
+          helperText="Open package details, adjust pricing, and keep bundled offers easy to scan."
+        />
+      }
+      table={
+        <PackageTable
+          packages={packages}
+          loading={loading}
+          currentPage={currentPage}
+          pageSize={pageSize}
+          total={total}
+          onView={handleViewPackage}
+          onEdit={handleOpenEdit}
+          onDelete={handleDelete}
+          onPageChange={setCurrentPage}
+          onPageSizeChange={setPageSize}
+        />
+      }
+      createModal={
+        <PackageFormModal
+          type="create"
+          open={isCreateModalOpen}
+          loading={createLoading}
+          selectedPackage={null}
+          form={createForm}
+          services={services}
+          onCancel={handleCloseCreateModal}
+          onSubmit={handleCreate}
+        />
+      }
+      editModal={
+        <PackageFormModal
+          type="edit"
+          open={isEditModalOpen}
+          loading={updateLoading}
+          selectedPackage={selectedPackage}
+          form={editForm}
+          services={services}
+          onCancel={handleCloseEditModal}
+          onSubmit={handleEdit}
+        />
+      }
+      additionalModals={[
+        <PackageDetailModal
+          key="package-detail-modal"
+          open={isDetailModalOpen}
+          package={detailPackage}
+          onClose={handleCloseDetailModal}
+        />,
+      ]}
+    />
   );
 }

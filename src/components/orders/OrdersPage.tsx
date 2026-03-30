@@ -1,17 +1,18 @@
 import React, { useEffect, useState } from 'react';
 import {
   Alert,
-  Card,
   Table,
   Tag,
   Button,
   Space,
   Modal,
   Empty,
-  Row,
+  Card,
   Col,
-  Statistic,
+  Row,
+  Typography,
 } from 'antd';
+import type { ColumnsType } from 'antd/es/table';
 import {
   EyeOutlined,
   DollarOutlined,
@@ -19,14 +20,20 @@ import {
   ClockCircleOutlined,
   ShoppingCartOutlined,
 } from '@ant-design/icons';
+import { useTheme } from '@hooks';
 import type { Booking, Order } from '@types';
 import { ordersService } from '@services/OrdersService';
 import { bookingApi } from '@services/BookingService';
 import { OrderDetail } from './OrderDetail';
 import { BookingDetailWithOrders } from '@components/bookings/BookingDetailWithOrders';
+import { StatCard } from '@components/ui/StatCard';
+import { StaffTableScroll } from '@components/ui';
 import { formatMoneyVND } from '@utils/money';
 
+const { Text } = Typography;
+
 export const OrdersPage: React.FC = () => {
+  const { darkMode } = useTheme();
   const [orders, setOrders] = useState<Order[]>([]);
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(false);
@@ -103,11 +110,12 @@ export const OrdersPage: React.FC = () => {
     }
   };
 
-  const columns = [
+  const columns: ColumnsType<Order> = [
     {
       title: 'Booking ID',
       dataIndex: 'bookingId',
       key: 'bookingId',
+      width: 110,
       render: (id: string) => (
         <code className="text-xs">{id.slice(0, 8)}...</code>
       ),
@@ -179,7 +187,7 @@ export const OrdersPage: React.FC = () => {
     },
   ];
 
-  const bookingColumns = [
+  const bookingColumns: ColumnsType<Booking> = [
     {
       title: 'Customer',
       key: 'customer',
@@ -247,62 +255,91 @@ export const OrdersPage: React.FC = () => {
     paidOrders: orders.filter((o) => o.status === 'PAID').length,
   };
 
+  const statCards = [
+    {
+      key: 'total-orders',
+      title: 'Total Orders',
+      value: `${stats.totalOrders}`,
+      accent: '#2563eb',
+      icon: <DollarOutlined />,
+    },
+    {
+      key: 'total-paid',
+      title: 'Total Paid',
+      value: formatMoneyVND(stats.totalPaid),
+      accent: '#16a34a',
+      icon: <CheckCircleOutlined />,
+    },
+    {
+      key: 'total-revenue',
+      title: 'Total Revenue',
+      value: formatMoneyVND(stats.totalAmount),
+      accent: '#d97706',
+      icon: <ShoppingCartOutlined />,
+    },
+    {
+      key: 'fully-paid',
+      title: 'Fully Paid',
+      value: `${stats.paidOrders}`,
+      accent: '#7c3aed',
+      icon: <ClockCircleOutlined />,
+    },
+  ];
+
   return (
-    <div className="space-y-4">
+    <div className="staff-page space-y-6">
+      <div className="staff-page-header">
+        <div className="min-w-0">
+          <div className="staff-kicker">Orders and payment flow</div>
+          <h1 className="staff-title mt-4">Orders</h1>
+          <p className="staff-subtitle mt-3">
+            Track deposits, monitor remaining balances, and move bookings into
+            checkout without losing visibility on smaller screens.
+          </p>
+        </div>
+
+        <div className="staff-surface rounded-3xl px-4 py-3">
+          <Text className="!text-xs !font-semibold !uppercase !tracking-[0.18em] !text-slate-500 dark:!text-slate-400">
+            Payment health
+          </Text>
+          <div className="mt-1 text-lg font-semibold text-slate-900 dark:text-slate-50">
+            {stats.totalOrders} active orders
+          </div>
+        </div>
+      </div>
+
       {/* Statistics */}
       <Row gutter={[16, 16]}>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="border-l-4 border-l-blue-500">
-            <Statistic
-              title="Total Orders"
-              value={stats.totalOrders}
-              prefix={<DollarOutlined />}
-              styles={{ content: { color: '#1890ff' } }}
+        {statCards.map((card) => (
+          <Col key={card.key} xs={24} sm={12} lg={6} className="flex">
+            <StatCard
+              title={card.title}
+              value={card.value}
+              icon={card.icon}
+              accent={card.accent}
+              darkMode={darkMode}
             />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="border-l-4 border-l-green-500">
-            <Statistic
-              title="Total Paid"
-              value={stats.totalPaid}
-              suffix="VND"
-              styles={{ content: { color: '#52c41a', fontSize: '16px' } }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="border-l-4 border-l-orange-500">
-            <Statistic
-              title="Total Revenue"
-              value={stats.totalAmount}
-              suffix="VND"
-              styles={{ content: { color: '#faad14', fontSize: '16px' } }}
-            />
-          </Card>
-        </Col>
-        <Col xs={24} sm={12} lg={6}>
-          <Card className="border-l-4 border-l-purple-500">
-            <Statistic
-              title="Fully Paid"
-              value={stats.paidOrders}
-              styles={{ content: { color: '#722ed1' } }}
-            />
-          </Card>
-        </Col>
+          </Col>
+        ))}
       </Row>
 
       {/* Orders Table */}
-      <Card title="All Orders" loading={loading}>
+      <Card
+        title="All Orders"
+        loading={loading}
+        className="staff-surface !border-0"
+      >
         {orders.length > 0 ? (
-          <Table
-            dataSource={orders}
-            columns={columns}
-            rowKey="id"
-            pagination={{ pageSize: 10 }}
-            size="small"
-            scroll={{ x: 1200 }}
-          />
+          <StaffTableScroll minWidth={1200}>
+            <Table
+              className="staff-table"
+              dataSource={orders}
+              columns={columns}
+              rowKey="id"
+              pagination={{ pageSize: 10 }}
+              size="small"
+            />
+          </StaffTableScroll>
         ) : (
           <Space orientation="vertical" size="large" style={{ width: '100%' }}>
             <Alert
@@ -320,15 +357,18 @@ export const OrdersPage: React.FC = () => {
         <Card
           title="Bookings Ready For Checkout"
           extra={<Tag color="processing">{bookings.length} bookings</Tag>}
+          className="staff-surface !border-0"
         >
-          <Table
-            dataSource={bookings}
-            columns={bookingColumns}
-            rowKey="id"
-            pagination={{ pageSize: 5 }}
-            size="small"
-            scroll={{ x: 900 }}
-          />
+          <StaffTableScroll minWidth={900}>
+            <Table
+              className="staff-table"
+              dataSource={bookings}
+              columns={bookingColumns}
+              rowKey="id"
+              pagination={{ pageSize: 5 }}
+              size="small"
+            />
+          </StaffTableScroll>
         </Card>
       )}
 
