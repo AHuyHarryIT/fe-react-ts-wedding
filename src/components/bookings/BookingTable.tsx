@@ -11,8 +11,6 @@ interface BookingTableProps {
   pageSize: number;
   total: number;
   onView: (booking: Booking) => void;
-  onEdit: (booking: Booking) => void;
-  onDelete: (id: string) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
 }
@@ -22,11 +20,15 @@ const statusToneMap: Record<
   'orange' | 'blue' | 'green' | 'red' | 'purple'
 > = {
   PENDING: 'orange',
+  DEPOSIT_PAID: 'purple',
   CONFIRMED: 'blue',
   COMPLETED: 'green',
   CANCELLED: 'red',
   RESCHEDULED: 'purple',
 };
+
+const formatBookingStatus = (status: BookingStatus) =>
+  status.replace(/_/g, ' ');
 
 export function BookingTable({
   bookings,
@@ -35,8 +37,6 @@ export function BookingTable({
   pageSize,
   total,
   onView,
-  onEdit,
-  onDelete,
   onPageChange,
   onPageSizeChange,
 }: BookingTableProps) {
@@ -71,7 +71,9 @@ export function BookingTable({
       key: 'status',
       width: 120,
       render: (status: BookingStatus) => (
-        <StatusChip tone={statusToneMap[status]}>{status}</StatusChip>
+        <StatusChip tone={statusToneMap[status]}>
+          {formatBookingStatus(status)}
+        </StatusChip>
       ),
     },
     {
@@ -86,7 +88,6 @@ export function BookingTable({
       key: 'actions',
       width: 200,
       render: (_, record) => {
-        const isPending = record.status === 'PENDING';
         return (
           <Space size="small">
             <ActionButton
@@ -94,22 +95,6 @@ export function BookingTable({
               size="small"
               onClick={() => onView(record)}
             />
-            {isPending && (
-              <>
-                <ActionButton
-                  action="edit"
-                  size="small"
-                  onClick={() => onEdit(record)}
-                />
-                <ActionButton
-                  action="delete"
-                  size="small"
-                  popconfirmTitle="Delete Booking"
-                  popconfirmDescription="Are you sure you want to delete this booking?"
-                  onClick={() => onDelete(record.id)}
-                />
-              </>
-            )}
           </Space>
         );
       },

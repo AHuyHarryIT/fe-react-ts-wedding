@@ -328,6 +328,10 @@ export function useBookingManagement() {
     setDetailBooking(null);
   };
 
+  const handleDetailBookingUpdated = (booking: Booking) => {
+    setDetailBooking(booking);
+  };
+
   const handleCloseCreateModal = () => {
     setIsCreateModalOpen(false);
     createForm.resetFields();
@@ -372,6 +376,7 @@ export function useBookingManagement() {
     handleCloseCreateModal,
     handleCloseEditModal,
     handleCloseDetailModal,
+    handleDetailBookingUpdated,
     handleAddCreateItem,
     handleRemoveCreateItem,
     handleAddEditItem,

@@ -20,6 +20,7 @@ import {
   EditOutlined,
   DeleteOutlined,
   ShoppingCartOutlined,
+  CheckCircleOutlined,
 } from '@ant-design/icons';
 import { bookingApi } from '@services/BookingService';
 import { ordersService } from '@services/OrdersService';
@@ -30,19 +31,25 @@ interface BookingDetailWithOrdersProps {
   open: boolean;
   booking: Booking | null;
   onClose: () => void;
+  onBookingUpdated?: (booking: Booking) => void;
+  onEditBooking?: (booking: Booking) => Promise<void> | void;
 }
 
 const statusColorMap: Record<BookingStatus, string> = {
   PENDING: 'orange',
+  DEPOSIT_PAID: 'purple',
   CONFIRMED: 'blue',
   COMPLETED: 'green',
   CANCELLED: 'red',
   RESCHEDULED: 'purple',
 };
 
+const formatBookingStatus = (status: BookingStatus) =>
+  status.replace(/_/g, ' ');
+
 export const BookingDetailWithOrders: React.FC<
   BookingDetailWithOrdersProps
-> = ({ open, booking, onClose }) => {
+> = ({ open, booking, onClose, onBookingUpdated, onEditBooking }) => {
   const [order, setOrder] = useState<Order | null>(null);
   const [loadingOrder, setLoadingOrder] = useState(false);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
@@ -88,16 +95,26 @@ export const BookingDetailWithOrders: React.FC<
     await queryClient.invalidateQueries({ queryKey: ['bookings'] });
   };
 
-  const canEditBooking = booking?.status !== 'COMPLETED';
-  const canDeleteBooking = booking?.status !== 'COMPLETED';
+  const canEditBooking =
+    booking?.status !== 'COMPLETED' && booking?.status !== 'CANCELLED';
+  const canDeleteBooking = booking?.status === 'PENDING';
+  const canCancelBooking =
+    booking?.status !== 'COMPLETED' && booking?.status !== 'CANCELLED';
+  const canMarkCompleted =
+    booking?.status === 'CONFIRMED' && order?.status === 'PAID';
 
   const handleEdit = async () => {
-    if (!canEditBooking) {
-      message.error('Cannot edit completed booking');
+    if (!booking) {
       return;
     }
-    // Implement edit functionality
-    message.info('Edit functionality coming soon');
+
+    if (!canEditBooking) {
+      message.error('This booking cannot be edited');
+      return;
+    }
+
+    onClose();
+    await onEditBooking?.(booking);
   };
 
   const handleDelete = async () => {
@@ -118,6 +135,73 @@ export const BookingDetailWithOrders: React.FC<
           await queryClient.invalidateQueries({ queryKey: ['bookings'] });
         } catch {
           message.error('Failed to delete booking');
+        }
+      },
+    });
+  };
+
+  const handleCancelBooking = async () => {
+    if (!booking) {
+      return;
+    }
+
+    if (!canCancelBooking) {
+      message.error('This booking cannot be cancelled');
+      return;
+    }
+
+    Modal.confirm({
+      title: 'Cancel Booking',
+      content:
+        'This will mark the booking as cancelled and hide payment actions for the customer. Continue?',
+      okText: 'Cancel Booking',
+      okButtonProps: { danger: true },
+      onOk: async () => {
+        try {
+          const response = await bookingApi.cancel(booking.id);
+          message.success('Booking cancelled successfully');
+          onBookingUpdated?.(response.data);
+          await queryClient.invalidateQueries({ queryKey: ['bookings'] });
+        } catch (error) {
+          const errorMessage =
+            (error as { response?: { data?: { message?: string } } })?.response
+              ?.data?.message || 'Failed to cancel booking';
+          message.error(errorMessage);
+        }
+      },
+    });
+  };
+
+  const handleMarkCompleted = async () => {
+    if (!booking) {
+      return;
+    }
+
+    if (!canMarkCompleted) {
+      message.error(
+        'Only confirmed bookings with a fully paid order can be marked completed'
+      );
+      return;
+    }
+
+    Modal.confirm({
+      title: 'Mark Booking Completed',
+      content:
+        'This will lock the booking from further edits. Continue to mark it as completed?',
+      okText: 'Mark Completed',
+      onOk: async () => {
+        try {
+          const response = await bookingApi.update(booking.id, {
+            status: 'COMPLETED',
+          });
+          message.success('Booking marked as completed');
+          onBookingUpdated?.(response.data);
+          await queryClient.invalidateQueries({ queryKey: ['bookings'] });
+        } catch (error) {
+          const errorMessage =
+            (error as { response?: { data?: { message?: string } } })?.response
+              ?.data?.message || 'Failed to mark booking as completed';
+          message.error(errorMessage);
         }
       },
     });
@@ -161,11 +245,11 @@ export const BookingDetailWithOrders: React.FC<
             >
               <Statistic
                 title="Status"
-                value={booking.status}
+                value={formatBookingStatus(booking.status as BookingStatus)}
                 styles={{ content: { fontSize: '14px' } }}
                 suffix={
                   <Tag color={statusColorMap[booking.status as BookingStatus]}>
-                    {booking.status}
+                    {formatBookingStatus(booking.status as BookingStatus)}
                   </Tag>
                 }
               />
@@ -358,21 +442,34 @@ export const BookingDetailWithOrders: React.FC<
                   {/* Action Buttons */}
                   <Divider />
                   <Space>
-                    <Button
-                      icon={<EditOutlined />}
-                      onClick={handleEdit}
-                      disabled={!canEditBooking}
-                    >
-                      Edit
-                    </Button>
-                    <Button
-                      danger
-                      icon={<DeleteOutlined />}
-                      onClick={handleDelete}
-                      disabled={!canDeleteBooking}
-                    >
-                      Delete
-                    </Button>
+                    {canEditBooking && (
+                      <Button icon={<EditOutlined />} onClick={handleEdit}>
+                        Edit
+                      </Button>
+                    )}
+                    {canCancelBooking && (
+                      <Button danger onClick={handleCancelBooking}>
+                        Cancel Booking
+                      </Button>
+                    )}
+                    {canDeleteBooking && (
+                      <Button
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={handleDelete}
+                      >
+                        Delete
+                      </Button>
+                    )}
+                    {canMarkCompleted && (
+                      <Button
+                        type="primary"
+                        icon={<CheckCircleOutlined />}
+                        onClick={handleMarkCompleted}
+                      >
+                        Mark Completed
+                      </Button>
+                    )}
                   </Space>
                 </div>
               ),
@@ -406,7 +503,7 @@ export const BookingDetailWithOrders: React.FC<
                         block
                         onClick={() => setCheckoutModalOpen(true)}
                       >
-                        Create Order & Checkout
+                        Create Order / Collect Deposit
                       </Button>
                     </Card>
                   )}
@@ -419,7 +516,7 @@ export const BookingDetailWithOrders: React.FC<
 
       {/* Checkout Modal */}
       <Modal
-        title={order ? 'Pay Remaining' : 'Checkout'}
+        title={order ? 'Collect Remaining Payment' : 'Deposit or Full Checkout'}
         open={checkoutModalOpen}
         onCancel={() => setCheckoutModalOpen(false)}
         footer={null}

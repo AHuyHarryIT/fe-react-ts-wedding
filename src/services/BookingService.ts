@@ -66,6 +66,15 @@ export const bookingApi = {
     return response.data;
   },
 
+  // Cancel a booking
+  cancel: async (id: string): Promise<StandardResponse<Booking>> => {
+    const response = await api.patch<StandardResponse<Booking>>(
+      `/bookings/${id}/cancel`,
+      {}
+    );
+    return response.data;
+  },
+
   // Hard delete a booking
   hardDelete: async (id: string): Promise<StandardResponse<void>> => {
     const response = await api.delete<StandardResponse<void>>(

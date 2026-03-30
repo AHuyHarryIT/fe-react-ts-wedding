@@ -244,7 +244,9 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
             onClick={onPayRemainingClick}
             danger={isPartiallyPaid}
           >
-            {isPartiallyPaid ? 'Pay Remaining Balance' : 'Make Payment'}
+            {isPartiallyPaid
+              ? 'Collect Remaining Balance'
+              : 'Collect Deposit or Full Payment'}
           </Button>
         </Card>
       )}

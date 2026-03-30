@@ -37,12 +37,12 @@ export function BookingsManagement() {
     setPageSize,
     handleCreate,
     handleEdit,
-    handleDelete,
     handleOpenEdit,
     handleViewBooking,
     handleCloseCreateModal,
     handleCloseEditModal,
     handleCloseDetailModal,
+    handleDetailBookingUpdated,
     handleAddCreateItem,
     handleRemoveCreateItem,
     handleAddEditItem,
@@ -97,8 +97,6 @@ export function BookingsManagement() {
               pageSize={pageSize}
               total={total}
               onView={handleViewBooking}
-              onEdit={handleOpenEdit}
-              onDelete={handleDelete}
               onPageChange={setCurrentPage}
               onPageSizeChange={setPageSize}
             />
@@ -142,6 +140,8 @@ export function BookingsManagement() {
             open={isDetailModalOpen}
             booking={detailBooking}
             onClose={handleCloseDetailModal}
+            onBookingUpdated={handleDetailBookingUpdated}
+            onEditBooking={handleOpenEdit}
           />,
         ]}
       />

@@ -1,8 +1,8 @@
 import { ordersService } from '@services/OrdersService';
 import type { CheckoutRequest, Order, PaymentMethod } from '@types';
-import { Button, Col, Divider, Form, Input, message, Radio, Row } from 'antd';
-import React, { useMemo, useState } from 'react';
 import { formatMoneyVND } from '@utils/money';
+import { Button, Col, Divider, Form, Input, Radio, Row, message } from 'antd';
+import React, { useMemo, useState } from 'react';
 
 interface CheckoutFormProps {
   bookingId: string;
@@ -272,6 +272,12 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
     );
   };
 
+  const submitLabel = existingOrder
+    ? 'Collect Remaining Payment'
+    : paymentOption === 'deposit'
+      ? 'Collect 30% Deposit'
+      : 'Collect Full Payment';
+
   return (
     <Form form={form} layout="vertical" onFinish={handleCheckout}>
       {/* Order Summary */}
@@ -345,17 +351,52 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
       {/* Deposit Option (First Checkout Only) */}
       {!existingOrder && (
         <>
-          <Form.Item>
-            <label className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                checked={paymentOption === 'deposit'}
-                onChange={(e) =>
-                  setPaymentOption(e.target.checked ? 'deposit' : 'full')
-                }
-              />
-              <span>Pay 30% deposit now, remaining later</span>
-            </label>
+          <Form.Item label="Payment Plan">
+            <Radio.Group
+              value={paymentOption}
+              onChange={(e) =>
+                setPaymentOption(e.target.value as 'deposit' | 'full')
+              }
+              className="w-full"
+            >
+              <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                <label className="block cursor-pointer rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-blue-300 hover:bg-blue-50">
+                  <div className="flex items-start gap-3">
+                    <Radio value="deposit" className="mt-1" />
+                    <div className="space-y-1">
+                      <div className="font-semibold text-slate-900">
+                        Deposit 30%
+                      </div>
+                      <div className="text-sm text-slate-600">
+                        Collect the minimum deposit now and leave the remaining
+                        balance for later.
+                      </div>
+                      <div className="text-sm font-medium text-blue-700">
+                        {formatMoneyVND(depositCalculations.depositAmount ?? 0)}{' '}
+                        now
+                      </div>
+                    </div>
+                  </div>
+                </label>
+
+                <label className="block cursor-pointer rounded-2xl border border-slate-200 bg-slate-50 p-4 transition hover:border-emerald-300 hover:bg-emerald-50">
+                  <div className="flex items-start gap-3">
+                    <Radio value="full" className="mt-1" />
+                    <div className="space-y-1">
+                      <div className="font-semibold text-slate-900">
+                        Full Payment
+                      </div>
+                      <div className="text-sm text-slate-600">
+                        Collect the entire booking amount in a single checkout.
+                      </div>
+                      <div className="text-sm font-medium text-emerald-700">
+                        {formatMoneyVND(totalPrice)} now
+                      </div>
+                    </div>
+                  </div>
+                </label>
+              </div>
+            </Radio.Group>
           </Form.Item>
         </>
       )}
@@ -405,7 +446,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
               block
               size="large"
             >
-              Checkout
+              {submitLabel}
             </Button>
           </Col>
           {onClose && (
