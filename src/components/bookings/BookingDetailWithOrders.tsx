@@ -5,7 +5,6 @@ import {
   Col,
   Descriptions,
   Divider,
-  List,
   Modal,
   Row,
   Statistic,
@@ -70,6 +69,12 @@ export const BookingDetailWithOrders: React.FC<
       loadOrder();
     }
   }, [open, booking?.id, loadOrder]);
+
+  useEffect(() => {
+    if (open) {
+      setActiveTab('details');
+    }
+  }, [open, booking?.id]);
 
   const handleCheckoutSuccess = async (updatedOrder: Order | null) => {
     // Immediately update with the returned order data
@@ -261,45 +266,44 @@ export const BookingDetailWithOrders: React.FC<
                     <>
                       <Divider>Packages ({booking.packages.length})</Divider>
                       <Card size="small">
-                        <List
-                          dataSource={booking.packages}
-                          renderItem={(item) => (
-                            <List.Item
+                        <div className="flex flex-col gap-3">
+                          {booking.packages.map((item) => (
+                            <div
                               key={item.packageId}
-                              extra={
-                                <div style={{ textAlign: 'right' }}>
-                                  <div
-                                    style={{ fontSize: '12px', color: '#666' }}
-                                  >
-                                    {formatMoneyVND(item.price)} ×{' '}
-                                    {item.quantity}
-                                  </div>
-                                  <div
-                                    style={{
-                                      fontWeight: 'bold',
-                                      fontSize: '14px',
-                                      color: '#1890ff',
-                                    }}
-                                  >
-                                    {formatMoneyVND(
-                                      (item.price || 0) * (item.quantity || 1)
-                                    )}
-                                  </div>
-                                </div>
-                              }
+                              className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 p-3"
                             >
-                              <List.Item.Meta
-                                avatar={<Tag color="blue">📦</Tag>}
-                                title={item.package?.name}
-                                description={
-                                  <div className="text-xs">
+                              <div className="flex items-center gap-3">
+                                <Tag color="blue">📦</Tag>
+                                <div>
+                                  <div className="font-medium">
+                                    {item.package?.name}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
                                     {item.package?.description}
                                   </div>
-                                }
-                              />
-                            </List.Item>
-                          )}
-                        />
+                                </div>
+                              </div>
+                              <div style={{ textAlign: 'right' }}>
+                                <div
+                                  style={{ fontSize: '12px', color: '#666' }}
+                                >
+                                  {formatMoneyVND(item.price)} × {item.quantity}
+                                </div>
+                                <div
+                                  style={{
+                                    fontWeight: 'bold',
+                                    fontSize: '14px',
+                                    color: '#1890ff',
+                                  }}
+                                >
+                                  {formatMoneyVND(
+                                    (item.price || 0) * (item.quantity || 1)
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </Card>
                     </>
                   )}
@@ -309,45 +313,44 @@ export const BookingDetailWithOrders: React.FC<
                     <>
                       <Divider>Services ({booking.services.length})</Divider>
                       <Card size="small">
-                        <List
-                          dataSource={booking.services}
-                          renderItem={(item) => (
-                            <List.Item
+                        <div className="flex flex-col gap-3">
+                          {booking.services.map((item) => (
+                            <div
                               key={item.serviceId}
-                              extra={
-                                <div style={{ textAlign: 'right' }}>
-                                  <div
-                                    style={{ fontSize: '12px', color: '#666' }}
-                                  >
-                                    {formatMoneyVND(item.price)} ×{' '}
-                                    {item.quantity}
-                                  </div>
-                                  <div
-                                    style={{
-                                      fontWeight: 'bold',
-                                      fontSize: '14px',
-                                      color: '#52c41a',
-                                    }}
-                                  >
-                                    {formatMoneyVND(
-                                      (item.price || 0) * (item.quantity || 1)
-                                    )}
-                                  </div>
-                                </div>
-                              }
+                              className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 p-3"
                             >
-                              <List.Item.Meta
-                                avatar={<Tag color="green">🎯</Tag>}
-                                title={item.service?.name}
-                                description={
-                                  <div style={{ fontSize: '12px' }}>
+                              <div className="flex items-center gap-3">
+                                <Tag color="green">🎯</Tag>
+                                <div>
+                                  <div className="font-medium">
+                                    {item.service?.name}
+                                  </div>
+                                  <div className="text-xs text-gray-500">
                                     {item.service?.description}
                                   </div>
-                                }
-                              />
-                            </List.Item>
-                          )}
-                        />
+                                </div>
+                              </div>
+                              <div style={{ textAlign: 'right' }}>
+                                <div
+                                  style={{ fontSize: '12px', color: '#666' }}
+                                >
+                                  {formatMoneyVND(item.price)} × {item.quantity}
+                                </div>
+                                <div
+                                  style={{
+                                    fontWeight: 'bold',
+                                    fontSize: '14px',
+                                    color: '#52c41a',
+                                  }}
+                                >
+                                  {formatMoneyVND(
+                                    (item.price || 0) * (item.quantity || 1)
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
                       </Card>
                     </>
                   )}

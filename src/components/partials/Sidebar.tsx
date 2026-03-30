@@ -2,6 +2,7 @@ import {
   CalendarOutlined,
   CameraOutlined,
   DashboardOutlined,
+  DollarOutlined,
   FileImageOutlined,
   GiftOutlined,
   KeyOutlined,
@@ -42,6 +43,12 @@ export function Sidebar({
       label: 'Bookings',
       onClick: () => navigate({ to: '/bookings' }),
     },
+    {
+      key: 'orders',
+      icon: <DollarOutlined />,
+      label: 'Orders',
+      onClick: () => navigate({ to: '/orders' }),
+    },
     // {
     //   key: 'clients',
     //   icon: <TeamOutlined />,
@@ -65,11 +72,6 @@ export function Sidebar({
       label: 'Albums',
       onClick: () => navigate({ to: '/albums' }),
     },
-    // {
-    //   key: 'payments',
-    //   icon: <DollarOutlined />,
-    //   label: 'Payments',
-    // },
     {
       key: 'users',
       icon: <TeamOutlined />,

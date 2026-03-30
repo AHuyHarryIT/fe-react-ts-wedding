@@ -1,20 +1,7 @@
 import { ordersService } from '@services/OrdersService';
 import type { CheckoutRequest, Order, PaymentMethod } from '@types';
-import type { MomoQRCodeResponse } from '../../types/payment';
-import {
-  Button,
-  Col,
-  Divider,
-  Form,
-  Input,
-  message,
-  Modal,
-  QRCode,
-  Radio,
-  Row,
-} from 'antd';
+import { Button, Col, Divider, Form, Input, message, Radio, Row } from 'antd';
 import React, { useMemo, useState } from 'react';
-import momoLogo from '@/assets/icons/momo-logo.svg';
 import { formatMoneyVND } from '@utils/money';
 
 interface CheckoutFormProps {
@@ -26,6 +13,14 @@ interface CheckoutFormProps {
 }
 
 const MIN_DEPOSIT_PERCENTAGE = 30;
+const STAFF_APP_BASE_URL = import.meta.env.DEV
+  ? 'http://127.0.0.1:5173'
+  : window.location.origin;
+const getStaffPaymentResultUrl = (bookingId: string) =>
+  `${STAFF_APP_BASE_URL}/payments/result?bookingId=${bookingId}`;
+
+const CURRENT_BOOKING_ID_KEY = 'currentBookingId';
+const CURRENT_MOMO_ORDER_ID_KEY = 'currentMomoOrderId';
 
 export const CheckoutForm: React.FC<CheckoutFormProps> = ({
   bookingId,
@@ -39,8 +34,6 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
   const [paymentOption, setPaymentOption] = useState<'deposit' | 'full'>(
     'full'
   );
-  const [showQRCode, setShowQRCode] = useState(false);
-  const [qrCodeData, setQrCodeData] = useState<MomoQRCodeResponse | null>(null);
 
   // Calculate deposit (fixed 30%)
   const depositCalculations = useMemo(() => {
@@ -106,17 +99,24 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
 
           const momoResponse = await ordersService.initiateMomoPayment(
             existingOrder.bookingId,
-            remainingPayment.id
+            remainingPayment.id,
+            getStaffPaymentResultUrl(existingOrder.bookingId)
           );
 
-          if (momoResponse) {
-            // Show QR code modal instead of redirecting
-            setQrCodeData({
-              ...momoResponse,
-              amount: remainingAmount,
-              orderInfo: 'Wedding Booking - Remaining Balance Payment',
-            });
-            setShowQRCode(true);
+          if (momoResponse?.payUrl) {
+            localStorage.setItem(
+              CURRENT_BOOKING_ID_KEY,
+              existingOrder.bookingId
+            );
+            localStorage.setItem('currentOrderId', existingOrder.bookingId);
+            localStorage.setItem('orderId', existingOrder.bookingId);
+            if (momoResponse.orderId) {
+              localStorage.setItem(
+                CURRENT_MOMO_ORDER_ID_KEY,
+                momoResponse.orderId
+              );
+            }
+            window.location.assign(momoResponse.payUrl);
             return;
           } else {
             message.error('Failed to initiate MOMO payment');
@@ -154,18 +154,21 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             // Then initiate MOMO payment with payment ID
             const momoResponse = await ordersService.initiateMomoPayment(
               order.bookingId,
-              paymentId
+              paymentId,
+              getStaffPaymentResultUrl(order.bookingId)
             );
 
-            if (momoResponse) {
-              // Show QR code modal instead of redirecting
-              setQrCodeData({
-                ...momoResponse,
-                amount: depositCalculations.depositAmount,
-                orderInfo: 'Wedding Booking - Deposit Payment (30%)',
-                bookingId: order.bookingId,
-              });
-              setShowQRCode(true);
+            if (momoResponse?.payUrl) {
+              localStorage.setItem(CURRENT_BOOKING_ID_KEY, order.bookingId);
+              localStorage.setItem('currentOrderId', order.bookingId);
+              localStorage.setItem('orderId', order.bookingId);
+              if (momoResponse.orderId) {
+                localStorage.setItem(
+                  CURRENT_MOMO_ORDER_ID_KEY,
+                  momoResponse.orderId
+                );
+              }
+              window.location.assign(momoResponse.payUrl);
               return;
             } else {
               message.error('Failed to initiate MOMO payment');
@@ -202,18 +205,21 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             // Then initiate MOMO payment with payment ID
             const momoResponse = await ordersService.initiateMomoPayment(
               order.bookingId,
-              paymentId
+              paymentId,
+              getStaffPaymentResultUrl(order.bookingId)
             );
 
-            if (momoResponse) {
-              // Show QR code modal instead of redirecting
-              setQrCodeData({
-                ...momoResponse,
-                amount: totalPrice,
-                orderInfo: 'Wedding Booking - Full Amount Payment',
-                bookingId: order.bookingId,
-              });
-              setShowQRCode(true);
+            if (momoResponse?.payUrl) {
+              localStorage.setItem(CURRENT_BOOKING_ID_KEY, order.bookingId);
+              localStorage.setItem('currentOrderId', order.bookingId);
+              localStorage.setItem('orderId', order.bookingId);
+              if (momoResponse.orderId) {
+                localStorage.setItem(
+                  CURRENT_MOMO_ORDER_ID_KEY,
+                  momoResponse.orderId
+                );
+              }
+              window.location.assign(momoResponse.payUrl);
               return;
             } else {
               message.error('Failed to initiate MOMO payment');
@@ -238,16 +244,6 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
     } finally {
       setLoading(false);
     }
-  };
-
-  // Note: Payment polling happens via dedicated payment pages and IPN callbacks
-  // This checkout modal just displays the QR code
-
-  // Cleanup on modal close
-  const handleCloseQRModal = () => {
-    console.log('🔴 Closing QR modal');
-    setShowQRCode(false);
-    setQrCodeData(null);
   };
 
   // Calculate remaining amount from API data
@@ -384,9 +380,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
           ]}
         >
           <Radio.Group>
-            <Radio value="BANK_TRANSFER">Bank Transfer</Radio>
-            <Radio value="CREDIT_CARD">Credit Card</Radio>
-            <Radio value="E_WALLET">E-Wallet</Radio>
+            <Radio value="E_WALLET">MoMo</Radio>
             <Radio value="CASH">Cash</Radio>
           </Radio.Group>
         </Form.Item>
@@ -423,69 +417,6 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
           )}
         </Row>
       </Form.Item>
-
-      {/* QR Code Modal for MOMO Payment */}
-      <Modal
-        title="MOMO Payment - Scan QR Code"
-        open={showQRCode}
-        onCancel={handleCloseQRModal}
-        footer={[
-          <Button key="cancel" onClick={handleCloseQRModal}>
-            Close
-          </Button>,
-          qrCodeData?.deepLink ? (
-            <Button
-              key="open-link"
-              type="primary"
-              href={qrCodeData.deepLink}
-              target="_blank"
-            >
-              Open Payment Link
-            </Button>
-          ) : null,
-        ]}
-        width={500}
-      >
-        <div className="text-center p-5">
-          <h3>Amount: {formatMoneyVND(qrCodeData?.amount || 0)}</h3>
-          <p className="text-gray-600 mb-5">
-            Scan QR code with MoMo app to complete payment
-          </p>
-
-          <div className="flex justify-center mb-5">
-            <QRCode
-              value={qrCodeData?.qrCodeUrl || ''}
-              status={qrCodeData?.qrCodeUrl ? 'active' : 'loading'}
-              icon={momoLogo}
-            />
-          </div>
-
-          {qrCodeData?.deepLink && (
-            <div className="mt-5">
-              <p className="text-gray-400 text-xs">Or tap here on mobile:</p>
-              <Button
-                type="dashed"
-                href={qrCodeData.deepLink}
-                className="w-full"
-              >
-                Open MOMO App
-              </Button>
-            </div>
-          )}
-
-          <div className="mt-5 p-2.5 bg-sky-50 rounded text-left text-xs">
-            <p>
-              <strong>Payment Details:</strong>
-            </p>
-            <p>Order ID: {qrCodeData?.orderId}</p>
-            <p>Amount: {formatMoneyVND(qrCodeData?.amount || 0)}</p>
-            <p className="mt-3 text-gray-600">
-              ℹ️ Please complete the payment in your MoMo app. The payment
-              status will be updated automatically.
-            </p>
-          </div>
-        </div>
-      </Modal>
     </Form>
   );
 };

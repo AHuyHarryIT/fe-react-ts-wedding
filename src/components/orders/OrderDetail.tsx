@@ -56,9 +56,7 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
       key: 'paymentMethod',
       render: (method: string) => {
         const methodMap: Record<string, string> = {
-          BANK_TRANSFER: 'Bank Transfer',
-          CREDIT_CARD: 'Credit Card',
-          E_WALLET: 'E-Wallet',
+          E_WALLET: 'MoMo',
           CASH: 'Cash',
         };
         return methodMap[method] || method;

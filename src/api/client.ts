@@ -3,13 +3,6 @@ import { extractErrorMessage, logError } from '@utils/error';
 import axios, { type AxiosError } from 'axios';
 
 const resolveApiBaseUrl = () => {
-  if (
-    typeof window !== 'undefined' &&
-    window.location.hostname === '127.0.0.1'
-  ) {
-    return 'http://127.0.0.1:3000';
-  }
-
   if (import.meta.env.VITE_API_BASE_URL) {
     return import.meta.env.VITE_API_BASE_URL as string;
   }

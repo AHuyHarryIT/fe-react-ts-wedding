@@ -31,9 +31,23 @@ export const ordersService = {
     params?: QueryOrderParams
   ): Promise<{ data: Order[]; pagination?: Record<string, unknown> }> {
     const response = await api.get<{
-      data: { data: Order[]; pagination?: Record<string, unknown> };
+      data: Order[] | { data: Order[]; pagination?: Record<string, unknown> };
+      pagination?: Record<string, unknown>;
     }>('/orders', { params });
-    return response.data.data;
+
+    const payload = response.data.data;
+
+    if (Array.isArray(payload)) {
+      return {
+        data: payload,
+        pagination: response.data.pagination,
+      };
+    }
+
+    return {
+      data: Array.isArray(payload?.data) ? payload.data : [],
+      pagination: payload?.pagination ?? response.data.pagination,
+    };
   },
 
   // Get order by booking ID
@@ -55,15 +69,36 @@ export const ordersService = {
     return response.data.data;
   },
 
+  async checkMomoPaymentStatus(orderId: string): Promise<{
+    orderId: string;
+    resultCode: number;
+    message: string;
+    transId?: string;
+  }> {
+    const response = await api.post<{
+      data: {
+        orderId: string;
+        resultCode: number;
+        message: string;
+        transId?: string;
+      };
+    }>('/orders/momo/check-status', {
+      orderId,
+    });
+    return response.data.data;
+  },
+
   // Initiate MOMO payment for E-WALLET
   async initiateMomoPayment(
     bookingId: string,
-    paymentId: string
+    paymentId: string,
+    redirectUrl?: string
   ): Promise<MomoInitiateResponse> {
     const response = await api.post<{ data: MomoInitiateResponse }>(
       `/orders/${bookingId}/momo/initiate`,
       {
         paymentId,
+        redirectUrl,
       }
     );
     return response.data.data;

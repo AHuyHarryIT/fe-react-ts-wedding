@@ -10,10 +10,8 @@ import {
   Form,
   Input,
   InputNumber,
-  List,
   Modal,
   Select,
-  Space,
   Tag,
   type FormInstance,
 } from 'antd';
@@ -307,50 +305,45 @@ export function BookingFormModal({
               style={{ marginBottom: 16 }}
               title={`Selected Items (${selectedItems.length})`}
             >
-              <List
-                dataSource={selectedItems}
-                renderItem={(item) => (
-                  <List.Item
-                    extra={
-                      <Space>
-                        <InputNumber
-                          min={1}
-                          value={item.quantity}
-                          onChange={(value) =>
-                            onItemQuantityChange(item.id, item.type, value || 1)
-                          }
-                          style={{ width: 60 }}
-                        />
-                        <Button
-                          type="text"
-                          danger
-                          icon={<DeleteOutlined />}
-                          onClick={() => onItemRemove(item.id, item.type)}
-                        />
-                      </Space>
-                    }
+              <div className="flex flex-col gap-3">
+                {selectedItems.map((item) => (
+                  <div
+                    key={`${item.type}-${item.id}`}
+                    className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 p-3"
                   >
-                    <List.Item.Meta
-                      avatar={
-                        <Tag color={item.type === 'package' ? 'blue' : 'green'}>
-                          {item.type === 'package' ? '📦' : '🎯'}
-                        </Tag>
-                      }
-                      title={item.name}
-                      description={
-                        <div>
-                          <div>
-                            {formatMoneyVND(item.price)} × {item.quantity} ={' '}
-                            {formatMoneyVND(
-                              (item.price || 0) * (item.quantity || 1)
-                            )}
-                          </div>
+                    <div className="flex items-center gap-3">
+                      <Tag color={item.type === 'package' ? 'blue' : 'green'}>
+                        {item.type === 'package' ? '📦' : '🎯'}
+                      </Tag>
+                      <div>
+                        <div className="font-medium">{item.name}</div>
+                        <div className="text-sm text-gray-500">
+                          {formatMoneyVND(item.price)} × {item.quantity} ={' '}
+                          {formatMoneyVND(
+                            (item.price || 0) * (item.quantity || 1)
+                          )}
                         </div>
-                      }
-                    />
-                  </List.Item>
-                )}
-              />
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <InputNumber
+                        min={1}
+                        value={item.quantity}
+                        onChange={(value) =>
+                          onItemQuantityChange(item.id, item.type, value || 1)
+                        }
+                        style={{ width: 60 }}
+                      />
+                      <Button
+                        type="text"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={() => onItemRemove(item.id, item.type)}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </div>
             </Card>
           )}
         </Form.Item>

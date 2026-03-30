@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { Card, Form, Input, Button, Typography, Space, message } from 'antd';
+import { Card, Form, Input, Button, Typography, message } from 'antd';
 import {
   LockOutlined,
   LoginOutlined,
@@ -157,12 +157,15 @@ const AdminLogin: React.FC = () => {
                   ]}
                 >
                   <Input
+                    id="staff-phone-number"
+                    name="phoneNumber"
                     prefix={
                       <PhoneOutlined
                         className={darkMode ? 'text-gray-400' : 'text-gray-400'}
                       />
                     }
                     placeholder="Phone number (e.g., +84981234567)"
+                    autoComplete="username"
                     className="h-12"
                   />
                 </Form.Item>
@@ -178,12 +181,15 @@ const AdminLogin: React.FC = () => {
                   ]}
                 >
                   <Input.Password
+                    id="staff-password"
+                    name="password"
                     prefix={
                       <LockOutlined
                         className={darkMode ? 'text-gray-400' : 'text-gray-400'}
                       />
                     }
                     placeholder="Password"
+                    autoComplete="current-password"
                     className="h-12"
                   />
                 </Form.Item>
@@ -251,7 +257,7 @@ const AdminLogin: React.FC = () => {
               animate={{ opacity: 1 }}
               transition={{ duration: 0.6, delay: 0.8 }}
             >
-              <Space direction="vertical" size="small" className="w-full">
+              <div className="flex w-full flex-col gap-2">
                 <Text
                   className={`text-sm ${darkMode ? 'text-gray-400' : 'text-slate-500'}`}
                 >
@@ -268,7 +274,7 @@ const AdminLogin: React.FC = () => {
                 >
                   {darkMode ? '☀️ Light Mode' : '🌙 Dark Mode'}
                 </Button>
-              </Space>
+              </div>
             </motion.div>
           </Card>
 

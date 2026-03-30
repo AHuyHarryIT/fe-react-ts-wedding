@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
 import ChatService from '../services/ChatService';
 import type { Chat, Message } from '../services/ChatService';
@@ -29,50 +29,56 @@ export const useChat = (userId: string): UseChatReturn => {
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [socket, setSocket] = useState<Socket | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
   const currentChatIdRef = useRef<string | null>(null);
+  const socketRef = useRef<Socket | null>(null);
 
-  const promoteChat = (
-    chatId: string,
-    updates: { lastMessageAt?: Date | string; lastMessage?: string }
-  ) => {
-    setChats((prevChats) => {
-      const targetIndex = prevChats.findIndex((chat) => chat.id === chatId);
-      if (targetIndex === -1) {
-        return prevChats;
-      }
+  const promoteChat = useCallback(
+    (
+      chatId: string,
+      updates: { lastMessageAt?: Date | string; lastMessage?: string }
+    ) => {
+      setChats((prevChats) => {
+        const targetIndex = prevChats.findIndex((chat) => chat.id === chatId);
+        if (targetIndex === -1) {
+          return prevChats;
+        }
 
-      const targetChat = prevChats[targetIndex];
-      const updatedChat: Chat = {
-        ...targetChat,
-        lastMessageAt: updates.lastMessageAt
-          ? new Date(updates.lastMessageAt)
-          : targetChat.lastMessageAt,
-      };
+        const targetChat = prevChats[targetIndex];
+        const updatedChat: Chat = {
+          ...targetChat,
+          lastMessageAt: updates.lastMessageAt
+            ? new Date(updates.lastMessageAt)
+            : targetChat.lastMessageAt,
+        };
 
-      if (updates.lastMessage) {
-        (updatedChat as Chat & { lastMessage?: string }).lastMessage =
-          updates.lastMessage;
-      }
+        if (updates.lastMessage) {
+          (updatedChat as Chat & { lastMessage?: string }).lastMessage =
+            updates.lastMessage;
+        }
 
-      const remainingChats = prevChats.filter((chat) => chat.id !== chatId);
-      return [updatedChat, ...remainingChats];
-    });
-  };
+        const remainingChats = prevChats.filter((chat) => chat.id !== chatId);
+        return [updatedChat, ...remainingChats];
+      });
+    },
+    []
+  );
 
-  const refreshChats = async () => {
+  const refreshChats = useCallback(async () => {
     const data = await ChatService.getChatsByStaff();
     setChats(data);
-  };
+  }, []);
 
-  const updateChatsWithMessage = (incomingMessage: Message) => {
-    promoteChat(incomingMessage.chatId, {
-      lastMessageAt: incomingMessage.createdAt,
-      lastMessage: incomingMessage.content,
-    });
-  };
+  const updateChatsWithMessage = useCallback(
+    (incomingMessage: Message) => {
+      promoteChat(incomingMessage.chatId, {
+        lastMessageAt: incomingMessage.createdAt,
+        lastMessage: incomingMessage.content,
+      });
+    },
+    [promoteChat]
+  );
 
   useEffect(() => {
     currentChatIdRef.current = currentChat?.id || null;
@@ -98,7 +104,7 @@ export const useChat = (userId: string): UseChatReturn => {
       reconnectionAttempts: 5,
     });
 
-    setSocket(newSocket);
+    socketRef.current = newSocket;
 
     // Listen for incoming messages with deduplication
     const handleMessageReceived = (data: Message) => {
@@ -176,8 +182,63 @@ export const useChat = (userId: string): UseChatReturn => {
       newSocket.off('new_message_notification');
       newSocket.off('error');
       newSocket.close();
+      if (socketRef.current === newSocket) {
+        socketRef.current = null;
+      }
     };
-  }, [userId]);
+  }, [userId, updateChatsWithMessage, promoteChat, refreshChats]);
+
+  const createChat = async (
+    customerId: string,
+    staffId?: string,
+    bookingId?: string
+  ) => {
+    try {
+      setLoading(true);
+      const newChat = await ChatService.createChat(
+        customerId,
+        staffId,
+        bookingId
+      );
+      setChats((prev) => [newChat, ...prev]);
+      setCurrentChat(newChat);
+      if (socketRef.current) {
+        socketRef.current.emit('join_chat', { chatId: newChat.id });
+      }
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to create chat');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const selectChat = useCallback(async (chatId: string) => {
+    try {
+      setLoading(true);
+      const chat = await ChatService.getChat(chatId);
+
+      // First, load messages from REST API before joining the chat room
+      // This prevents messages from being added twice when we join
+      const chatMessages = await ChatService.getMessages(chatId);
+      setCurrentChat(chat);
+      setMessages(chatMessages);
+
+      // Now join the chat room to listen for NEW messages only
+      // The REST API already provided us with historical messages
+      if (socketRef.current) {
+        socketRef.current.emit('join_chat', { chatId });
+      }
+
+      // Mark messages as read
+      await ChatService.markMessagesAsRead(chatId);
+      setError(null);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Failed to load chat');
+    } finally {
+      setLoading(false);
+    }
+  }, []);
 
   // Load chats on mount
   useEffect(() => {
@@ -203,59 +264,7 @@ export const useChat = (userId: string): UseChatReturn => {
     };
 
     loadChats();
-  }, [userId]);
-
-  const createChat = async (
-    customerId: string,
-    staffId?: string,
-    bookingId?: string
-  ) => {
-    try {
-      setLoading(true);
-      const newChat = await ChatService.createChat(
-        customerId,
-        staffId,
-        bookingId
-      );
-      setChats((prev) => [newChat, ...prev]);
-      setCurrentChat(newChat);
-      if (socket) {
-        socket.emit('join_chat', { chatId: newChat.id });
-      }
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create chat');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const selectChat = async (chatId: string) => {
-    try {
-      setLoading(true);
-      const chat = await ChatService.getChat(chatId);
-
-      // First, load messages from REST API before joining the chat room
-      // This prevents messages from being added twice when we join
-      const chatMessages = await ChatService.getMessages(chatId);
-      setCurrentChat(chat);
-      setMessages(chatMessages);
-
-      // Now join the chat room to listen for NEW messages only
-      // The REST API already provided us with historical messages
-      if (socket) {
-        socket.emit('join_chat', { chatId });
-      }
-
-      // Mark messages as read
-      await ChatService.markMessagesAsRead(chatId);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load chat');
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, [userId, selectChat]);
 
   const sendMessage = async (content: string) => {
     if (!currentChat) return;
@@ -283,10 +292,10 @@ export const useChat = (userId: string): UseChatReturn => {
   };
 
   const markAsRead = async () => {
-    if (!currentChat || !socket) return;
+    if (!currentChat || !socketRef.current) return;
 
     try {
-      socket.emit('mark_as_read', { chatId: currentChat.id });
+      socketRef.current.emit('mark_as_read', { chatId: currentChat.id });
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to mark as read');
     }

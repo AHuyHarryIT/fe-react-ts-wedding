@@ -1,15 +1,12 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import { ChatPage } from '@components/chat/ChatPage';
 import { AdminLayout } from '@components/layouts/AdminLayout';
 import { useAuthStore } from '@stores/authStore';
+import { requireStaffAuth } from '@utils/authGuard';
 
 export const Route = createFileRoute('/chat')({
-  beforeLoad: () => {
-    // Check if user is authenticated
-    const isAuthenticated = useAuthStore.getState().isAuthenticated;
-    if (!isAuthenticated) {
-      throw redirect({ to: '/login' });
-    }
+  beforeLoad: async () => {
+    await requireStaffAuth();
   },
   component: ChatPageRoute,
 });

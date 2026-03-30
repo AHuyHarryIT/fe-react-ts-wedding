@@ -1,4 +1,4 @@
-import { createFileRoute, redirect } from '@tanstack/react-router';
+import { createFileRoute } from '@tanstack/react-router';
 import {
   Button,
   Card,
@@ -21,6 +21,7 @@ import { motion } from 'motion/react';
 import { useTheme } from '@hooks';
 import { useAuthStore } from '@stores/authStore';
 import { AdminLayout } from '@components/layouts/AdminLayout';
+import { requireStaffAuth } from '@utils/authGuard';
 
 const { Title, Text } = Typography;
 
@@ -197,7 +198,7 @@ function Dashboard() {
                 }}
                 className="shadow-lg"
               >
-                <Space direction="vertical" className="w-full" size="middle">
+                <div className="flex w-full flex-col gap-4">
                   <Button
                     type="primary"
                     icon={<CalendarOutlined />}
@@ -231,7 +232,7 @@ function Dashboard() {
                   >
                     View Services
                   </Button>
-                </Space>
+                </div>
               </Card>
             </motion.div>
           </Col>
@@ -259,7 +260,7 @@ function Dashboard() {
                 }}
                 className="shadow-lg"
               >
-                <Space direction="vertical" className="w-full" size="middle">
+                <div className="flex w-full flex-col gap-4">
                   {recentActivities.map((activity) => (
                     <div
                       key={activity.id}
@@ -290,7 +291,7 @@ function Dashboard() {
                       </Text>
                     </div>
                   ))}
-                </Space>
+                </div>
               </Card>
             </motion.div>
           </Col>
@@ -339,7 +340,7 @@ function Dashboard() {
                           ? `${user.lastName} ${user.firstName || ''}`
                           : 'Admin User'}
                       </Title>
-                      <Space direction="vertical" size={0}>
+                      <div className="flex flex-col gap-0">
                         <Text
                           style={{
                             color: darkMode ? '#9ca3af' : '#64748b',
@@ -356,7 +357,7 @@ function Dashboard() {
                             ✉️ {user.email}
                           </Text>
                         )}
-                      </Space>
+                      </div>
                     </div>
                   </Space>
                 </Col>
@@ -370,12 +371,8 @@ function Dashboard() {
 }
 
 export const Route = createFileRoute('/')({
-  beforeLoad: () => {
-    // Check if user is authenticated
-    const isAuthenticated = useAuthStore.getState().isAuthenticated;
-    if (!isAuthenticated) {
-      throw redirect({ to: '/login' });
-    }
+  beforeLoad: async () => {
+    await requireStaffAuth();
   },
   component: Dashboard,
 });

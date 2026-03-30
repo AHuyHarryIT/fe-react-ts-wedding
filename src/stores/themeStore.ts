@@ -24,12 +24,12 @@ const getInitialTheme = (): boolean => {
       const parsed = JSON.parse(saved);
       return parsed.state?.darkMode ?? false;
     } catch {
-      // If parsing fails, fall back to system preference
+      // If parsing fails, fall back to the app default
     }
   }
 
-  // Check system preference
-  return window.matchMedia('(prefers-color-scheme: dark)').matches;
+  // Default the staff app to light mode for new sessions.
+  return false;
 };
 
 export const useThemeStore = create<ThemeState>()(

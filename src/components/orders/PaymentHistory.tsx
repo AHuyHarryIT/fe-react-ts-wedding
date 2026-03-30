@@ -30,9 +30,7 @@ export const PaymentHistory: React.FC<PaymentHistoryProps> = ({
   const getMethodLabel = (method: string) => {
     const methodMap: Record<string, string> = {
       MOMO: 'Momo',
-      BANK_TRANSFER: 'Bank Transfer',
-      CREDIT_CARD: 'Credit Card',
-      E_WALLET: 'E-Wallet',
+      E_WALLET: 'MoMo',
       CASH: 'Cash',
     };
     return methodMap[method] || method;

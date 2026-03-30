@@ -3,7 +3,7 @@ import { BookingDetailWithOrders } from '@components/bookings/BookingDetailWithO
 import { BookingFormModal } from '@components/bookings/BookingFormModal';
 import { BookingTable } from '@components/bookings/BookingTable';
 import { useBookingManagement } from '@components/bookings/useBookingManagement';
-import { Button, Card, Col, Input, Row, Space } from 'antd';
+import { Button, Card, Col, Input, Row } from 'antd';
 
 export function BookingsManagement() {
   const {
@@ -61,12 +61,15 @@ export function BookingsManagement() {
           </Button>
         }
       >
-        <Space direction="vertical" size="large" style={{ width: '100%' }}>
+        <div className="flex w-full flex-col gap-6">
           <Row gutter={16}>
             <Col span={8}>
               <Input
+                id="bookings-search"
+                name="bookings-search"
                 placeholder="Search bookings..."
                 prefix={<SearchOutlined />}
+                autoComplete="off"
                 value={searchText}
                 onChange={(e) => {
                   setSearchText(e.target.value);
@@ -89,7 +92,7 @@ export function BookingsManagement() {
             onPageChange={setCurrentPage}
             onPageSizeChange={setPageSize}
           />
-        </Space>
+        </div>
       </Card>
 
       <BookingFormModal

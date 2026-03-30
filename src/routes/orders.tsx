@@ -1,19 +1,19 @@
 import { createFileRoute } from '@tanstack/react-router';
+import { OrdersPage } from '@components/orders';
 import { AdminLayout } from '@components/layouts/AdminLayout';
-import { PermissionManagement } from '@components/permissions';
 import { requireStaffAuth } from '@utils/authGuard';
 
-export const Route = createFileRoute('/permissions')({
+export const Route = createFileRoute('/orders')({
   beforeLoad: async () => {
     await requireStaffAuth();
   },
-  component: PermissionManagementPage,
+  component: OrdersPageRoute,
 });
 
-function PermissionManagementPage() {
+function OrdersPageRoute() {
   return (
-    <AdminLayout selectedKey="permissions">
-      <PermissionManagement />
+    <AdminLayout selectedKey="orders">
+      <OrdersPage />
     </AdminLayout>
   );
 }

@@ -28,7 +28,7 @@ export function AdminLayout({
   const [collapsed, setCollapsed] = useState(false);
 
   useEffect(() => {
-    if (!isAuthenticated || user?.id) {
+    if (isAuthenticated || user?.id) {
       return;
     }
 

@@ -308,13 +308,18 @@ export function useBookingManagement() {
   };
 
   const handleViewBooking = async (booking: Booking) => {
+    setDetailBooking(booking);
+    setIsDetailModalOpen(true);
     try {
+      setIsLoadingBooking(true);
       // Fetch fresh booking data by ID
       const response = await bookingApi.getOne(booking.id);
       setDetailBooking(response.data);
-      setIsDetailModalOpen(true);
     } catch (error) {
       console.error('Failed to load booking details:', error);
+      messageApi.error('Failed to load booking details');
+    } finally {
+      setIsLoadingBooking(false);
     }
   };
 
