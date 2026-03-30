@@ -5,14 +5,6 @@ export interface LoginRequest {
   password: string;
 }
 
-export interface RegisterRequest {
-  phoneNumber: string;
-  password: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-}
-
 export interface AuthResponse {
   message: string;
   user: User;

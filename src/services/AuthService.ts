@@ -1,7 +1,6 @@
 import { api } from '@/api/client';
 import type {
   LoginRequest,
-  RegisterRequest,
   User,
   AuthResponse,
   UpdateProfileRequest,
@@ -35,16 +34,6 @@ export const authApi = {
     );
     return unwrapApiData<AuthResponse>(response.data);
   },
-
-  // Register new user
-  register: async (data: RegisterRequest): Promise<AuthResponse> => {
-    const response = await api.post<AuthResponse | ApiEnvelope<AuthResponse>>(
-      '/auth/register',
-      data
-    );
-    return unwrapApiData<AuthResponse>(response.data);
-  },
-
   // Logout (clears cookies)
   logout: async (): Promise<MessageResponse> => {
     try {
@@ -85,12 +74,6 @@ export const authApi = {
       '/auth/change-password',
       data
     );
-    return response.data;
-  },
-
-  // Refresh tokens
-  refreshTokens: async (): Promise<MessageResponse> => {
-    const response = await api.post<MessageResponse>('/auth/refresh');
     return response.data;
   },
 };
