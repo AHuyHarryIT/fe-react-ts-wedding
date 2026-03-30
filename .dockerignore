@@ -1,0 +1,13 @@
+.git
+.gitignore
+node_modules
+dist
+coverage
+.husky
+.env
+.env.*
+!.env.dev
+!.env.prod
+*.log
+npm-debug.log*
+README.md
