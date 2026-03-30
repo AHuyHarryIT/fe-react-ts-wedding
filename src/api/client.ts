@@ -1,7 +1,7 @@
 import type { ApiErrorData } from '@types';
 import { extractErrorMessage, logError } from '@utils/error';
 import axios, { type AxiosError } from 'axios';
-const { useAuthStore } = await import('@stores/authStore');
+import { useAuthStore } from '@stores/authStore';
 
 const resolveApiBaseUrl = () => {
   if (import.meta.env.VITE_API_BASE_URL) {
