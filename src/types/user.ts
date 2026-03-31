@@ -1,4 +1,5 @@
 import type { Role } from './role';
+import type { Job } from './job';
 
 export interface User {
   id: string;
@@ -6,6 +7,9 @@ export interface User {
   firstName?: string;
   lastName?: string;
   email?: string;
+  jobId?: string | null;
+  jobs?: Pick<Job, 'id' | 'name' | 'description' | 'isActive'>[] | null;
+  job?: Pick<Job, 'id' | 'name' | 'description' | 'isActive'> | null;
   isActive: boolean;
   createdAt: string;
   updatedAt: string;
@@ -17,12 +21,14 @@ export interface UserWithRoles extends User {
 }
 
 export interface CreateUserRequest {
-  id?: string;
+  id: string;
   phoneNumber: string;
   password: string;
   firstName?: string;
   lastName?: string;
   email?: string;
+  jobIds?: string[];
+  jobId?: string | null;
   roleIds?: string[];
 }
 
@@ -31,6 +37,9 @@ export interface UpdateUserRequest {
   firstName?: string;
   lastName?: string;
   email?: string;
+  jobIds?: string[];
+  jobId?: string | null;
+  roleIds?: string[];
   isActive?: boolean;
 }
 

@@ -16,6 +16,7 @@ import {
 } from 'antd';
 import dayjs from 'dayjs';
 import type { FormInstance } from 'antd/es/form';
+import { VIETNAM_PHONE_REGEX } from '@utils/phone';
 
 interface CustomerFormModalProps {
   type: 'create' | 'edit';
@@ -52,11 +53,15 @@ export function CustomerFormModal({
         form={form}
         layout="vertical"
         onFinish={(values) => {
-          const payload = {
+          const payloadValues = {
             ...values,
-            weddingDate: values.weddingDate
-              ? dayjs(values.weddingDate).toISOString()
-              : values.weddingDate === null
+          } as typeof values & { confirmPassword?: string };
+          delete payloadValues.confirmPassword;
+          const payload = {
+            ...payloadValues,
+            weddingDate: payloadValues.weddingDate
+              ? dayjs(payloadValues.weddingDate).toISOString()
+              : payloadValues.weddingDate === null
                 ? null
                 : undefined,
           };
@@ -72,12 +77,12 @@ export function CustomerFormModal({
               rules={[
                 { required: true, message: 'Please input phone number' },
                 {
-                  pattern: /^[0-9]{10,11}$/,
-                  message: 'Please input a valid phone number',
+                  pattern: VIETNAM_PHONE_REGEX,
+                  message: 'Please input a valid Vietnamese phone number',
                 },
               ]}
             >
-              <Input placeholder="Enter customer phone number" />
+              <Input placeholder="Enter customer phone number (e.g. 0981234567)" />
             </Form.Item>
 
             <Form.Item
@@ -148,10 +153,7 @@ export function CustomerFormModal({
         <Form.Item
           label="Email"
           name="email"
-          rules={[
-            { required: true, message: 'Please input email' },
-            { type: 'email', message: 'Please input a valid email' },
-          ]}
+          rules={[{ type: 'email', message: 'Please input a valid email' }]}
         >
           <Input placeholder="Enter email" type="email" />
         </Form.Item>

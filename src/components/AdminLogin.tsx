@@ -14,6 +14,7 @@ import { useTheme } from '@hooks';
 import { AntdProvider } from '@providers/AntdProvider';
 import type { LoginRequest } from '@/types';
 import { authApi } from '@services/AuthService';
+import { VIETNAM_PHONE_REGEX } from '@utils/phone';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -151,7 +152,7 @@ const AdminLogin: React.FC = () => {
                       message: 'Please enter your phone number',
                     },
                     {
-                      pattern: /^(\+84|84|0)[1-9][0-9]{8}$/,
+                      pattern: VIETNAM_PHONE_REGEX,
                       message: 'Please enter a valid Vietnamese phone number',
                     },
                   ]}

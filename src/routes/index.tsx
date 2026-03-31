@@ -4,6 +4,7 @@ import {
   CalendarOutlined,
   CameraOutlined,
   ShoppingOutlined,
+  ToolOutlined,
   TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons';
@@ -132,7 +133,7 @@ function Dashboard() {
                   </span>
                 }
               >
-                <div className="grid gap-3 md:grid-cols-3">
+                <div className="grid gap-3 md:grid-cols-4">
                   <Button
                     type="primary"
                     icon={<CalendarOutlined />}
@@ -161,6 +162,14 @@ function Dashboard() {
                     onClick={() => navigate({ to: '/services' })}
                   >
                     View Services
+                  </Button>
+                  <Button
+                    icon={<ToolOutlined />}
+                    size="large"
+                    className="!h-11 !rounded-2xl"
+                    onClick={() => navigate({ to: '/jobs' })}
+                  >
+                    Manage Jobs
                   </Button>
                 </div>
               </Card>

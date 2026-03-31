@@ -2,6 +2,7 @@ import { api } from '@/api/client';
 import type {
   Booking,
   CreateBookingRequest,
+  BookingStaffAssignmentInput,
   UpdateBookingRequest,
   QueryBookingParams,
   StandardResponse,
@@ -47,6 +48,21 @@ export const bookingApi = {
     const response = await api.patch<StandardResponse<Booking>>(
       `/bookings/${id}`,
       data
+    );
+    return response.data;
+  },
+
+  // Assign staff members to a booking
+  assignStaff: async (
+    id: string,
+    staffAssignments: BookingStaffAssignmentInput[]
+  ): Promise<StandardResponse<Booking>> => {
+    const response = await api.patch<StandardResponse<Booking>>(
+      `/bookings/${id}/staff`,
+      {
+        staffAssignments,
+        staffIds: staffAssignments.map((assignment) => assignment.staffId),
+      }
     );
     return response.data;
   },

@@ -6,6 +6,7 @@ import {
   DollarOutlined,
   FileImageOutlined,
   GiftOutlined,
+  ToolOutlined,
   KeyOutlined,
   MessageOutlined,
   SafetyOutlined,
@@ -69,6 +70,12 @@ export function Sidebar({
       icon: <CameraOutlined />,
       label: 'Services',
       onClick: () => navigate({ to: '/services' }),
+    },
+    {
+      key: 'jobs',
+      icon: <ToolOutlined />,
+      label: 'Jobs',
+      onClick: () => navigate({ to: '/jobs' }),
     },
     {
       key: 'packages',

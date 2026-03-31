@@ -12,7 +12,6 @@ interface UserTableProps {
   total: number;
   onEdit: (user: User) => void;
   onDelete: (id: string) => void;
-  onManageRoles: (user: User) => void;
   onPageChange: (page: number, pageSize: number) => void;
 }
 
@@ -24,7 +23,6 @@ export function UserTable({
   total,
   onEdit,
   onDelete,
-  onManageRoles,
   onPageChange,
 }: UserTableProps) {
   const extraColumns: ColumnsType<User> = [
@@ -53,6 +51,31 @@ export function UserTable({
           '-'
         ),
     },
+    {
+      title: 'Managed Jobs',
+      dataIndex: 'jobs',
+      key: 'jobs',
+      width: 300,
+      render: (_jobs, user) => {
+        const managedJobs = user.jobs?.length
+          ? user.jobs
+          : user.job
+            ? [user.job]
+            : [];
+
+        return managedJobs.length ? (
+          <Space size={[6, 6]} wrap>
+            {managedJobs.map((job) => (
+              <StatusChip key={job.id} tone="slate">
+                {job.name}
+              </StatusChip>
+            ))}
+          </Space>
+        ) : (
+          '-'
+        );
+      },
+    },
   ];
 
   return (
@@ -67,7 +90,6 @@ export function UserTable({
       extraColumns={extraColumns}
       onEdit={onEdit}
       onDelete={onDelete}
-      onManageRoles={onManageRoles}
       onPageChange={onPageChange}
     />
   );

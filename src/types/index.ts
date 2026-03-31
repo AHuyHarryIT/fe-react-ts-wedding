@@ -8,6 +8,7 @@ export * from './user';
 export * from './customer';
 export * from './error';
 export * from './service';
+export * from './job';
 export * from './package';
 export * from './booking';
 export * from './order';

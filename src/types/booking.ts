@@ -28,6 +28,32 @@ export interface BookingService {
   service?: Service;
 }
 
+export interface BookingAssignedStaff {
+  staffId: string;
+  staff?: User;
+  job?: string;
+}
+
+export interface BookingDirectStaffAssignment
+  extends Pick<
+    User,
+    'id' | 'firstName' | 'lastName' | 'email' | 'phoneNumber' | 'isActive'
+  > {
+  staffId: string;
+  job?: string;
+}
+
+export interface BookingStaffAssignmentInput {
+  staffId: string;
+  job?: string;
+}
+
+export interface BookingSession {
+  id: string;
+  title: string;
+  staffs?: BookingAssignedStaff[];
+}
+
 export interface Booking {
   id: string;
   customerId: User['id'];
@@ -41,6 +67,9 @@ export interface Booking {
   customer?: User;
   packages?: BookingPackage[];
   services?: BookingService[];
+  staffs?: BookingAssignedStaff[];
+  assignedStaffs?: BookingDirectStaffAssignment[];
+  sessions?: BookingSession[];
   orders?: Order[];
   order?: Order;
 }
@@ -49,6 +78,7 @@ export interface CreateBookingRequest {
   customerId: User['id'];
   packageIds?: Package['id'][];
   serviceIds?: Service['id'][];
+  staffIds?: User['id'][];
   notes?: string;
   eventDate: string;
   totalPrice?: number;
@@ -59,6 +89,7 @@ export interface UpdateBookingRequest {
   customerId?: User['id'];
   packageIds?: Package['id'][];
   serviceIds?: Service['id'][];
+  staffIds?: User['id'][];
   notes?: string;
   eventDate?: string;
   totalPrice?: number;
@@ -74,4 +105,5 @@ export interface QueryBookingParams extends PaginationParams {
   includePackage?: boolean;
   includePackages?: boolean;
   includeServices?: boolean;
+  includeStaffs?: boolean;
 }

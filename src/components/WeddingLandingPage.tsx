@@ -13,6 +13,7 @@ import {
   Statistic,
   FloatButton,
 } from 'antd';
+import { VIETNAM_PHONE_REGEX } from '@utils/phone';
 import {
   HeartOutlined,
   CameraOutlined,
@@ -449,6 +450,10 @@ const ContactSection: React.FC = () => {
                     {
                       required: true,
                       message: 'Please enter your phone number',
+                    },
+                    {
+                      pattern: VIETNAM_PHONE_REGEX,
+                      message: 'Please enter a valid Vietnamese phone number',
                     },
                   ]}
                 >

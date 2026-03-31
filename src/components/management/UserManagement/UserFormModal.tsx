@@ -1,226 +1,293 @@
 import { EyeInvisibleOutlined, EyeOutlined } from '@ant-design/icons';
-import type {
-  CreateUserRequest,
-  Role,
-  UpdateUserRequest,
-  UserWithRoles,
-} from '@types';
+import type { CreateUserRequest, Job, Role, UpdateUserRequest } from '@types';
 import {
   Button,
+  Col,
   Divider,
+  Flex,
   Form,
   Input,
   Modal,
+  Row,
   Select,
-  Space,
   Switch,
+  Typography,
 } from 'antd';
 import type { FormInstance } from 'antd/es/form';
+import { VIETNAM_PHONE_REGEX } from '@utils/phone';
 
 interface UserFormModalProps {
   type: 'create' | 'edit';
   open: boolean;
   loading: boolean;
-  selectedUser: UserWithRoles | null;
   form: FormInstance;
   roles?: Role[];
+  jobs?: Job[];
   onCancel: () => void;
   onSubmit:
     | ((values: CreateUserRequest) => void)
     | ((values: UpdateUserRequest) => void);
-  rolesLoading?: boolean;
-  // Only for create modal
-  isFetchingNextPage?: boolean;
-  hasNextPage?: boolean;
-  onRoleScrollEnd?: () => void;
 }
 
 export function UserFormModal({
   type,
   open,
   loading,
-  // selectedUser,
   form,
   roles = [],
+  jobs = [],
   onCancel,
   onSubmit,
-  // rolesLoading,
-  isFetchingNextPage,
-  hasNextPage,
-  onRoleScrollEnd,
 }: UserFormModalProps) {
   return (
     <Modal
-      title={type === 'create' ? 'Create Staff Account' : 'Edit Staff Account'}
+      title={
+        <Typography.Title level={4} style={{ margin: 0 }}>
+          {type === 'create' ? 'Create Staff Account' : 'Edit Staff Account'}
+        </Typography.Title>
+      }
       open={open}
       onCancel={onCancel}
       footer={null}
-      width={600}
+      width={720}
+      styles={{
+        header: {
+          margin: 0,
+          padding: '24px 28px 0',
+        },
+        body: {
+          padding: '18px 28px 28px',
+        },
+      }}
     >
       <Form
         form={form}
         layout="vertical"
-        onFinish={onSubmit}
+        onFinish={(values) => {
+          const payloadValues = {
+            ...values,
+          } as typeof values & { confirmPassword?: string };
+          delete payloadValues.confirmPassword;
+          onSubmit(payloadValues);
+        }}
         autoComplete="off"
       >
-        {type === 'create' && (
-          <>
-            <Form.Item label="Staff ID" name="id">
-              <Input placeholder="Leave blank to auto-generate staff ID" />
-            </Form.Item>
+        <Flex vertical gap={24}>
+          <Flex vertical gap={16}>
+            <Flex vertical gap={4}>
+              <Typography.Title level={5} style={{ margin: 0 }}>
+                {type === 'create' ? 'Access Setup' : 'Identity'}
+              </Typography.Title>
+              <Typography.Text type="secondary">
+                {type === 'create'
+                  ? 'Create the sign-in credentials and base identity for this staff account.'
+                  : 'Update the core identity and access state for this staff account.'}
+              </Typography.Text>
+            </Flex>
+            <Row gutter={[16, 0]}>
+              {(type === 'create' || type === 'edit') && (
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    label="Staff ID"
+                    name="id"
+                    rules={[
+                      { required: true, message: 'Please input staff ID!' },
+                    ]}
+                  >
+                    <Input placeholder="Enter staff ID" />
+                  </Form.Item>
+                </Col>
+              )}
 
-            <Form.Item
-              label="Phone Number"
-              name="phoneNumber"
-              rules={[
-                { required: true, message: 'Please input phone number!' },
-                {
-                  pattern: /^[0-9]{10,11}$/,
-                  message: 'Please input a valid phone number!',
-                },
-              ]}
-            >
-              <Input placeholder="Enter phone number" />
-            </Form.Item>
+              {type === 'create' && (
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    label="Phone Number"
+                    name="phoneNumber"
+                    rules={[
+                      { required: true, message: 'Please input phone number!' },
+                      {
+                        pattern: VIETNAM_PHONE_REGEX,
+                        message:
+                          'Please input a valid Vietnamese phone number!',
+                      },
+                    ]}
+                  >
+                    <Input placeholder="Enter phone number (e.g. 0981234567)" />
+                  </Form.Item>
+                </Col>
+              )}
 
-            <Form.Item
-              label="Password"
-              name="password"
-              rules={[
-                { required: true, message: 'Please input password!' },
-                {
-                  min: 6,
-                  message: 'Password must be at least 6 characters!',
-                },
-              ]}
-            >
-              <Input.Password
-                placeholder="Enter password"
-                iconRender={(visible) =>
-                  visible ? <EyeOutlined /> : <EyeInvisibleOutlined />
-                }
-              />
-            </Form.Item>
+              {type === 'edit' && (
+                <Col xs={24} md={12}>
+                  <Form.Item
+                    label="Status"
+                    name="isActive"
+                    valuePropName="checked"
+                  >
+                    <Switch
+                      checkedChildren="Active"
+                      unCheckedChildren="Inactive"
+                    />
+                  </Form.Item>
+                </Col>
+              )}
 
-            <Form.Item
-              label="Confirm Password"
-              name="confirmPassword"
-              dependencies={['password']}
-              rules={[
-                { required: true, message: 'Please confirm password!' },
-                ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    if (!value || getFieldValue('password') === value) {
-                      return Promise.resolve();
-                    }
-                    return Promise.reject(new Error('Passwords do not match!'));
-                  },
-                }),
-              ]}
-            >
-              <Input.Password
-                placeholder="Confirm password"
-                iconRender={(visible) =>
-                  visible ? <EyeOutlined /> : <EyeInvisibleOutlined />
-                }
-              />
-            </Form.Item>
-
-            <Divider />
-          </>
-        )}
-
-        <Form.Item
-          label="First Name"
-          name="firstName"
-          rules={[{ required: true, message: 'Please input first name!' }]}
-        >
-          <Input placeholder="Enter first name" />
-        </Form.Item>
-
-        <Form.Item
-          label="Last Name"
-          name="lastName"
-          rules={[{ required: true, message: 'Please input last name!' }]}
-        >
-          <Input placeholder="Enter last name" />
-        </Form.Item>
-
-        <Form.Item
-          label="Email"
-          name="email"
-          rules={[
-            { required: true, message: 'Please input email!' },
-            { type: 'email', message: 'Please input valid email!' },
-          ]}
-        >
-          <Input placeholder="Enter email" type="email" />
-        </Form.Item>
-
-        {type === 'edit' && (
-          <Form.Item label="Staff ID" name="id">
-            <Input placeholder="Enter staff ID" />
-          </Form.Item>
-        )}
-
-        {type === 'create' && (
-          <Form.Item
-            label="Roles"
-            name="roleIds"
-            rules={[
-              { required: true, message: 'Please select at least one role!' },
-            ]}
-          >
-            <Select
-              mode="multiple"
-              placeholder="Select roles"
-              loading={isFetchingNextPage}
-              options={roles.map((role) => ({
-                label: role.name,
-                value: role.id,
-              }))}
-              dropdownRender={(menu) => (
+              {type === 'create' && (
                 <>
-                  {menu}
-                  {onRoleScrollEnd && (
-                    <div
-                      style={{
-                        display: 'flex',
-                        justifyContent: 'center',
-                        padding: 8,
-                      }}
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      label="Password"
+                      name="password"
+                      rules={[
+                        { required: true, message: 'Please input password!' },
+                        {
+                          min: 6,
+                          message: 'Password must be at least 6 characters!',
+                        },
+                      ]}
                     >
-                      <Button
-                        onClick={onRoleScrollEnd}
-                        loading={isFetchingNextPage}
-                        disabled={!hasNextPage}
-                        style={{ width: '100%' }}
-                        type="dashed"
-                      >
-                        {hasNextPage ? 'Show more' : 'No more roles'}
-                      </Button>
-                    </div>
-                  )}
+                      <Input.Password
+                        placeholder="Enter password"
+                        iconRender={(visible) =>
+                          visible ? <EyeOutlined /> : <EyeInvisibleOutlined />
+                        }
+                      />
+                    </Form.Item>
+                  </Col>
+                  <Col xs={24} md={12}>
+                    <Form.Item
+                      label="Confirm Password"
+                      name="confirmPassword"
+                      dependencies={['password']}
+                      rules={[
+                        { required: true, message: 'Please confirm password!' },
+                        ({ getFieldValue }) => ({
+                          validator(_, value) {
+                            if (!value || getFieldValue('password') === value) {
+                              return Promise.resolve();
+                            }
+                            return Promise.reject(
+                              new Error('Passwords do not match!')
+                            );
+                          },
+                        }),
+                      ]}
+                    >
+                      <Input.Password
+                        placeholder="Confirm password"
+                        iconRender={(visible) =>
+                          visible ? <EyeOutlined /> : <EyeInvisibleOutlined />
+                        }
+                      />
+                    </Form.Item>
+                  </Col>
                 </>
               )}
-            />
-          </Form.Item>
-        )}
+            </Row>
+          </Flex>
 
-        {type === 'edit' && (
-          <Form.Item label="Status" name="isActive" valuePropName="checked">
-            <Switch checkedChildren="Active" unCheckedChildren="Inactive" />
-          </Form.Item>
-        )}
+          <Divider style={{ margin: 0 }} />
 
-        <Form.Item>
-          <Space style={{ width: '100%', justifyContent: 'flex-end' }}>
+          <Flex vertical gap={16}>
+            <Flex vertical gap={4}>
+              <Typography.Title level={5} style={{ margin: 0 }}>
+                Profile Details
+              </Typography.Title>
+              <Typography.Text type="secondary">
+                Maintain the visible profile information used across the staff
+                workspace.
+              </Typography.Text>
+            </Flex>
+            <Row gutter={[16, 0]}>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="First Name"
+                  name="firstName"
+                  rules={[
+                    { required: true, message: 'Please input first name!' },
+                  ]}
+                >
+                  <Input placeholder="Enter first name" />
+                </Form.Item>
+              </Col>
+              <Col xs={24} md={12}>
+                <Form.Item
+                  label="Last Name"
+                  name="lastName"
+                  rules={[
+                    { required: true, message: 'Please input last name!' },
+                  ]}
+                >
+                  <Input placeholder="Enter last name" />
+                </Form.Item>
+              </Col>
+              <Col xs={24}>
+                <Form.Item
+                  label="Email"
+                  name="email"
+                  rules={[
+                    { type: 'email', message: 'Please input valid email!' },
+                  ]}
+                >
+                  <Input placeholder="Enter email" type="email" />
+                </Form.Item>
+              </Col>
+              <Col xs={24}>
+                <Form.Item label="Managed Jobs" name="jobIds">
+                  <Select
+                    mode="multiple"
+                    allowClear
+                    showSearch
+                    maxTagCount="responsive"
+                    placeholder="Select one or more jobs"
+                    optionFilterProp="label"
+                    options={jobs.map((job) => ({
+                      label: job.name,
+                      value: job.id,
+                    }))}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Flex>
+
+          <Divider style={{ margin: 0 }} />
+
+          <Flex vertical gap={16}>
+            <Flex vertical gap={4}>
+              <Typography.Title level={5} style={{ margin: 0 }}>
+                Access Control
+              </Typography.Title>
+              <Typography.Text type="secondary">
+                Choose the permissions group this staff account should receive.
+              </Typography.Text>
+            </Flex>
+            <Row gutter={[16, 0]}>
+              <Col xs={24}>
+                <Form.Item label="Roles" name="roleIds">
+                  <Select
+                    mode="multiple"
+                    placeholder="Select roles"
+                    options={roles.map((role) => ({
+                      label: role.name,
+                      value: role.id,
+                    }))}
+                  />
+                </Form.Item>
+              </Col>
+            </Row>
+          </Flex>
+
+          <Divider style={{ margin: 0 }} />
+
+          <Flex justify="flex-end" gap={12}>
             <Button onClick={onCancel}>Cancel</Button>
             <Button type="primary" htmlType="submit" loading={loading}>
               {type === 'create' ? 'Create' : 'Update'}
             </Button>
-          </Space>
-        </Form.Item>
+          </Flex>
+        </Flex>
       </Form>
     </Modal>
   );

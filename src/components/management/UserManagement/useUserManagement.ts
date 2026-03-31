@@ -1,3 +1,4 @@
+import { jobApi } from '@services/JobService';
 import { roleApi } from '@services/RoleService';
 import { userApi } from '@services/UserService';
 import { useMutation, useQuery } from '@tanstack/react-query';
@@ -15,7 +16,6 @@ import { useCallback, useState } from 'react';
 export function useUserManagement() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const [isRoleModalOpen, setIsRoleModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
   const [searchText, setSearchText] = useState('');
@@ -76,8 +76,20 @@ export function useUserManagement() {
     },
   });
 
+  const { data: jobsData } = useQuery({
+    queryKey: ['jobs', 'active', 'staff-form'],
+    queryFn: async () => {
+      const response = await jobApi.getAll({
+        page: 1,
+        limit: 100,
+        isActive: true,
+      });
+      return { data: response.data };
+    },
+  });
+
   // Fetch selected user with roles
-  const { data: selectedUserData, refetch: refetchSelectedUser } = useQuery({
+  const { data: selectedUserData } = useQuery({
     queryKey: ['user', selectedUserId],
     queryFn: () => userApi.getOne(selectedUserId!),
     enabled: !!selectedUserId,
@@ -131,35 +143,15 @@ export function useUserManagement() {
     },
   });
 
-  // Assign roles mutation
-  const assignRolesMutation = useMutation({
-    mutationFn: ({ userId, roleIds }: { userId: string; roleIds: string[] }) =>
-      userApi.assignRoles(userId, { roleIds }),
-    onSuccess: () => {
-      messageApi.success('Roles assigned successfully');
-      refetchUsers();
-    },
-    onError: (error) => {
-      messageApi.error(getErrorMessage(error) || 'Failed to assign roles');
-    },
-  });
-
-  // Remove roles mutation
-  const removeRolesMutation = useMutation({
-    mutationFn: ({ userId, roleIds }: { userId: string; roleIds: string[] }) =>
-      userApi.removeRoles(userId, roleIds),
-    onSuccess: () => {
-      messageApi.success('Roles removed successfully');
-      refetchUsers();
-    },
-    onError: (error) => {
-      messageApi.error(getErrorMessage(error) || 'Failed to remove roles');
-    },
-  });
-
   const handleCreate = useCallback(
     (values: CreateUserRequest) => {
-      createMutation.mutate(values);
+      createMutation.mutate({
+        ...values,
+        email: values.email?.trim() ? values.email.trim() : undefined,
+        jobIds: values.jobIds?.length ? values.jobIds : undefined,
+        jobId: values.jobId ?? values.jobIds?.[0] ?? undefined,
+        roleIds: values.roleIds ?? [],
+      });
     },
     [createMutation]
   );
@@ -170,7 +162,13 @@ export function useUserManagement() {
 
       updateMutation.mutate({
         id: selectedUserId,
-        data: values,
+        data: {
+          ...values,
+          email: values.email?.trim() ? values.email.trim() : undefined,
+          jobIds: values.jobIds?.length ? values.jobIds : undefined,
+          jobId: values.jobId ?? values.jobIds?.[0] ?? undefined,
+          roleIds: values.roleIds ?? [],
+        },
       });
     },
     [selectedUserId, updateMutation]
@@ -192,6 +190,12 @@ export function useUserManagement() {
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,
+        roleIds: user.roles?.map((role) => role.id) ?? [],
+        jobIds: user.jobs?.length
+          ? user.jobs.map((job) => job.id)
+          : user.jobId
+            ? [user.jobId]
+            : [],
         isActive: user.isActive,
       });
       setIsEditModalOpen(true);
@@ -199,44 +203,14 @@ export function useUserManagement() {
     [editForm]
   );
 
-  const handleOpenRoles = useCallback((user: User) => {
-    setSelectedUserId(user.id);
-    setIsRoleModalOpen(true);
-  }, []);
-
-  const handleAssignRoles = useCallback(
-    (roleIds: string[]) => {
-      if (!selectedUserId) return;
-      assignRolesMutation.mutate(
-        { userId: selectedUserId, roleIds },
-        {
-          onSuccess: () => {
-            refetchSelectedUser();
-          },
-        }
-      );
-    },
-    [selectedUserId, assignRolesMutation, refetchSelectedUser]
-  );
-
-  const handleRemoveRoles = useCallback(
-    (roleIds: string[]) => {
-      if (!selectedUserId) return;
-      removeRolesMutation.mutate(
-        { userId: selectedUserId, roleIds },
-        {
-          onSuccess: () => {
-            refetchSelectedUser();
-          },
-        }
-      );
-    },
-    [selectedUserId, removeRolesMutation, refetchSelectedUser]
-  );
-
   const handleCloseCreateModal = useCallback(() => {
     setIsCreateModalOpen(false);
     createForm.resetFields();
+  }, [createForm]);
+
+  const handleOpenCreateModal = useCallback(() => {
+    createForm.resetFields();
+    setIsCreateModalOpen(true);
   }, [createForm]);
 
   const handleCloseEditModal = useCallback(() => {
@@ -245,15 +219,9 @@ export function useUserManagement() {
     setSelectedUserId(null);
   }, [editForm]);
 
-  const handleCloseRoleModal = useCallback(() => {
-    setIsRoleModalOpen(false);
-    setSelectedUserId(null);
-  }, []);
-
   return {
     isCreateModalOpen,
     isEditModalOpen,
-    isRoleModalOpen,
     selectedUser: selectedUserData?.data || selectedUser,
     searchText,
     currentPage,
@@ -261,15 +229,15 @@ export function useUserManagement() {
     usersData,
     usersLoading,
     rolesData,
+    jobsData,
     createForm,
     editForm,
     contextHolder,
     createMutation,
     updateMutation,
     deleteMutation,
-    assignRolesMutation,
-    removeRolesMutation,
     setIsCreateModalOpen,
+    handleOpenCreateModal,
     setSearchText,
     setCurrentPage,
     setPageSize,
@@ -277,11 +245,7 @@ export function useUserManagement() {
     handleEdit,
     handleDelete,
     handleOpenEdit,
-    handleOpenRoles,
-    handleAssignRoles,
-    handleRemoveRoles,
     handleCloseCreateModal,
     handleCloseEditModal,
-    handleCloseRoleModal,
   };
 }

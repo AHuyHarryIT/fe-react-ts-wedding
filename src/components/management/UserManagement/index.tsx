@@ -5,15 +5,12 @@ import {
 } from '@components/management';
 import { UserTable } from './UserTable';
 import { UserFormModal } from './UserFormModal';
-import { UserRoleModal } from './UserRoleModal';
 import { useUserManagement } from './useUserManagement';
 
 export function UserManagement() {
   const {
     isCreateModalOpen,
     isEditModalOpen,
-    isRoleModalOpen,
-    selectedUser,
     searchText,
     currentPage,
     pageSize,
@@ -24,10 +21,9 @@ export function UserManagement() {
     contextHolder,
     createMutation,
     updateMutation,
-    assignRolesMutation,
-    removeRolesMutation,
     rolesData,
-    setIsCreateModalOpen,
+    jobsData,
+    handleOpenCreateModal,
     setSearchText,
     setCurrentPage,
     setPageSize,
@@ -35,15 +31,12 @@ export function UserManagement() {
     handleEdit,
     handleDelete,
     handleOpenEdit,
-    handleOpenRoles,
-    handleAssignRoles,
-    handleRemoveRoles,
     handleCloseCreateModal,
     handleCloseEditModal,
-    handleCloseRoleModal,
   } = useUserManagement();
 
   const allRoles = rolesData?.data || [];
+  const activeJobs = jobsData?.data || [];
 
   return (
     <>
@@ -53,7 +46,7 @@ export function UserManagement() {
           <ManagementHeader
             title="Staff Account Management"
             subtitle="Manage staff accounts, roles, and internal profile details"
-            onCreateClick={() => setIsCreateModalOpen(true)}
+            onCreateClick={handleOpenCreateModal}
             createButtonText="Add Staff Account"
           />
         }
@@ -73,7 +66,6 @@ export function UserManagement() {
             total={usersData?.pagination?.total || 0}
             onEdit={handleOpenEdit}
             onDelete={handleDelete}
-            onManageRoles={handleOpenRoles}
             onPageChange={(page, size) => {
               setCurrentPage(page);
               setPageSize(size);
@@ -85,9 +77,9 @@ export function UserManagement() {
             type="create"
             open={isCreateModalOpen}
             loading={createMutation.isPending}
-            selectedUser={null}
             form={createForm}
             roles={allRoles}
+            jobs={activeJobs}
             onCancel={handleCloseCreateModal}
             onSubmit={handleCreate}
           />
@@ -97,27 +89,13 @@ export function UserManagement() {
             type="edit"
             open={isEditModalOpen}
             loading={updateMutation.isPending}
-            selectedUser={selectedUser}
             form={editForm}
             roles={allRoles}
+            jobs={activeJobs}
             onCancel={handleCloseEditModal}
             onSubmit={handleEdit}
           />
         }
-        additionalModals={[
-          <UserRoleModal
-            key="user-role-modal"
-            open={isRoleModalOpen}
-            loading={
-              assignRolesMutation.isPending || removeRolesMutation.isPending
-            }
-            user={selectedUser}
-            roles={allRoles}
-            onCancel={handleCloseRoleModal}
-            onAssign={handleAssignRoles}
-            onRemove={handleRemoveRoles}
-          />,
-        ]}
       />
     </>
   );
