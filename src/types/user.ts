@@ -7,6 +7,12 @@ export interface User {
   firstName?: string;
   lastName?: string;
   email?: string;
+  staffJobs?:
+    | {
+        jobId: string;
+        job?: Pick<Job, 'id' | 'name'> | null;
+      }[]
+    | null;
   jobId?: string | null;
   jobs?: Pick<Job, 'id' | 'name' | 'description' | 'isActive'>[] | null;
   job?: Pick<Job, 'id' | 'name' | 'description' | 'isActive'> | null;

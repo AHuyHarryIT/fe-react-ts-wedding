@@ -37,6 +37,9 @@ export const serviceApi = {
     if (data.description) formData.append('description', data.description);
     if (data.price) formData.append('price', String(data.price));
     formData.append('isActive', String(data.isActive ?? true));
+    if (Object.prototype.hasOwnProperty.call(data, 'jobId')) {
+      formData.append('jobId', data.jobId ?? '');
+    }
     if (data.image) {
       formData.append('image', data.image);
     }
@@ -64,6 +67,9 @@ export const serviceApi = {
     if (data.price !== undefined) formData.append('price', String(data.price));
     if (data.isActive !== undefined)
       formData.append('isActive', String(data.isActive));
+    if (Object.prototype.hasOwnProperty.call(data, 'jobId')) {
+      formData.append('jobId', data.jobId ?? '');
+    }
     if (data.image) {
       formData.append('image', data.image);
     }

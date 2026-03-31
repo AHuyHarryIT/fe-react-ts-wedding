@@ -1,4 +1,5 @@
 import type { PaginationParams } from './common';
+import type { Job } from './job';
 
 export interface Service {
   id: string;
@@ -6,6 +7,8 @@ export interface Service {
   description?: string;
   price?: number;
   isActive: boolean;
+  jobId?: string | null;
+  job?: Pick<Job, 'id' | 'name'> | null;
   createdAt: string;
   updatedAt: string;
   deletedAt?: string | null;
@@ -18,6 +21,7 @@ export interface CreateServiceRequest {
   description?: string;
   price?: number;
   isActive?: boolean;
+  jobId?: string | null;
   image?: File;
 }
 
@@ -30,6 +34,7 @@ export interface UpdateServiceRequest {
   description?: string;
   price?: number;
   isActive?: boolean;
+  jobId?: string | null;
   image?: File;
 }
 

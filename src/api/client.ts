@@ -28,8 +28,17 @@ api.interceptors.response.use(
     const errorMessage = extractErrorMessage(error);
     const statusCode = axiosError.response?.status;
     const url = axiosError.config?.url;
+    const skipErrorLogging = Boolean(
+      (
+        axiosError.config as AxiosError['config'] & {
+          skipErrorLogging?: boolean;
+        }
+      )?.skipErrorLogging
+    );
 
-    logError({ statusCode, url, message: errorMessage }, 'Response Error');
+    if (!skipErrorLogging) {
+      logError({ statusCode, url, message: errorMessage }, 'Response Error');
+    }
 
     // Handle unauthorized sessions by clearing local auth state.
     if (statusCode === 401 && !url?.includes('/auth/login')) {
@@ -58,7 +67,9 @@ api.interceptors.response.use(
 
       case 404:
         // Not found
-        console.warn('[Not Found Error]', `Resource not found: ${url}`);
+        if (!skipErrorLogging) {
+          console.warn('[Not Found Error]', `Resource not found: ${url}`);
+        }
         break;
 
       case 409:

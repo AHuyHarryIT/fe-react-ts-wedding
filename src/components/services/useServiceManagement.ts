@@ -8,6 +8,7 @@ import type {
   ServiceFormData,
 } from '@types';
 import { serviceApi } from '@services/ServiceService';
+import { jobApi } from '@services/JobService';
 
 export function useServiceManagement() {
   const queryClient = useQueryClient();
@@ -30,6 +31,16 @@ export function useServiceManagement() {
         page: currentPage,
         limit: pageSize,
         search: searchText || undefined,
+      }),
+  });
+
+  const { data: jobsData, isLoading: jobsLoading } = useQuery({
+    queryKey: ['jobs', 'active-for-services'],
+    queryFn: () =>
+      jobApi.getAll({
+        page: 1,
+        limit: 100,
+        isActive: true,
       }),
   });
 
@@ -122,6 +133,7 @@ export function useServiceManagement() {
       description: service.description || '',
       price: service.price,
       isActive: service.isActive,
+      jobId: service.jobId ?? null,
     });
     setIsEditModalOpen(true);
   };
@@ -139,7 +151,9 @@ export function useServiceManagement() {
 
   return {
     services: servicesData?.data || [],
+    jobs: jobsData?.data || [],
     loading: servicesLoading,
+    jobsLoading,
     createLoading: createMutation.isPending,
     updateLoading: updateMutation.isPending,
     total: servicesData?.pagination?.total || 0,

@@ -11,7 +11,9 @@ import { useServiceManagement } from './useServiceManagement';
 export function ServicesManagement() {
   const {
     services,
+    jobs,
     loading,
+    jobsLoading,
     createLoading,
     updateLoading,
     total,
@@ -90,6 +92,8 @@ export function ServicesManagement() {
             open={isCreateModalOpen}
             loading={createLoading}
             selectedService={null}
+            jobs={jobs}
+            jobsLoading={jobsLoading}
             form={createForm}
             onCancel={handleCloseCreateModal}
             onSubmit={handleCreate}
@@ -101,6 +105,8 @@ export function ServicesManagement() {
             open={isEditModalOpen}
             loading={updateLoading}
             selectedService={selectedService}
+            jobs={jobs}
+            jobsLoading={jobsLoading}
             form={editForm}
             onCancel={handleCloseEditModal}
             onSubmit={handleEdit}

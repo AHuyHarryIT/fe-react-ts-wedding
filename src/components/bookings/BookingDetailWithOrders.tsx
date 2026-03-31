@@ -3,7 +3,6 @@ import type { Booking, BookingStatus, Order, User } from '@types';
 import {
   Card,
   Col,
-  AutoComplete,
   Descriptions,
   Divider,
   Modal,
@@ -15,24 +14,21 @@ import {
   Tabs,
   Space,
   Empty,
-  Select,
   Spin,
 } from 'antd';
 import { useQueryClient } from '@tanstack/react-query';
 import {
   EditOutlined,
   DeleteOutlined,
-  MinusCircleOutlined,
   ShoppingCartOutlined,
   CheckCircleOutlined,
-  PlusOutlined,
 } from '@ant-design/icons';
 import { bookingApi } from '@services/BookingService';
 import { ordersService } from '@services/OrdersService';
 import { CheckoutForm } from '@components/orders/CheckoutForm';
 import { OrderDetail } from '@components/orders/OrderDetail';
-import { useGenericSelect } from '@hooks/useGenericSelect';
 import { formatMoneyVND } from '@utils/money';
+import { BookingSessionsPanel } from '@components/bookings/BookingSessionsPanel';
 
 type AssignedStaffMember = {
   id: string;
@@ -42,11 +38,6 @@ type AssignedStaffMember = {
   phoneNumber?: string;
   isActive?: boolean;
   job?: string;
-};
-
-type StaffAssignmentRow = {
-  staffId: string;
-  job: string;
 };
 
 interface BookingDetailWithOrdersProps {
@@ -135,22 +126,12 @@ export const BookingDetailWithOrders: React.FC<
   const [loadingBookingDetails, setLoadingBookingDetails] = useState(false);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
-  const [assignedStaffRows, setAssignedStaffRows] = useState<
-    StaffAssignmentRow[]
-  >([]);
-  const [savingStaffAssignments, setSavingStaffAssignments] = useState(false);
   const queryClient = useQueryClient();
-  const staffOptions = useGenericSelect<User>({
-    entity: 'users',
-  });
-  const jobOptions = useGenericSelect<{
-    id: string;
-    name: string;
-    description?: string;
-  }>({
-    entity: 'jobs',
-  });
   const currentBooking = resolvedBooking ?? booking;
+  const assignedStaff = useMemo(
+    () => getBookingStaffAssignments(currentBooking),
+    [currentBooking]
+  );
 
   // Load order for this booking
   const loadOrder = useCallback(async () => {
@@ -195,138 +176,6 @@ export const BookingDetailWithOrders: React.FC<
     }
   }, [open, booking?.id]);
 
-  useEffect(() => {
-    if (!open || !currentBooking) {
-      setAssignedStaffRows([]);
-      return;
-    }
-
-    const directAssignments = currentBooking.assignedStaffs ?? [];
-    const legacyAssignments =
-      currentBooking.staffs?.map((assignment) => ({
-        staffId: assignment.staffId,
-        job: assignment.job || '',
-      })) || [];
-
-    const normalized = [...directAssignments, ...legacyAssignments].reduce<
-      StaffAssignmentRow[]
-    >((rows, assignment) => {
-      if (!assignment?.staffId) {
-        return rows;
-      }
-
-      if (rows.some((row) => row.staffId === assignment.staffId)) {
-        return rows.map((row) =>
-          row.staffId === assignment.staffId
-            ? { ...row, job: row.job || assignment.job || '' }
-            : row
-        );
-      }
-
-      rows.push({
-        staffId: assignment.staffId,
-        job: assignment.job || '',
-      });
-      return rows;
-    }, []);
-
-    setAssignedStaffRows(normalized);
-  }, [open, currentBooking]);
-
-  const assignedStaff = useMemo(
-    () => getBookingStaffAssignments(currentBooking),
-    [currentBooking]
-  );
-
-  const assignmentRows = useMemo(
-    () =>
-      assignedStaffRows.length > 0
-        ? assignedStaffRows
-        : assignedStaff.map((staff) => ({
-            staffId: staff.id,
-            job: staff.job || '',
-          })),
-    [assignedStaff, assignedStaffRows]
-  );
-
-  const assignedStaffOptions = useMemo(
-    () =>
-      staffOptions.options.map((staff) => ({
-        value: staff.id,
-        label: formatStaffLabel(staff),
-      })),
-    [staffOptions.options]
-  );
-
-  const assignedJobOptions = useMemo(
-    () =>
-      jobOptions.options
-        .slice()
-        .sort((a, b) => a.name.localeCompare(b.name))
-        .map((job) => ({
-          value: job.name,
-          label: job.name,
-        })),
-    [jobOptions.options]
-  );
-
-  const updateAssignmentRow = (
-    index: number,
-    patch: Partial<StaffAssignmentRow>
-  ) => {
-    setAssignedStaffRows((prev) =>
-      prev.map((item, itemIndex) =>
-        itemIndex === index ? { ...item, ...patch } : item
-      )
-    );
-  };
-
-  const hasStaffAssignmentChanges = useMemo(() => {
-    const currentAssignments = assignedStaff
-      .map((staff) => ({
-        staffId: staff.id,
-        job: staff.job || '',
-      }))
-      .sort((a, b) => a.staffId.localeCompare(b.staffId));
-    const selectedAssignments = [...assignmentRows].sort((a, b) =>
-      a.staffId.localeCompare(b.staffId)
-    );
-
-    return (
-      currentAssignments.length !== selectedAssignments.length ||
-      currentAssignments.some(
-        (assignment, index) =>
-          assignment.staffId !== selectedAssignments[index]?.staffId ||
-          assignment.job !== selectedAssignments[index]?.job
-      )
-    );
-  }, [assignedStaff, assignmentRows]);
-
-  const handleSaveStaffAssignments = async () => {
-    if (!currentBooking) {
-      return;
-    }
-
-    try {
-      setSavingStaffAssignments(true);
-      const response = await bookingApi.assignStaff(
-        currentBooking.id,
-        assignmentRows
-      );
-      message.success('Assigned staff updated successfully');
-      setResolvedBooking(response.data);
-      onBookingUpdated?.(response.data);
-      await queryClient.invalidateQueries({ queryKey: ['bookings'] });
-    } catch (error) {
-      const errorMessage =
-        (error as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message || 'Failed to update assigned staff';
-      message.error(errorMessage);
-    } finally {
-      setSavingStaffAssignments(false);
-    }
-  };
-
   const handleCheckoutSuccess = async (updatedOrder: Order | null) => {
     // Immediately update with the returned order data
     if (updatedOrder) {
@@ -346,7 +195,9 @@ export const BookingDetailWithOrders: React.FC<
   const canCancelBooking =
     currentBooking?.status !== 'COMPLETED' &&
     currentBooking?.status !== 'CANCELLED';
-  const canAssignStaff = canEditBooking;
+  const canManageSessions =
+    currentBooking?.status !== 'COMPLETED' &&
+    currentBooking?.status !== 'CANCELLED';
   const canMarkCompleted =
     currentBooking?.status === 'CONFIRMED' && order?.status === 'PAID';
 
@@ -643,6 +494,21 @@ export const BookingDetailWithOrders: React.FC<
                                     <div className="text-xs text-gray-500">
                                       {item.package?.description}
                                     </div>
+                                    {item.package?.services?.some(
+                                      (pkgService) =>
+                                        pkgService.service?.job?.name
+                                    ) ? (
+                                      <div className="text-xs text-blue-500">
+                                        Required jobs:{' '}
+                                        {item.package.services
+                                          .map(
+                                            (pkgService) =>
+                                              pkgService.service?.job?.name
+                                          )
+                                          .filter(Boolean)
+                                          .join(', ')}
+                                      </div>
+                                    ) : null}
                                   </div>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
@@ -694,6 +560,11 @@ export const BookingDetailWithOrders: React.FC<
                                     <div className="text-xs text-gray-500">
                                       {item.service?.description}
                                     </div>
+                                    {item.service?.job?.name ? (
+                                      <div className="text-xs text-blue-500">
+                                        Required job: {item.service.job.name}
+                                      </div>
+                                    ) : null}
                                   </div>
                                 </div>
                                 <div style={{ textAlign: 'right' }}>
@@ -722,153 +593,19 @@ export const BookingDetailWithOrders: React.FC<
                       </>
                     )}
 
-                  <Divider>Assign Staff</Divider>
+                  <Divider>Staff Assignment</Divider>
                   <Card size="small">
                     {loadingBookingDetails ? (
                       <div style={{ padding: '24px 0', textAlign: 'center' }}>
                         <Spin tip="Loading booking assignment..." />
                       </div>
-                    ) : null}
-                    <Space
-                      direction="vertical"
-                      style={{ width: '100%' }}
-                      size="middle"
-                    >
-                      <div className="flex flex-col gap-3">
-                        <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300">
-                          Pick a managed job or type a custom responsibility.
-                          Active jobs come from the staff job catalog.
-                        </div>
-                        {assignmentRows.map((row, index) => (
-                          <div
-                            key={`${row.staffId || 'new'}-${index}`}
-                            className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_auto]"
-                          >
-                            <Select
-                              allowClear
-                              placeholder="Select staff member"
-                              showSearch
-                              filterOption={false}
-                              value={row.staffId || undefined}
-                              onChange={(value) =>
-                                updateAssignmentRow(index, { staffId: value })
-                              }
-                              loading={staffOptions.loading}
-                              options={assignedStaffOptions}
-                              onSearch={staffOptions.onSearch}
-                              optionFilterProp="label"
-                              disabled={!canAssignStaff}
-                              onPopupScroll={(e) => {
-                                const target = e.target as HTMLDivElement;
-                                if (
-                                  target.scrollTop + target.offsetHeight >=
-                                  target.scrollHeight - 8
-                                ) {
-                                  staffOptions.loadMore();
-                                }
-                              }}
-                            />
-                            <AutoComplete
-                              value={row.job}
-                              onChange={(value) =>
-                                updateAssignmentRow(index, {
-                                  job: value,
-                                })
-                              }
-                              options={assignedJobOptions}
-                              onSearch={jobOptions.onSearch}
-                              onPopupScroll={(e) => {
-                                const target = e.target as HTMLDivElement;
-                                if (
-                                  target.scrollTop + target.offsetHeight >=
-                                  target.scrollHeight - 8
-                                ) {
-                                  jobOptions.loadMore();
-                                }
-                              }}
-                              filterOption={(inputValue, option) =>
-                                String(option?.value ?? '')
-                                  .toLowerCase()
-                                  .includes(inputValue.toLowerCase())
-                              }
-                              notFoundContent={
-                                jobOptions.options.length > 0
-                                  ? 'No matching jobs'
-                                  : 'No managed jobs yet'
-                              }
-                              placeholder="Select or type a job"
-                              disabled={!canAssignStaff}
-                              className="w-full"
-                            />
-                            <Button
-                              danger
-                              type="text"
-                              icon={<MinusCircleOutlined />}
-                              onClick={() =>
-                                setAssignedStaffRows((prev) =>
-                                  prev.filter(
-                                    (_, itemIndex) => itemIndex !== index
-                                  )
-                                )
-                              }
-                              disabled={!canAssignStaff}
-                            >
-                              Remove
-                            </Button>
-                          </div>
-                        ))}
+                    ) : (
+                      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300">
+                        Staff can only be assigned while editing the booking.
+                        Open <strong>Edit</strong> to assign staff by the jobs
+                        required by this booking’s services.
                       </div>
-                      <Button
-                        type="dashed"
-                        icon={<PlusOutlined />}
-                        onClick={() =>
-                          setAssignedStaffRows((prev) => [
-                            ...prev,
-                            { staffId: '', job: '' },
-                          ])
-                        }
-                        disabled={!canAssignStaff}
-                      >
-                        Add staff responsibility
-                      </Button>
-                      {!canAssignStaff ? (
-                        <span style={{ color: '#8c8c8c', fontSize: '12px' }}>
-                          Staff assignments can only be changed while the
-                          booking is editable.
-                        </span>
-                      ) : null}
-                      <Space>
-                        <Button
-                          onClick={() =>
-                            setAssignedStaffRows(
-                              assignedStaff.map((staff) => ({
-                                staffId: staff.id,
-                                job: staff.job || '',
-                              }))
-                            )
-                          }
-                          disabled={
-                            savingStaffAssignments ||
-                            !hasStaffAssignmentChanges ||
-                            !canAssignStaff
-                          }
-                        >
-                          Reset
-                        </Button>
-                        <Button
-                          type="primary"
-                          loading={savingStaffAssignments}
-                          onClick={handleSaveStaffAssignments}
-                          disabled={
-                            savingStaffAssignments ||
-                            !hasStaffAssignmentChanges ||
-                            !canAssignStaff
-                          }
-                        >
-                          Save Assignment
-                        </Button>
-                      </Space>
-                    </Space>
+                    )}
                   </Card>
 
                   {/* Action Buttons */}
@@ -904,6 +641,23 @@ export const BookingDetailWithOrders: React.FC<
                     )}
                   </Space>
                 </div>
+              ),
+            },
+            {
+              key: 'sessions',
+              label: 'Sessions',
+              children: (
+                <BookingSessionsPanel
+                  bookingId={currentBooking.id}
+                  sessions={currentBooking.sessions}
+                  canManage={Boolean(canManageSessions)}
+                  onChanged={async () => {
+                    await loadBookingDetails();
+                    await queryClient.invalidateQueries({
+                      queryKey: ['bookings'],
+                    });
+                  }}
+                />
               ),
             },
             {

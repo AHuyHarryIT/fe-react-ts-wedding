@@ -52,7 +52,9 @@ export const ordersService = {
 
   // Get order by booking ID
   async getOrder(bookingId: string): Promise<Order> {
-    const response = await api.get<{ data: Order }>(`/orders/${bookingId}`);
+    const response = await api.get<{ data: Order }>(`/orders/${bookingId}`, {
+      skipErrorLogging: true,
+    } as never);
     return response.data.data;
   },
 

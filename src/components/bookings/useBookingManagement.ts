@@ -2,6 +2,7 @@ import { bookingApi } from '@services/BookingService';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   Booking,
+  BookingStaffAssignmentInput,
   BookingStatus,
   CreateBookingRequest,
   UpdateBookingRequest,
@@ -78,25 +79,6 @@ export function useBookingManagement() {
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || 'Failed to create booking';
-      messageApi.error(errorMessage);
-    },
-  });
-
-  const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateBookingRequest }) =>
-      bookingApi.update(id, data),
-    onSuccess: () => {
-      messageApi.success('Booking updated successfully');
-      setIsEditModalOpen(false);
-      setSelectedBooking(null);
-      editForm.resetFields();
-      setEditSelectedItems([]);
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
-    },
-    onError: (error: unknown) => {
-      const errorMessage =
-        (error as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message || 'Failed to update booking';
       messageApi.error(errorMessage);
     },
   });
@@ -220,7 +202,10 @@ export function useBookingManagement() {
     createMutation.mutate(bookingData);
   };
 
-  const handleEdit = (values: BookingFormData) => {
+  const handleEdit = async (
+    values: BookingFormData,
+    staffAssignments?: BookingStaffAssignmentInput[]
+  ) => {
     if (!selectedBooking) return;
 
     if (editSelectedItems.length === 0) {
@@ -241,7 +226,30 @@ export function useBookingManagement() {
       totalPrice: calculateEditTotalPrice(),
       status: values.status,
     };
-    updateMutation.mutate({ id: selectedBooking.id, data: updateData });
+
+    try {
+      const updateResponse = await bookingApi.update(
+        selectedBooking.id,
+        updateData
+      );
+
+      if (staffAssignments) {
+        await bookingApi.assignStaff(selectedBooking.id, staffAssignments);
+      }
+
+      messageApi.success('Booking updated successfully');
+      setIsEditModalOpen(false);
+      setSelectedBooking(null);
+      editForm.resetFields();
+      setEditSelectedItems([]);
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      return updateResponse;
+    } catch (error) {
+      const errorMessage =
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message || 'Failed to update booking';
+      messageApi.error(errorMessage);
+    }
   };
 
   const handleDelete = (id: string) => {

@@ -6,16 +6,18 @@ import { useMemo, useState } from 'react';
 interface UseGenericSelectParams {
   entity: string;
   limit?: number;
+  extraParams?: Record<string, string | number | boolean | undefined>;
 }
 
 export function useGenericSelect<TExtra = unknown>({
   entity,
   limit = 10,
+  extraParams,
 }: UseGenericSelectParams) {
   const [search, setSearch] = useState('');
 
   const query = useInfiniteQuery<PaginatedResponse<TExtra>>({
-    queryKey: ['selection', entity, search],
+    queryKey: ['selection', entity, search, extraParams],
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
       const data = await selectionApi.getAll<TExtra>({
@@ -23,6 +25,7 @@ export function useGenericSelect<TExtra = unknown>({
         search,
         page: pageParam,
         limit,
+        ...extraParams,
       });
       return data;
     },

@@ -1,6 +1,6 @@
-import { Modal, Form, Input, InputNumber, Switch } from 'antd';
+import { Modal, Form, Input, InputNumber, Select, Switch } from 'antd';
 import { type FormInstance } from 'antd';
-import type { Service, ServiceFormData } from '@types';
+import type { Job, Service, ServiceFormData } from '@types';
 import { ImageUpload } from '@components/ui';
 
 const { TextArea } = Input;
@@ -10,6 +10,8 @@ interface ServiceFormModalProps {
   open: boolean;
   loading: boolean;
   selectedService: Service | null;
+  jobs: Job[];
+  jobsLoading?: boolean;
   form: FormInstance<ServiceFormData>;
   onCancel: () => void;
   onSubmit: (values: ServiceFormData) => void;
@@ -20,6 +22,8 @@ export function ServiceFormModal({
   open,
   loading,
   selectedService,
+  jobs,
+  jobsLoading = false,
   form,
   onCancel,
   onSubmit,
@@ -61,6 +65,23 @@ export function ServiceFormModal({
           rules={[{ type: 'number', min: 0 }]}
         >
           <InputNumber placeholder="0" step={1000} style={{ width: '100%' }} />
+        </Form.Item>
+
+        <Form.Item name="jobId" label="Required Job">
+          <Select
+            allowClear
+            showSearch
+            loading={jobsLoading}
+            placeholder="Optional managed job for this service"
+            optionFilterProp="label"
+            options={jobs
+              .slice()
+              .sort((a, b) => a.name.localeCompare(b.name))
+              .map((job) => ({
+                value: job.id,
+                label: job.name,
+              }))}
+          />
         </Form.Item>
 
         <Form.Item name="isActive" label="Active">

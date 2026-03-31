@@ -1,21 +1,34 @@
-import { DeleteOutlined } from '@ant-design/icons';
+import {
+  DeleteOutlined,
+  MinusCircleOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import { useGenericSelect } from '@hooks/useGenericSelect';
-import type { Booking, BookingStatus } from '@types';
+import type {
+  Booking,
+  BookingStaffAssignmentInput,
+  BookingStatus,
+  User,
+} from '@types';
 import { formatMoneyVND } from '@utils/money';
 import {
+  AutoComplete,
   Button,
   Card,
   DatePicker,
+  Divider,
   Empty,
   Form,
   Input,
   InputNumber,
   Modal,
   Select,
+  Space,
   Tag,
   type FormInstance,
 } from 'antd';
 import dayjs from 'dayjs';
+import { useEffect, useMemo, useState } from 'react';
 
 const { TextArea } = Input;
 
@@ -28,6 +41,23 @@ interface BookingFormData {
   totalPrice?: number;
   status?: BookingStatus;
 }
+
+type StaffAssignmentRow = {
+  staffId: string;
+  job: string;
+  requiredJobId?: string;
+  requiredJobName?: string;
+  serviceLabel?: string;
+  sourceKey?: string;
+  isRequired?: boolean;
+};
+
+type RequiredServiceAssignment = {
+  sourceKey: string;
+  serviceLabel: string;
+  requiredJobId: string;
+  requiredJobName: string;
+};
 
 interface SelectedItem {
   id: string;
@@ -45,7 +75,10 @@ interface BookingFormModalProps {
   form: FormInstance<BookingFormData>;
   selectedItems: SelectedItem[];
   onCancel: () => void;
-  onSubmit: (values: BookingFormData) => void;
+  onSubmit: (
+    values: BookingFormData,
+    staffAssignments?: BookingStaffAssignmentInput[]
+  ) => void;
   onItemAdd: (item: SelectedItem) => void;
   onItemRemove: (itemId: string, type: 'package' | 'service') => void;
   onItemQuantityChange: (
@@ -75,6 +108,62 @@ type PackageExtra = {
   price: number;
 };
 
+const getRequiredServiceAssignments = (
+  booking: Booking | null
+): RequiredServiceAssignment[] => {
+  if (!booking) {
+    return [];
+  }
+
+  const assignments: RequiredServiceAssignment[] = [];
+
+  for (const item of booking.services ?? []) {
+    const jobId = item.service?.jobId;
+    const jobName = item.service?.job?.name;
+
+    if (!jobId || !jobName) {
+      continue;
+    }
+
+    assignments.push({
+      sourceKey: `service:${item.serviceId}`,
+      serviceLabel: item.service?.name || 'Service',
+      requiredJobId: jobId,
+      requiredJobName: jobName,
+    });
+  }
+
+  for (const item of booking.packages ?? []) {
+    for (const pkgService of item.package?.services ?? []) {
+      const jobId = pkgService.service?.jobId;
+      const jobName = pkgService.service?.job?.name;
+
+      if (!jobId || !jobName) {
+        continue;
+      }
+
+      assignments.push({
+        sourceKey: `package:${item.packageId}:service:${pkgService.serviceId}`,
+        serviceLabel: `${item.package?.name || 'Package'} / ${pkgService.service?.name || 'Service'}`,
+        requiredJobId: jobId,
+        requiredJobName: jobName,
+      });
+    }
+  }
+
+  return assignments;
+};
+
+const formatStaffLabel = (staff?: User | null) =>
+  [
+    `${staff?.lastName || ''} ${staff?.firstName || ''}`.trim(),
+    staff?.phoneNumber ? `(${staff.phoneNumber})` : '',
+    staff?.id ? `[${staff.id}]` : '',
+  ]
+    .filter(Boolean)
+    .join(' ')
+    .trim();
+
 export function BookingFormModal({
   type,
   open,
@@ -92,6 +181,9 @@ export function BookingFormModal({
   const isEditMode = type === 'edit' && selectedBooking;
   const title = isEditMode ? 'Edit Booking' : 'Create New Booking';
   const totalPrice = calculateTotalPrice();
+  const [assignedStaffRows, setAssignedStaffRows] = useState<
+    StaffAssignmentRow[]
+  >([]);
 
   const customerOptions = useGenericSelect<CustomerExtra>({
     entity: 'customers',
@@ -104,6 +196,144 @@ export function BookingFormModal({
   const packageOptions = useGenericSelect<PackageExtra>({
     entity: 'packages',
   });
+  const staffOptions = useGenericSelect<User>({
+    entity: 'users',
+    extraParams: {
+      bookingId: selectedBooking?.id,
+    },
+  });
+  const jobOptions = useGenericSelect<{
+    id: string;
+    name: string;
+    description?: string;
+  }>({
+    entity: 'jobs',
+  });
+
+  const requiredServiceAssignments = useMemo(
+    () => getRequiredServiceAssignments(selectedBooking),
+    [selectedBooking]
+  );
+
+  useEffect(() => {
+    if (!open || !selectedBooking || type !== 'edit') {
+      setAssignedStaffRows([]);
+      return;
+    }
+
+    const directAssignments = selectedBooking.assignedStaffs ?? [];
+    const legacyAssignments =
+      selectedBooking.staffs?.map((assignment) => ({
+        staffId: assignment.staffId,
+        job: assignment.job || '',
+      })) || [];
+
+    const savedAssignments = [
+      ...directAssignments,
+      ...legacyAssignments,
+    ].reduce<StaffAssignmentRow[]>((rows, assignment) => {
+      if (!assignment?.staffId) {
+        return rows;
+      }
+
+      if (rows.some((row) => row.staffId === assignment.staffId)) {
+        return rows.map((row) =>
+          row.staffId === assignment.staffId
+            ? { ...row, job: row.job || assignment.job || '' }
+            : row
+        );
+      }
+
+      rows.push({
+        staffId: assignment.staffId,
+        job: assignment.job || '',
+      });
+      return rows;
+    }, []);
+
+    const remainingAssignments = [...savedAssignments];
+    const requiredRows = requiredServiceAssignments.map(
+      (requiredAssignment) => {
+        const matchedIndex = remainingAssignments.findIndex(
+          (assignment) => assignment.job === requiredAssignment.requiredJobName
+        );
+        const matchedAssignment =
+          matchedIndex >= 0
+            ? remainingAssignments.splice(matchedIndex, 1)[0]
+            : null;
+
+        return {
+          staffId: matchedAssignment?.staffId || '',
+          job: matchedAssignment?.job || requiredAssignment.requiredJobName,
+          requiredJobId: requiredAssignment.requiredJobId,
+          requiredJobName: requiredAssignment.requiredJobName,
+          serviceLabel: requiredAssignment.serviceLabel,
+          sourceKey: requiredAssignment.sourceKey,
+          isRequired: true,
+        };
+      }
+    );
+
+    const manualRows = remainingAssignments.map((assignment, index) => ({
+      ...assignment,
+      sourceKey: `manual:${assignment.staffId || 'new'}:${index}`,
+      isRequired: false,
+    }));
+
+    setAssignedStaffRows([...requiredRows, ...manualRows]);
+  }, [open, selectedBooking, requiredServiceAssignments, type]);
+
+  const assignedStaffOptions = useMemo(
+    () =>
+      staffOptions.options.map((staff) => ({
+        value: staff.id,
+        label: formatStaffLabel(staff),
+      })),
+    [staffOptions.options]
+  );
+
+  const assignedJobOptions = useMemo(
+    () =>
+      jobOptions.options
+        .slice()
+        .sort((a, b) => a.name.localeCompare(b.name))
+        .map((job) => ({
+          value: job.name,
+          label: job.name,
+        })),
+    [jobOptions.options]
+  );
+
+  const filteredStaffOptionsByRow = useMemo(
+    () =>
+      assignedStaffRows.map((row) => {
+        if (!row.requiredJobId) {
+          return assignedStaffOptions;
+        }
+
+        return assignedStaffOptions.filter((staffOption) => {
+          const matchedStaff = staffOptions.options.find(
+            (option) => option.id === staffOption.value
+          );
+
+          return (matchedStaff?.staffJobs ?? []).some(
+            (staffJob) => staffJob.jobId === row.requiredJobId
+          );
+        });
+      }),
+    [assignedStaffOptions, assignedStaffRows, staffOptions.options]
+  );
+
+  const updateAssignmentRow = (
+    index: number,
+    patch: Partial<StaffAssignmentRow>
+  ) => {
+    setAssignedStaffRows((prev) =>
+      prev.map((item, itemIndex) =>
+        itemIndex === index ? { ...item, ...patch } : item
+      )
+    );
+  };
 
   return (
     <Modal
@@ -129,7 +359,16 @@ export function BookingFormModal({
       <Form<BookingFormData>
         form={form}
         layout="vertical"
-        onFinish={onSubmit}
+        onFinish={(values) => {
+          const normalizedAssignments = assignedStaffRows
+            .filter((row) => row.staffId)
+            .map((row) => ({
+              staffId: row.staffId,
+              job: row.job || undefined,
+            }));
+
+          onSubmit(values, isEditMode ? normalizedAssignments : undefined);
+        }}
         initialValues={{
           status: 'PENDING',
         }}
@@ -361,6 +600,119 @@ export function BookingFormModal({
               Total Price: {formatMoneyVND(totalPrice)}
             </div>
           </Card>
+        )}
+
+        {isEditMode && (
+          <>
+            <Divider>Assign Staff</Divider>
+            <Space
+              direction="vertical"
+              style={{ width: '100%', marginBottom: 16 }}
+              size="middle"
+            >
+              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300">
+                Services with configured jobs are listed automatically below.
+                Each row only shows staff who have the matching managed job.
+              </div>
+              {assignedStaffRows.map((row, index) => (
+                <div
+                  key={row.sourceKey || `${row.staffId || 'new'}-${index}`}
+                  className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_auto]"
+                >
+                  {row.isRequired && row.serviceLabel ? (
+                    <div className="md:col-span-3">
+                      <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
+                        <Tag color="blue">{row.serviceLabel}</Tag>
+                        <Tag color="purple">
+                          Required job: {row.requiredJobName}
+                        </Tag>
+                      </div>
+                    </div>
+                  ) : null}
+                  <Select
+                    allowClear
+                    placeholder="Select staff member"
+                    showSearch
+                    filterOption={false}
+                    value={row.staffId || undefined}
+                    onChange={(value) =>
+                      updateAssignmentRow(index, { staffId: value })
+                    }
+                    loading={staffOptions.loading}
+                    options={filteredStaffOptionsByRow[index] ?? []}
+                    onSearch={staffOptions.onSearch}
+                    optionFilterProp="label"
+                    onPopupScroll={(e) => {
+                      const target = e.target as HTMLDivElement;
+                      if (
+                        target.scrollTop + target.offsetHeight >=
+                        target.scrollHeight - 8
+                      ) {
+                        staffOptions.loadMore();
+                      }
+                    }}
+                  />
+                  <AutoComplete
+                    value={row.job}
+                    onChange={(value) =>
+                      updateAssignmentRow(index, {
+                        job: value,
+                      })
+                    }
+                    options={assignedJobOptions}
+                    onSearch={jobOptions.onSearch}
+                    onPopupScroll={(e) => {
+                      const target = e.target as HTMLDivElement;
+                      if (
+                        target.scrollTop + target.offsetHeight >=
+                        target.scrollHeight - 8
+                      ) {
+                        jobOptions.loadMore();
+                      }
+                    }}
+                    filterOption={(inputValue, option) =>
+                      String(option?.value ?? '')
+                        .toLowerCase()
+                        .includes(inputValue.toLowerCase())
+                    }
+                    notFoundContent={
+                      jobOptions.options.length > 0
+                        ? 'No matching jobs'
+                        : 'No managed jobs yet'
+                    }
+                    placeholder="Select or type a job"
+                    disabled={Boolean(row.isRequired)}
+                    className="w-full"
+                  />
+                  <Button
+                    danger
+                    type="text"
+                    icon={<MinusCircleOutlined />}
+                    onClick={() =>
+                      setAssignedStaffRows((prev) =>
+                        prev.filter((_, itemIndex) => itemIndex !== index)
+                      )
+                    }
+                    disabled={Boolean(row.isRequired)}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+              <Button
+                type="dashed"
+                icon={<PlusOutlined />}
+                onClick={() =>
+                  setAssignedStaffRows((prev) => [
+                    ...prev,
+                    { staffId: '', job: '' },
+                  ])
+                }
+              >
+                Add staff responsibility
+              </Button>
+            </Space>
+          </>
         )}
 
         <Form.Item name="notes" label="Notes">

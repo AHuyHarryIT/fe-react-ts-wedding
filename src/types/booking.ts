@@ -51,7 +51,16 @@ export interface BookingStaffAssignmentInput {
 export interface BookingSession {
   id: string;
   title: string;
+  bookingId?: string;
+  locationName?: string | null;
+  address?: string | null;
+  startsAt?: string;
+  endsAt?: string;
+  status?: BookingStatus;
+  createdAt?: string;
+  updatedAt?: string;
   staffs?: BookingAssignedStaff[];
+  services?: BookingService[];
 }
 
 export interface Booking {
@@ -106,4 +115,32 @@ export interface QueryBookingParams extends PaginationParams {
   includePackages?: boolean;
   includeServices?: boolean;
   includeStaffs?: boolean;
+}
+
+export interface CreateBookingSessionRequest {
+  bookingId: string;
+  title: string;
+  locationName?: string;
+  address?: string;
+  startsAt: string;
+  endsAt: string;
+  status?: BookingStatus;
+}
+
+export interface UpdateBookingSessionRequest {
+  bookingId?: string;
+  title?: string;
+  locationName?: string;
+  address?: string;
+  startsAt?: string;
+  endsAt?: string;
+  status?: BookingStatus;
+}
+
+export interface QueryBookingSessionParams extends PaginationParams {
+  bookingId?: string;
+  status?: BookingStatus;
+  includeBooking?: boolean;
+  includeStaff?: boolean;
+  includeServices?: boolean;
 }

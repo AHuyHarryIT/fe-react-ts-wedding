@@ -60,6 +60,13 @@ export function ServiceTable({
       render: (price: number) => `${formatMoneyVND(price)}`,
     },
     {
+      title: 'Required Job',
+      dataIndex: ['job', 'name'],
+      key: 'job',
+      width: 180,
+      render: (_, record) => record.job?.name || '-',
+    },
+    {
       title: 'Status',
       dataIndex: 'isActive',
       key: 'isActive',
@@ -94,7 +101,7 @@ export function ServiceTable({
   ];
 
   return (
-    <StaffTableScroll minWidth={900}>
+    <StaffTableScroll minWidth={1080}>
       <Table
         className="staff-table"
         columns={columns}
