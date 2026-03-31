@@ -1,32 +1,29 @@
 import {
-  ManagementLayout,
+  AccountTable,
   ManagementHeader,
+  ManagementLayout,
   SearchBar,
 } from '@components/management';
-import { UserTable } from './UserTable';
-import { UserFormModal } from './UserFormModal';
-import { UserRoleModal } from './UserRoleModal';
-import { useUserManagement } from './useUserManagement';
+import type { ColumnsType } from 'antd/es/table';
+import type { Customer } from '@types';
+import { CustomerFormModal } from './CustomerFormModal';
+import { useCustomerManagement } from './useCustomerManagement';
 
-export function UserManagement() {
+export function CustomerManagement() {
   const {
     isCreateModalOpen,
     isEditModalOpen,
-    isRoleModalOpen,
-    selectedUser,
+    selectedCustomer,
     searchText,
     currentPage,
     pageSize,
-    usersData,
-    usersLoading,
+    customersData,
+    customersLoading,
     createForm,
     editForm,
     contextHolder,
     createMutation,
     updateMutation,
-    assignRolesMutation,
-    removeRolesMutation,
-    rolesData,
     setIsCreateModalOpen,
     setSearchText,
     setCurrentPage,
@@ -35,15 +32,27 @@ export function UserManagement() {
     handleEdit,
     handleDelete,
     handleOpenEdit,
-    handleOpenRoles,
-    handleAssignRoles,
-    handleRemoveRoles,
     handleCloseCreateModal,
     handleCloseEditModal,
-    handleCloseRoleModal,
-  } = useUserManagement();
+  } = useCustomerManagement();
 
-  const allRoles = rolesData?.data || [];
+  const extraColumns: ColumnsType<Customer> = [
+    {
+      title: 'Wedding Date',
+      dataIndex: 'weddingDate',
+      key: 'weddingDate',
+      width: 150,
+      render: (value) =>
+        value ? new Date(value).toLocaleDateString('vi-VN') : '-',
+    },
+    {
+      title: 'Wedding Venue',
+      dataIndex: 'weddingVenue',
+      key: 'weddingVenue',
+      width: 220,
+      render: (value) => value || '-',
+    },
+  ];
 
   return (
     <>
@@ -51,29 +60,31 @@ export function UserManagement() {
       <ManagementLayout
         header={
           <ManagementHeader
-            title="Staff Account Management"
-            subtitle="Manage staff accounts, roles, and internal profile details"
+            title="Customer Account Management"
+            subtitle="Manage customer profiles, wedding details, and account status"
             onCreateClick={() => setIsCreateModalOpen(true)}
-            createButtonText="Add Staff Account"
+            createButtonText="Add Customer Account"
           />
         }
         searchBar={
           <SearchBar
             value={searchText}
             onChange={setSearchText}
-            placeholder="Search staff by ID, phone, name, or email..."
+            placeholder="Search customers by phone, name, email, or wedding venue..."
           />
         }
         table={
-          <UserTable
-            data={usersData?.data || []}
-            loading={usersLoading}
+          <AccountTable
+            data={customersData?.data || []}
+            loading={customersLoading}
             currentPage={currentPage}
             pageSize={pageSize}
-            total={usersData?.pagination?.total || 0}
+            total={customersData?.pagination?.total || 0}
+            entityLabel="customer account"
+            emptyDescription="No customer accounts found"
+            extraColumns={extraColumns}
             onEdit={handleOpenEdit}
             onDelete={handleDelete}
-            onManageRoles={handleOpenRoles}
             onPageChange={(page, size) => {
               setCurrentPage(page);
               setPageSize(size);
@@ -81,43 +92,27 @@ export function UserManagement() {
           />
         }
         createModal={
-          <UserFormModal
+          <CustomerFormModal
             type="create"
             open={isCreateModalOpen}
             loading={createMutation.isPending}
-            selectedUser={null}
+            selectedCustomer={null}
             form={createForm}
-            roles={allRoles}
             onCancel={handleCloseCreateModal}
             onSubmit={handleCreate}
           />
         }
         editModal={
-          <UserFormModal
+          <CustomerFormModal
             type="edit"
             open={isEditModalOpen}
             loading={updateMutation.isPending}
-            selectedUser={selectedUser}
+            selectedCustomer={selectedCustomer}
             form={editForm}
-            roles={allRoles}
             onCancel={handleCloseEditModal}
             onSubmit={handleEdit}
           />
         }
-        additionalModals={[
-          <UserRoleModal
-            key="user-role-modal"
-            open={isRoleModalOpen}
-            loading={
-              assignRolesMutation.isPending || removeRolesMutation.isPending
-            }
-            user={selectedUser}
-            roles={allRoles}
-            onCancel={handleCloseRoleModal}
-            onAssign={handleAssignRoles}
-            onRemove={handleRemoveRoles}
-          />,
-        ]}
       />
     </>
   );

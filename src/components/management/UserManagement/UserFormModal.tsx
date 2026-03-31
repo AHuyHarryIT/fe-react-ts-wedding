@@ -51,7 +51,7 @@ export function UserFormModal({
 }: UserFormModalProps) {
   return (
     <Modal
-      title={type === 'create' ? 'Create New User' : 'Edit User'}
+      title={type === 'create' ? 'Create Staff Account' : 'Edit Staff Account'}
       open={open}
       onCancel={onCancel}
       footer={null}
@@ -65,6 +65,10 @@ export function UserFormModal({
       >
         {type === 'create' && (
           <>
+            <Form.Item label="Staff ID" name="id">
+              <Input placeholder="Leave blank to auto-generate staff ID" />
+            </Form.Item>
+
             <Form.Item
               label="Phone Number"
               name="phoneNumber"
@@ -152,6 +156,12 @@ export function UserFormModal({
         >
           <Input placeholder="Enter email" type="email" />
         </Form.Item>
+
+        {type === 'edit' && (
+          <Form.Item label="Staff ID" name="id">
+            <Input placeholder="Enter staff ID" />
+          </Form.Item>
+        )}
 
         {type === 'create' && (
           <Form.Item

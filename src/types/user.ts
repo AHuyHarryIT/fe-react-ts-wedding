@@ -17,6 +17,7 @@ export interface UserWithRoles extends User {
 }
 
 export interface CreateUserRequest {
+  id?: string;
   phoneNumber: string;
   password: string;
   firstName?: string;
@@ -26,6 +27,7 @@ export interface CreateUserRequest {
 }
 
 export interface UpdateUserRequest {
+  id?: string;
   firstName?: string;
   lastName?: string;
   email?: string;

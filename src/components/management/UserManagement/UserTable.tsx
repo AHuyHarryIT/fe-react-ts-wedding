@@ -1,7 +1,7 @@
-import { LockOutlined } from '@ant-design/icons';
-import { ActionButton, StaffTableScroll, StatusChip } from '@components/ui';
+import { AccountTable } from '@components/management';
+import { StatusChip } from '@components/ui';
 import type { User } from '@types';
-import { Empty, Space, Table } from 'antd';
+import { Space } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 interface UserTableProps {
@@ -27,100 +27,48 @@ export function UserTable({
   onManageRoles,
   onPageChange,
 }: UserTableProps) {
-  const columns: ColumnsType<User> = [
+  const extraColumns: ColumnsType<User> = [
     {
-      title: 'Phone Number',
-      dataIndex: 'phoneNumber',
-      key: 'phoneNumber',
+      title: 'Staff ID',
+      dataIndex: 'id',
+      key: 'id',
       width: 150,
+      render: (value) => value || '-',
     },
     {
-      title: 'Name',
-      key: 'name',
-      width: 150,
-      render: (_, record) => {
-        const fullName = [record.lastName, record.firstName]
-          .filter(Boolean)
-          .join(' ');
-        return fullName || '-';
-      },
-    },
-    {
-      title: 'Email',
-      dataIndex: 'email',
-      key: 'email',
-      width: 150,
-      render: (email) => email || '-',
-    },
-    {
-      title: 'Status',
-      dataIndex: 'isActive',
-      key: 'isActive',
-      width: 100,
-      render: (isActive: boolean) => (
-        <StatusChip tone={isActive ? 'green' : 'red'}>
-          {isActive ? 'Active' : 'Inactive'}
-        </StatusChip>
-      ),
-    },
-    {
-      title: 'Created',
-      dataIndex: 'createdAt',
-      key: 'createdAt',
-      width: 150,
-      render: (date: string) => new Date(date).toLocaleDateString(),
-    },
-    {
-      title: 'Actions',
-      key: 'actions',
-      width: 200,
-      render: (_, record) => (
-        <Space size="small">
-          <ActionButton
-            action="edit"
-            size="small"
-            onClick={() => onEdit(record)}
-          />
-          <ActionButton
-            action="custom"
-            icon={<LockOutlined />}
-            size="small"
-            label="Role"
-            showIcon={true}
-            onClick={() => onManageRoles(record)}
-          />
-          <ActionButton
-            action="delete"
-            size="small"
-            popconfirmTitle="Delete user"
-            popconfirmDescription="Are you sure you want to delete this user?"
-            onClick={() => onDelete(record.id)}
-          />
-        </Space>
-      ),
+      title: 'Roles',
+      dataIndex: 'roles',
+      key: 'roles',
+      width: 220,
+      render: (roles: User['roles']) =>
+        roles?.length ? (
+          <Space size={[6, 6]} wrap>
+            {roles.map((role) => (
+              <StatusChip key={role.id} tone="slate">
+                {role.name}
+              </StatusChip>
+            ))}
+          </Space>
+        ) : (
+          '-'
+        ),
     },
   ];
 
   return (
-    <StaffTableScroll minWidth={940}>
-      <Table
-        className="staff-table"
-        columns={columns}
-        dataSource={data}
-        loading={loading}
-        rowKey="id"
-        pagination={{
-          current: currentPage,
-          pageSize: pageSize,
-          total: total,
-          pageSizeOptions: ['10', '20', '50', '100'],
-          showSizeChanger: true,
-          onChange: onPageChange,
-        }}
-        locale={{
-          emptyText: <Empty description="No users found" />,
-        }}
-      />
-    </StaffTableScroll>
+    <AccountTable
+      data={data}
+      loading={loading}
+      currentPage={currentPage}
+      pageSize={pageSize}
+      total={total}
+      entityLabel="staff account"
+      emptyDescription="No staff accounts found"
+      extraColumns={extraColumns}
+      onEdit={onEdit}
+      onDelete={onDelete}
+      onManageRoles={onManageRoles}
+      onPageChange={onPageChange}
+    />
   );
 }

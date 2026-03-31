@@ -87,13 +87,15 @@ export function useUserManagement() {
   const createMutation = useMutation({
     mutationFn: userApi.create,
     onSuccess: () => {
-      messageApi.success('User created successfully');
+      messageApi.success('Staff account created successfully');
       createForm.resetFields();
       setIsCreateModalOpen(false);
       refetchUsers();
     },
     onError: (error) => {
-      messageApi.error(getErrorMessage(error) || 'Failed to create user');
+      messageApi.error(
+        getErrorMessage(error) || 'Failed to create staff account'
+      );
     },
   });
 
@@ -102,14 +104,16 @@ export function useUserManagement() {
     mutationFn: ({ id, data }: { id: string; data: UpdateUserRequest }) =>
       userApi.update(id, data),
     onSuccess: () => {
-      messageApi.success('User updated successfully');
+      messageApi.success('Staff account updated successfully');
       editForm.resetFields();
       setIsEditModalOpen(false);
       refetchUsers();
       setSelectedUserId(null);
     },
     onError: (error) => {
-      messageApi.error(getErrorMessage(error) || 'Failed to update user');
+      messageApi.error(
+        getErrorMessage(error) || 'Failed to update staff account'
+      );
     },
   });
 
@@ -117,11 +121,13 @@ export function useUserManagement() {
   const deleteMutation = useMutation({
     mutationFn: userApi.delete,
     onSuccess: () => {
-      messageApi.success('User deleted successfully');
+      messageApi.success('Staff account deleted successfully');
       refetchUsers();
     },
     onError: (error) => {
-      messageApi.error(getErrorMessage(error) || 'Failed to delete user');
+      messageApi.error(
+        getErrorMessage(error) || 'Failed to delete staff account'
+      );
     },
   });
 
@@ -182,6 +188,7 @@ export function useUserManagement() {
       setSelectedUserId(user.id);
       setSelectedUser(user as UserWithRoles);
       editForm.setFieldsValue({
+        id: user.id,
         firstName: user.firstName,
         lastName: user.lastName,
         email: user.email,

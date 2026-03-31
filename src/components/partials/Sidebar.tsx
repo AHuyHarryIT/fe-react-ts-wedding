@@ -83,9 +83,15 @@ export function Sidebar({
       onClick: () => navigate({ to: '/albums' }),
     },
     {
-      key: 'users',
+      key: 'customers',
       icon: <TeamOutlined />,
-      label: 'Users',
+      label: 'Customers',
+      onClick: () => navigate({ to: '/customers' }),
+    },
+    {
+      key: 'staff',
+      icon: <TeamOutlined />,
+      label: 'Staff',
       onClick: () => navigate({ to: '/users' }),
     },
     {

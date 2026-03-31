@@ -150,9 +150,9 @@ function Dashboard() {
                     icon={<UserOutlined />}
                     size="large"
                     className="!h-11 !rounded-2xl"
-                    onClick={() => navigate({ to: '/users' })}
+                    onClick={() => navigate({ to: '/customers' })}
                   >
-                    Manage Clients
+                    Manage Customers
                   </Button>
                   <Button
                     icon={<ShoppingOutlined />}
