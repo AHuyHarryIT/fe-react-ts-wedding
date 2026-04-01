@@ -96,41 +96,87 @@ type ServiceExtra = {
   id: string;
   name: string;
   price: number;
+  jobId?: string | null;
+  job?: {
+    id: string;
+    name: string;
+  } | null;
 };
 
 type PackageExtra = {
   id: string;
   name: string;
   price: number;
+  services?: Array<{
+    serviceId: string;
+    service?: {
+      id: string;
+      name: string;
+      jobId?: string | null;
+      job?: {
+        id: string;
+        name: string;
+      } | null;
+    };
+  }>;
 };
 
 const getRequiredServiceAssignments = (
-  booking: Booking | null
+  selectedItems: SelectedItem[],
+  booking: Booking | null,
+  availablePackages: PackageExtra[],
+  availableServices: ServiceExtra[]
 ): RequiredServiceAssignment[] => {
-  if (!booking) {
+  if (selectedItems.length === 0) {
     return [];
   }
 
   const assignments: RequiredServiceAssignment[] = [];
+  const packageMap = new Map<string, PackageExtra>();
+  const serviceMap = new Map<string, ServiceExtra>();
 
-  for (const item of booking.services ?? []) {
-    const jobId = item.service?.jobId;
-    const jobName = item.service?.job?.name;
+  for (const pkg of availablePackages) {
+    packageMap.set(pkg.id, pkg);
+  }
 
-    if (!jobId || !jobName) {
+  for (const svc of availableServices) {
+    serviceMap.set(svc.id, svc);
+  }
+
+  for (const item of booking?.packages ?? []) {
+    if (item.package) {
+      packageMap.set(item.package.id, item.package as PackageExtra);
+    }
+  }
+
+  for (const item of booking?.services ?? []) {
+    if (item.service) {
+      serviceMap.set(item.service.id, item.service as ServiceExtra);
+    }
+  }
+
+  for (const item of selectedItems) {
+    if (item.type === 'service') {
+      const service = serviceMap.get(item.id);
+      const jobId = service?.jobId;
+      const jobName = service?.job?.name;
+
+      if (!jobId || !jobName) {
+        continue;
+      }
+
+      assignments.push({
+        sourceKey: `service:${service?.id || item.id}`,
+        serviceLabel: service?.name || item.name || 'Service',
+        requiredJobId: jobId,
+        requiredJobName: jobName,
+      });
       continue;
     }
 
-    assignments.push({
-      sourceKey: `service:${item.serviceId}`,
-      serviceLabel: item.service?.name || 'Service',
-      requiredJobId: jobId,
-      requiredJobName: jobName,
-    });
-  }
+    const pkg = packageMap.get(item.id);
 
-  for (const item of booking.packages ?? []) {
-    for (const pkgService of item.package?.services ?? []) {
+    for (const pkgService of pkg?.services ?? []) {
       const jobId = pkgService.service?.jobId;
       const jobName = pkgService.service?.job?.name;
 
@@ -139,8 +185,8 @@ const getRequiredServiceAssignments = (
       }
 
       assignments.push({
-        sourceKey: `package:${item.packageId}:service:${pkgService.serviceId}`,
-        serviceLabel: `${item.package?.name || 'Package'} / ${pkgService.service?.name || 'Service'}`,
+        sourceKey: `package:${pkg?.id || item.id}:service:${pkgService.serviceId}`,
+        serviceLabel: `${pkg?.name || item.name || 'Package'} / ${pkgService.service?.name || 'Service'}`,
         requiredJobId: jobId,
         requiredJobName: jobName,
       });
@@ -207,51 +253,57 @@ export function BookingFormModal({
   });
 
   const requiredServiceAssignments = useMemo(
-    () => getRequiredServiceAssignments(selectedBooking),
-    [selectedBooking]
+    () =>
+      getRequiredServiceAssignments(
+        selectedItems,
+        selectedBooking,
+        packageOptions.options,
+        serviceOptions.options
+      ),
+    [
+      selectedBooking,
+      selectedItems,
+      packageOptions.options,
+      serviceOptions.options,
+    ]
   );
 
   useEffect(() => {
-    if (!open || !selectedBooking || type !== 'edit') {
+    if (!open) {
       setAssignedStaffRows([]);
       return;
     }
 
-    const directAssignments = selectedBooking.assignedStaffs ?? [];
-    const legacyAssignments =
-      selectedBooking.staffs?.map((assignment) => ({
-        staffId: assignment.staffId,
-        job: assignment.job || '',
-      })) || [];
+    setAssignedStaffRows((prevRows) => {
+      const previousBySource = new Map(
+        prevRows
+          .filter((row) => row.sourceKey)
+          .map((row) => [row.sourceKey as string, row])
+      );
 
-    const savedAssignments = [
-      ...directAssignments,
-      ...legacyAssignments,
-    ].reduce<StaffAssignmentRow[]>((rows, assignment) => {
-      if (!assignment?.staffId) {
-        return rows;
-      }
+      const savedAssignments =
+        type === 'edit' && selectedBooking
+          ? [
+              ...(selectedBooking.assignedStaffs ?? []).map((assignment) => ({
+                staffId: assignment.staffId,
+                job: assignment.job || '',
+              })),
+              ...(selectedBooking.staffs?.map((assignment) => ({
+                staffId: assignment.staffId,
+                job: assignment.job || '',
+              })) ?? []),
+            ]
+          : [];
 
-      if (rows.some((row) => row.staffId === assignment.staffId)) {
-        return rows.map((row) =>
-          row.staffId === assignment.staffId
-            ? { ...row, job: row.job || assignment.job || '' }
-            : row
-        );
-      }
+      const remainingAssignments = [...savedAssignments];
 
-      rows.push({
-        staffId: assignment.staffId,
-        job: assignment.job || '',
-      });
-      return rows;
-    }, []);
-
-    const remainingAssignments = [...savedAssignments];
-    const requiredRows = requiredServiceAssignments.map(
-      (requiredAssignment) => {
+      return requiredServiceAssignments.map((requiredAssignment) => {
+        const previousRow = previousBySource.get(requiredAssignment.sourceKey);
         const matchedIndex = remainingAssignments.findIndex(
-          (assignment) => assignment.job === requiredAssignment.requiredJobName
+          (assignment) =>
+            assignment.job === requiredAssignment.requiredJobName &&
+            (!previousRow?.staffId ||
+              assignment.staffId === previousRow.staffId)
         );
         const matchedAssignment =
           matchedIndex >= 0
@@ -259,19 +311,17 @@ export function BookingFormModal({
             : null;
 
         return {
-          staffId: matchedAssignment?.staffId || '',
-          job: matchedAssignment?.job || requiredAssignment.requiredJobName,
+          staffId: previousRow?.staffId || matchedAssignment?.staffId || '',
+          job: requiredAssignment.requiredJobName,
           requiredJobId: requiredAssignment.requiredJobId,
           requiredJobName: requiredAssignment.requiredJobName,
           serviceLabel: requiredAssignment.serviceLabel,
           sourceKey: requiredAssignment.sourceKey,
           isRequired: true,
         };
-      }
-    );
-
-    setAssignedStaffRows(requiredRows);
-  }, [open, selectedBooking, requiredServiceAssignments, type]);
+      });
+    });
+  }, [open, requiredServiceAssignments, selectedBooking, type]);
 
   const assignedStaffOptions = useMemo(
     () =>
@@ -357,7 +407,10 @@ export function BookingFormModal({
               job: row.job || undefined,
             }));
 
-          onSubmit(values, isEditMode ? normalizedAssignments : undefined);
+          onSubmit(
+            values,
+            normalizedAssignments.length > 0 ? normalizedAssignments : undefined
+          );
         }}
         initialValues={{
           status: 'PENDING',
@@ -592,7 +645,7 @@ export function BookingFormModal({
           </Card>
         )}
 
-        {isEditMode && (
+        {assignedStaffRows.length > 0 && (
           <>
             <Divider>Assign Staff</Divider>
             <Space

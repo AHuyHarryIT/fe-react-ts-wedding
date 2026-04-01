@@ -66,23 +66,6 @@ export function useBookingManagement() {
   });
 
   // Mutations
-  const createMutation = useMutation({
-    mutationFn: (data: CreateBookingRequest) => bookingApi.create(data),
-    onSuccess: () => {
-      messageApi.success('Booking created successfully');
-      setIsCreateModalOpen(false);
-      createForm.resetFields();
-      setCreateSelectedItems([]);
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
-    },
-    onError: (error: unknown) => {
-      const errorMessage =
-        (error as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message || 'Failed to create booking';
-      messageApi.error(errorMessage);
-    },
-  });
-
   const deleteMutation = useMutation({
     mutationFn: (id: string) => bookingApi.delete(id),
     onSuccess: () => {
@@ -180,7 +163,10 @@ export function useBookingManagement() {
   };
 
   // Handlers
-  const handleCreate = (values: BookingFormData) => {
+  const handleCreate = async (
+    values: BookingFormData,
+    staffAssignments?: BookingStaffAssignmentInput[]
+  ) => {
     if (createSelectedItems.length === 0) {
       messageApi.error('Please select at least 1 package or service');
       return;
@@ -199,7 +185,26 @@ export function useBookingManagement() {
       totalPrice: calculateCreateTotalPrice(),
       status: values.status,
     };
-    createMutation.mutate(bookingData);
+
+    try {
+      const createResponse = await bookingApi.create(bookingData);
+
+      if (staffAssignments?.length) {
+        await bookingApi.assignStaff(createResponse.data.id, staffAssignments);
+      }
+
+      messageApi.success('Booking created successfully');
+      setIsCreateModalOpen(false);
+      createForm.resetFields();
+      setCreateSelectedItems([]);
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      return createResponse;
+    } catch (error) {
+      const errorMessage =
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message || 'Failed to create booking';
+      messageApi.error(errorMessage);
+    }
   };
 
   const handleEdit = async (
