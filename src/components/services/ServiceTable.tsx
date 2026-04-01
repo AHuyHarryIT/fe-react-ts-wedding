@@ -60,7 +60,7 @@ export function ServiceTable({
       render: (price: number) => `${formatMoneyVND(price)}`,
     },
     {
-      title: 'Required Job',
+      title: 'Job',
       dataIndex: ['job', 'name'],
       key: 'job',
       width: 180,

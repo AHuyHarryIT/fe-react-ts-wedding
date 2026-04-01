@@ -499,7 +499,7 @@ export const BookingDetailWithOrders: React.FC<
                                         pkgService.service?.job?.name
                                     ) ? (
                                       <div className="text-xs text-blue-500">
-                                        Required jobs:{' '}
+                                        Jobs:
                                         {item.package.services
                                           .map(
                                             (pkgService) =>
@@ -562,7 +562,7 @@ export const BookingDetailWithOrders: React.FC<
                                     </div>
                                     {item.service?.job?.name ? (
                                       <div className="text-xs text-blue-500">
-                                        Required job: {item.service.job.name}
+                                        Job: {item.service.job.name}
                                       </div>
                                     ) : null}
                                   </div>

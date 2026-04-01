@@ -67,7 +67,7 @@ export function ServiceFormModal({
           <InputNumber placeholder="0" step={1000} style={{ width: '100%' }} />
         </Form.Item>
 
-        <Form.Item name="jobId" label="Required Job">
+        <Form.Item name="jobId" label="Job">
           <Select
             allowClear
             showSearch

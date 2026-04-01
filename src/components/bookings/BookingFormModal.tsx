@@ -1,8 +1,4 @@
-import {
-  DeleteOutlined,
-  MinusCircleOutlined,
-  PlusOutlined,
-} from '@ant-design/icons';
+import { DeleteOutlined } from '@ant-design/icons';
 import { useGenericSelect } from '@hooks/useGenericSelect';
 import type {
   Booking,
@@ -274,13 +270,7 @@ export function BookingFormModal({
       }
     );
 
-    const manualRows = remainingAssignments.map((assignment, index) => ({
-      ...assignment,
-      sourceKey: `manual:${assignment.staffId || 'new'}:${index}`,
-      isRequired: false,
-    }));
-
-    setAssignedStaffRows([...requiredRows, ...manualRows]);
+    setAssignedStaffRows(requiredRows);
   }, [open, selectedBooking, requiredServiceAssignments, type]);
 
   const assignedStaffOptions = useMemo(
@@ -623,9 +613,7 @@ export function BookingFormModal({
                     <div className="md:col-span-3">
                       <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
                         <Tag color="blue">{row.serviceLabel}</Tag>
-                        <Tag color="purple">
-                          Required job: {row.requiredJobName}
-                        </Tag>
+                        <Tag color="purple">Job: {row.requiredJobName}</Tag>
                       </div>
                     </div>
                   ) : null}
@@ -684,33 +672,9 @@ export function BookingFormModal({
                     disabled={Boolean(row.isRequired)}
                     className="w-full"
                   />
-                  <Button
-                    danger
-                    type="text"
-                    icon={<MinusCircleOutlined />}
-                    onClick={() =>
-                      setAssignedStaffRows((prev) =>
-                        prev.filter((_, itemIndex) => itemIndex !== index)
-                      )
-                    }
-                    disabled={Boolean(row.isRequired)}
-                  >
-                    Remove
-                  </Button>
+                  <div />
                 </div>
               ))}
-              <Button
-                type="dashed"
-                icon={<PlusOutlined />}
-                onClick={() =>
-                  setAssignedStaffRows((prev) => [
-                    ...prev,
-                    { staffId: '', job: '' },
-                  ])
-                }
-              >
-                Add staff responsibility
-              </Button>
             </Space>
           </>
         )}
