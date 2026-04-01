@@ -67,6 +67,28 @@ export function ServiceTable({
       render: (_, record) => record.job?.name || '-',
     },
     {
+      title: 'Location',
+      dataIndex: 'isLocation',
+      key: 'isLocation',
+      width: 110,
+      render: (value: boolean | undefined) => (
+        <StatusChip tone={value ? 'blue' : 'slate'}>
+          {value ? 'Yes' : 'No'}
+        </StatusChip>
+      ),
+    },
+    {
+      title: 'Time',
+      dataIndex: 'isTime',
+      key: 'isTime',
+      width: 110,
+      render: (value: boolean | undefined) => (
+        <StatusChip tone={value ? 'blue' : 'slate'}>
+          {value ? 'Yes' : 'No'}
+        </StatusChip>
+      ),
+    },
+    {
       title: 'Status',
       dataIndex: 'isActive',
       key: 'isActive',
@@ -101,7 +123,7 @@ export function ServiceTable({
   ];
 
   return (
-    <StaffTableScroll minWidth={1080}>
+    <StaffTableScroll minWidth={1300}>
       <Table
         className="staff-table"
         columns={columns}

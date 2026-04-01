@@ -7,6 +7,8 @@ export interface Service {
   description?: string;
   price?: number;
   isActive: boolean;
+  isLocation?: boolean;
+  isTime?: boolean;
   jobId?: string | null;
   job?: Pick<Job, 'id' | 'name'> | null;
   createdAt: string;
@@ -21,6 +23,8 @@ export interface CreateServiceRequest {
   description?: string;
   price?: number;
   isActive?: boolean;
+  isLocation?: boolean;
+  isTime?: boolean;
   jobId?: string | null;
   image?: File;
 }
@@ -34,6 +38,8 @@ export interface UpdateServiceRequest {
   description?: string;
   price?: number;
   isActive?: boolean;
+  isLocation?: boolean;
+  isTime?: boolean;
   jobId?: string | null;
   image?: File;
 }

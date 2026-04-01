@@ -1,4 +1,13 @@
-import { Modal, Form, Input, InputNumber, Select, Switch } from 'antd';
+import {
+  Col,
+  Form,
+  Input,
+  InputNumber,
+  Modal,
+  Row,
+  Select,
+  Switch,
+} from 'antd';
 import { type FormInstance } from 'antd';
 import type { Job, Service, ServiceFormData } from '@types';
 import { ImageUpload } from '@components/ui';
@@ -84,9 +93,27 @@ export function ServiceFormModal({
           />
         </Form.Item>
 
-        <Form.Item name="isActive" label="Active">
-          <Switch />
-        </Form.Item>
+        <Row gutter={16}>
+          <Col span={8}>
+            <Form.Item name="isActive" label="Active" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item
+              name="isLocation"
+              label="Location"
+              valuePropName="checked"
+            >
+              <Switch />
+            </Form.Item>
+          </Col>
+          <Col span={8}>
+            <Form.Item name="isTime" label="Time" valuePropName="checked">
+              <Switch />
+            </Form.Item>
+          </Col>
+        </Row>
 
         <ImageUpload
           form={form}

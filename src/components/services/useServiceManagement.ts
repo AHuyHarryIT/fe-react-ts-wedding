@@ -133,6 +133,8 @@ export function useServiceManagement() {
       description: service.description || '',
       price: service.price,
       isActive: service.isActive,
+      isLocation: service.isLocation,
+      isTime: service.isTime,
       jobId: service.jobId ?? null,
     });
     setIsEditModalOpen(true);
