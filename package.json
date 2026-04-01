@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host",
-    "build": "tsc -b && vite build",
+    "build": "vite build",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "lint-staged": "lint-staged",
@@ -19,7 +19,8 @@
     "commitlint": "commitlint --edit",
     "preview": "vite preview",
     "prepare": "husky",
-    "ts:check": "tsc --noEmit"
+    "ts:check": "tsc --noEmit",
+    "check": "npm run lint && npm run ts:check && npm run build"
   },
   "dependencies": {
     "@ant-design/icons": "^6.1.0",
