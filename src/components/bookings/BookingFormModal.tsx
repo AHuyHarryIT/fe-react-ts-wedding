@@ -21,6 +21,7 @@ import {
   Select,
   Space,
   Tag,
+  TimePicker,
   type FormInstance,
 } from 'antd';
 import dayjs from 'dayjs';
@@ -46,6 +47,11 @@ type StaffAssignmentRow = {
   serviceLabel?: string;
   sourceKey?: string;
   isRequired?: boolean;
+  requiresLocation?: boolean;
+  requiresTime?: boolean;
+  locationName?: string;
+  startTime?: string;
+  endTime?: string;
 };
 
 type RequiredServiceAssignment = {
@@ -53,6 +59,8 @@ type RequiredServiceAssignment = {
   serviceLabel: string;
   requiredJobId: string;
   requiredJobName: string;
+  requiresLocation?: boolean;
+  requiresTime?: boolean;
 };
 
 interface SelectedItem {
@@ -96,6 +104,8 @@ type ServiceExtra = {
   id: string;
   name: string;
   price: number;
+  isLocation?: boolean;
+  isTime?: boolean;
   jobId?: string | null;
   job?: {
     id: string;
@@ -112,6 +122,8 @@ type PackageExtra = {
     service?: {
       id: string;
       name: string;
+      isLocation?: boolean;
+      isTime?: boolean;
       jobId?: string | null;
       job?: {
         id: string;
@@ -171,6 +183,8 @@ const getRequiredServiceAssignments = (
         serviceLabel,
         requiredJobId: jobId,
         requiredJobName: jobName,
+        requiresLocation: Boolean(service?.isLocation),
+        requiresTime: Boolean(service?.isTime),
       });
       continue;
     }
@@ -191,6 +205,8 @@ const getRequiredServiceAssignments = (
         serviceLabel,
         requiredJobId: jobId,
         requiredJobName: jobName,
+        requiresLocation: Boolean(pkgService.service?.isLocation),
+        requiresTime: Boolean(pkgService.service?.isTime),
       });
     }
   }
@@ -285,6 +301,9 @@ export function BookingFormModal({
         staffId: string;
         serviceLabel?: string;
         job: string;
+        locationName?: string;
+        startTime?: string;
+        endTime?: string;
       }> =
         type === 'edit' && selectedBooking
           ? [
@@ -293,10 +312,16 @@ export function BookingFormModal({
                 staffId: assignment.staffId,
                 serviceLabel: assignment.serviceLabel,
                 job: assignment.job || '',
+                locationName: assignment.locationName || '',
+                startTime: assignment.startTime || '',
+                endTime: assignment.endTime || '',
               })),
               ...(selectedBooking.staffs?.map((assignment) => ({
                 staffId: assignment.staffId,
                 job: assignment.job || '',
+                locationName: assignment.locationName || '',
+                startTime: assignment.startTime || '',
+                endTime: assignment.endTime || '',
               })) ?? []),
             ]
           : [];
@@ -321,6 +346,13 @@ export function BookingFormModal({
           serviceLabel: requiredAssignment.serviceLabel,
           sourceKey: requiredAssignment.sourceKey,
           isRequired: true,
+          requiresLocation: requiredAssignment.requiresLocation,
+          requiresTime: requiredAssignment.requiresTime,
+          locationName:
+            previousRow?.locationName || matchedAssignment?.locationName || '',
+          startTime:
+            previousRow?.startTime || matchedAssignment?.startTime || '',
+          endTime: previousRow?.endTime || matchedAssignment?.endTime || '',
         };
       });
     });
@@ -403,6 +435,9 @@ export function BookingFormModal({
               staffId: row.staffId,
               serviceLabel: row.serviceLabel,
               job: row.job || undefined,
+              locationName: row.locationName?.trim() || undefined,
+              startTime: row.startTime || undefined,
+              endTime: row.endTime || undefined,
             }));
 
           onSubmit(
@@ -659,10 +694,10 @@ export function BookingFormModal({
               {assignedStaffRows.map((row, index) => (
                 <div
                   key={row.sourceKey || `${row.staffId || 'new'}-${index}`}
-                  className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-[minmax(0,1.5fr)_minmax(0,1fr)_auto]"
+                  className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-2"
                 >
                   {row.isRequired && row.serviceLabel ? (
-                    <div className="md:col-span-3">
+                    <div className="md:col-span-2">
                       <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
                         <Tag color="blue">{row.serviceLabel}</Tag>
                         <Tag color="purple">Job: {row.requiredJobName}</Tag>
@@ -724,7 +759,55 @@ export function BookingFormModal({
                     disabled={Boolean(row.isRequired)}
                     className="w-full"
                   />
-                  <div />
+                  {row.requiresLocation ? (
+                    <Input
+                      value={row.locationName}
+                      onChange={(event) =>
+                        updateAssignmentRow(index, {
+                          locationName: event.target.value,
+                        })
+                      }
+                      placeholder="Location"
+                    />
+                  ) : null}
+                  {row.requiresTime ? (
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
+                      <TimePicker
+                        value={
+                          row.startTime
+                            ? dayjs(`2000-01-01T${row.startTime}:00`)
+                            : null
+                        }
+                        onChange={(value) =>
+                          updateAssignmentRow(index, {
+                            startTime: value ? value.format('HH:mm') : '',
+                          })
+                        }
+                        format="HH:mm"
+                        minuteStep={5}
+                        use12Hours={false}
+                        className="w-full"
+                        placeholder="Start time"
+                      />
+                      <TimePicker
+                        value={
+                          row.endTime
+                            ? dayjs(`2000-01-01T${row.endTime}:00`)
+                            : null
+                        }
+                        onChange={(value) =>
+                          updateAssignmentRow(index, {
+                            endTime: value ? value.format('HH:mm') : '',
+                          })
+                        }
+                        format="HH:mm"
+                        minuteStep={5}
+                        use12Hours={false}
+                        className="w-full"
+                        placeholder="End time"
+                      />
+                    </div>
+                  ) : null}
                 </div>
               ))}
             </Space>

@@ -34,6 +34,9 @@ export interface BookingAssignedStaff {
   serviceLabel?: string;
   staff?: User;
   job?: string;
+  locationName?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
 }
 
 export interface BookingDirectStaffAssignment
@@ -45,6 +48,9 @@ export interface BookingDirectStaffAssignment
   staffId: string;
   serviceLabel?: string;
   job?: string;
+  locationName?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
 }
 
 export interface BookingStaffAssignmentInput {
@@ -52,6 +58,9 @@ export interface BookingStaffAssignmentInput {
   staffId: string;
   serviceLabel?: string;
   job?: string;
+  locationName?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
 }
 
 export interface BookingSession {

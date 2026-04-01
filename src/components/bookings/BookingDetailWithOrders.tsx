@@ -40,6 +40,9 @@ type AssignedStaffMember = {
   isActive?: boolean;
   job?: string;
   serviceLabel?: string;
+  locationName?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
 };
 
 interface BookingDetailWithOrdersProps {
@@ -119,6 +122,18 @@ const getBookingStaffAssignments = (booking: Booking | null) => {
       isActive: staff.isActive,
       job,
       serviceLabel,
+      locationName:
+        'locationName' in staff && typeof staff.locationName === 'string'
+          ? staff.locationName
+          : undefined,
+      startTime:
+        'startTime' in staff && typeof staff.startTime === 'string'
+          ? staff.startTime
+          : undefined,
+      endTime:
+        'endTime' in staff && typeof staff.endTime === 'string'
+          ? staff.endTime
+          : undefined,
     });
   }
 
@@ -134,6 +149,19 @@ const formatStaffLabel = (staff?: AssignedStaffMember | User | null) =>
     staff?.phoneNumber ? `(${staff.phoneNumber})` : '',
     staff?.id ? `[${staff.id}]` : '',
     staff && 'job' in staff && staff.job ? `- ${staff.job}` : '',
+    staff && 'locationName' in staff && staff.locationName
+      ? `- ${staff.locationName}`
+      : '',
+    staff &&
+    (('startTime' in staff && staff.startTime) ||
+      ('endTime' in staff && staff.endTime))
+      ? `@ ${[
+          'startTime' in staff ? staff.startTime : '',
+          'endTime' in staff ? staff.endTime : '',
+        ]
+          .filter(Boolean)
+          .join(' - ')}`
+      : '',
   ]
     .filter(Boolean)
     .join(' ')
