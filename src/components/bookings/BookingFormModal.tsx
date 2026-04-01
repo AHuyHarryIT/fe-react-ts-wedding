@@ -165,9 +165,10 @@ const getRequiredServiceAssignments = (
         continue;
       }
 
+      const serviceLabel = service?.name || item.name || 'Service';
       assignments.push({
         sourceKey: `service:${service?.id || item.id}`,
-        serviceLabel: service?.name || item.name || 'Service',
+        serviceLabel,
         requiredJobId: jobId,
         requiredJobName: jobName,
       });
@@ -184,9 +185,10 @@ const getRequiredServiceAssignments = (
         continue;
       }
 
+      const serviceLabel = `${pkg?.name || item.name || 'Package'} / ${pkgService.service?.name || 'Service'}`;
       assignments.push({
         sourceKey: `package:${pkg?.id || item.id}:service:${pkgService.serviceId}`,
-        serviceLabel: `${pkg?.name || item.name || 'Package'} / ${pkgService.service?.name || 'Service'}`,
+        serviceLabel,
         requiredJobId: jobId,
         requiredJobName: jobName,
       });
@@ -240,9 +242,6 @@ export function BookingFormModal({
   });
   const staffOptions = useGenericSelect<User>({
     entity: 'users',
-    extraParams: {
-      bookingId: selectedBooking?.id,
-    },
   });
   const jobOptions = useGenericSelect<{
     id: string;
@@ -281,11 +280,18 @@ export function BookingFormModal({
           .map((row) => [row.sourceKey as string, row])
       );
 
-      const savedAssignments =
+      const savedAssignments: Array<{
+        sourceKey?: string;
+        staffId: string;
+        serviceLabel?: string;
+        job: string;
+      }> =
         type === 'edit' && selectedBooking
           ? [
               ...(selectedBooking.assignedStaffs ?? []).map((assignment) => ({
+                sourceKey: assignment.sourceKey,
                 staffId: assignment.staffId,
+                serviceLabel: assignment.serviceLabel,
                 job: assignment.job || '',
               })),
               ...(selectedBooking.staffs?.map((assignment) => ({
@@ -300,10 +306,7 @@ export function BookingFormModal({
       return requiredServiceAssignments.map((requiredAssignment) => {
         const previousRow = previousBySource.get(requiredAssignment.sourceKey);
         const matchedIndex = remainingAssignments.findIndex(
-          (assignment) =>
-            assignment.job === requiredAssignment.requiredJobName &&
-            (!previousRow?.staffId ||
-              assignment.staffId === previousRow.staffId)
+          (assignment) => assignment.sourceKey === requiredAssignment.sourceKey
         );
         const matchedAssignment =
           matchedIndex >= 0
@@ -328,6 +331,9 @@ export function BookingFormModal({
       staffOptions.options.map((staff) => ({
         value: staff.id,
         label: formatStaffLabel(staff),
+        jobIds:
+          staff.staffJobs?.map((staffJob) => staffJob.jobId).filter(Boolean) ??
+          [],
       })),
     [staffOptions.options]
   );
@@ -344,26 +350,6 @@ export function BookingFormModal({
     [jobOptions.options]
   );
 
-  const filteredStaffOptionsByRow = useMemo(
-    () =>
-      assignedStaffRows.map((row) => {
-        if (!row.requiredJobId) {
-          return assignedStaffOptions;
-        }
-
-        return assignedStaffOptions.filter((staffOption) => {
-          const matchedStaff = staffOptions.options.find(
-            (option) => option.id === staffOption.value
-          );
-
-          return (matchedStaff?.staffJobs ?? []).some(
-            (staffJob) => staffJob.jobId === row.requiredJobId
-          );
-        });
-      }),
-    [assignedStaffOptions, assignedStaffRows, staffOptions.options]
-  );
-
   const updateAssignmentRow = (
     index: number,
     patch: Partial<StaffAssignmentRow>
@@ -372,6 +358,16 @@ export function BookingFormModal({
       prev.map((item, itemIndex) =>
         itemIndex === index ? { ...item, ...patch } : item
       )
+    );
+  };
+
+  const getAssignedStaffOptionsForRow = (row: StaffAssignmentRow) => {
+    if (!row.requiredJobId) {
+      return assignedStaffOptions;
+    }
+
+    return assignedStaffOptions.filter((staff) =>
+      staff.jobIds.includes(row.requiredJobId as string)
     );
   };
 
@@ -403,7 +399,9 @@ export function BookingFormModal({
           const normalizedAssignments = assignedStaffRows
             .filter((row) => row.staffId)
             .map((row) => ({
+              sourceKey: row.sourceKey,
               staffId: row.staffId,
+              serviceLabel: row.serviceLabel,
               job: row.job || undefined,
             }));
 
@@ -655,7 +653,8 @@ export function BookingFormModal({
             >
               <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300">
                 Services with configured jobs are listed automatically below.
-                Each row only shows staff who have the matching managed job.
+                Each service row can use the same staff member or a different
+                one.
               </div>
               {assignedStaffRows.map((row, index) => (
                 <div
@@ -680,7 +679,7 @@ export function BookingFormModal({
                       updateAssignmentRow(index, { staffId: value })
                     }
                     loading={staffOptions.loading}
-                    options={filteredStaffOptionsByRow[index] ?? []}
+                    options={getAssignedStaffOptionsForRow(row)}
                     onSearch={staffOptions.onSearch}
                     optionFilterProp="label"
                     onPopupScroll={(e) => {

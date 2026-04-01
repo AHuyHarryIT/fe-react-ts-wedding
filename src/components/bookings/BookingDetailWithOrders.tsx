@@ -31,6 +31,7 @@ import { formatMoneyVND } from '@utils/money';
 import { BookingSessionsPanel } from '@components/bookings/BookingSessionsPanel';
 
 type AssignedStaffMember = {
+  sourceKey?: string;
   id: string;
   firstName?: string;
   lastName?: string;
@@ -38,6 +39,7 @@ type AssignedStaffMember = {
   phoneNumber?: string;
   isActive?: boolean;
   job?: string;
+  serviceLabel?: string;
 };
 
 interface BookingDetailWithOrdersProps {
@@ -81,18 +83,34 @@ const getBookingStaffAssignments = (booking: Booking | null) => {
     ...legacyAssignments,
     ...sessionAssignments,
   ];
-  const seenIds = new Set<string>();
+  const seenKeys = new Set<string>();
   const normalizedAssignments: AssignedStaffMember[] = [];
 
   for (const staff of combinedAssignments) {
-    if (!staff?.id || seenIds.has(staff.id)) {
+    if (!staff?.id) {
       continue;
     }
 
-    seenIds.add(staff.id);
+    const sourceKey =
+      'sourceKey' in staff && typeof staff.sourceKey === 'string'
+        ? staff.sourceKey
+        : undefined;
+    const serviceLabel =
+      'serviceLabel' in staff && typeof staff.serviceLabel === 'string'
+        ? staff.serviceLabel
+        : undefined;
     const job =
       'job' in staff && typeof staff.job === 'string' ? staff.job : undefined;
+    const dedupeKey =
+      sourceKey || `${staff.id}:${job || ''}:${serviceLabel || ''}`;
+
+    if (seenKeys.has(dedupeKey)) {
+      continue;
+    }
+
+    seenKeys.add(dedupeKey);
     normalizedAssignments.push({
+      sourceKey,
       id: staff.id,
       firstName: staff.firstName,
       lastName: staff.lastName,
@@ -100,6 +118,7 @@ const getBookingStaffAssignments = (booking: Booking | null) => {
       phoneNumber: staff.phoneNumber,
       isActive: staff.isActive,
       job,
+      serviceLabel,
     });
   }
 
@@ -108,6 +127,9 @@ const getBookingStaffAssignments = (booking: Booking | null) => {
 
 const formatStaffLabel = (staff?: AssignedStaffMember | User | null) =>
   [
+    staff && 'serviceLabel' in staff && staff.serviceLabel
+      ? `${staff.serviceLabel}:`
+      : '',
     `${staff?.lastName || ''} ${staff?.firstName || ''}`.trim(),
     staff?.phoneNumber ? `(${staff.phoneNumber})` : '',
     staff?.id ? `[${staff.id}]` : '',
@@ -402,7 +424,13 @@ export const BookingDetailWithOrders: React.FC<
                       {assignedStaff.length > 0 ? (
                         <Space wrap>
                           {assignedStaff.map((staff) => (
-                            <Tag key={staff.id} color="blue">
+                            <Tag
+                              key={
+                                staff.sourceKey ||
+                                `${staff.id}-${staff.job || ''}-${staff.serviceLabel || ''}`
+                              }
+                              color="blue"
+                            >
                               {formatStaffLabel(staff)}
                             </Tag>
                           ))}
@@ -500,13 +528,16 @@ export const BookingDetailWithOrders: React.FC<
                                     ) ? (
                                       <div className="text-xs text-blue-500">
                                         Jobs:
-                                        {item.package.services
-                                          .map(
-                                            (pkgService) =>
-                                              pkgService.service?.job?.name
-                                          )
-                                          .filter(Boolean)
-                                          .join(', ')}
+                                        {[
+                                          ...new Set(
+                                            item.package.services
+                                              .map(
+                                                (pkgService) =>
+                                                  pkgService.service?.job?.name
+                                              )
+                                              .filter(Boolean)
+                                          ),
+                                        ].join(', ')}
                                       </div>
                                     ) : null}
                                   </div>

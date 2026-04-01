@@ -61,7 +61,6 @@ export const bookingApi = {
       `/bookings/${id}/staff`,
       {
         staffAssignments,
-        staffIds: staffAssignments.map((assignment) => assignment.staffId),
       }
     );
     return response.data;

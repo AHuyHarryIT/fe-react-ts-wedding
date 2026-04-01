@@ -29,7 +29,9 @@ export interface BookingService {
 }
 
 export interface BookingAssignedStaff {
+  sourceKey?: string;
   staffId: string;
+  serviceLabel?: string;
   staff?: User;
   job?: string;
 }
@@ -39,12 +41,16 @@ export interface BookingDirectStaffAssignment
     User,
     'id' | 'firstName' | 'lastName' | 'email' | 'phoneNumber' | 'isActive'
   > {
+  sourceKey?: string;
   staffId: string;
+  serviceLabel?: string;
   job?: string;
 }
 
 export interface BookingStaffAssignmentInput {
+  sourceKey?: string;
   staffId: string;
+  serviceLabel?: string;
   job?: string;
 }
 
