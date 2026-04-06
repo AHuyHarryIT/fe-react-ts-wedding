@@ -7,6 +7,7 @@ import type {
   User,
 } from '@types';
 import {
+  App,
   Card,
   Col,
   Descriptions,
@@ -16,7 +17,6 @@ import {
   Statistic,
   Tag,
   Button,
-  message,
   Tabs,
   Space,
   Empty,
@@ -162,6 +162,7 @@ const formatStaffLabel = (staff?: AssignedStaffMember | User | null) =>
 export const BookingDetailWithOrders: React.FC<
   BookingDetailWithOrdersProps
 > = ({ open, booking, onClose, onBookingUpdated, onEditBooking }) => {
+  const { message, modal } = App.useApp();
   const [resolvedBooking, setResolvedBooking] = useState<Booking | null>(null);
   const [order, setOrder] = useState<Order | null>(null);
   const [loadingOrder, setLoadingOrder] = useState(false);
@@ -262,7 +263,7 @@ export const BookingDetailWithOrders: React.FC<
       message.error('Cannot delete completed booking');
       return;
     }
-    Modal.confirm({
+    modal.confirm({
       title: 'Delete Booking',
       content: 'Are you sure you want to delete this booking?',
       okText: 'Delete',
@@ -290,7 +291,7 @@ export const BookingDetailWithOrders: React.FC<
       return;
     }
 
-    Modal.confirm({
+    modal.confirm({
       title: 'Cancel Booking',
       content:
         'This will mark the booking as cancelled and hide payment actions for the customer. Continue?',
@@ -325,7 +326,7 @@ export const BookingDetailWithOrders: React.FC<
       return;
     }
 
-    Modal.confirm({
+    modal.confirm({
       title: 'Mark Booking Completed',
       content:
         'This will lock the booking from further edits. Continue to mark it as completed?',

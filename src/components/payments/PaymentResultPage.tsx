@@ -225,7 +225,7 @@ export const PaymentResultPage: React.FC = () => {
               <Statistic
                 title="Order Status"
                 value={orderData.status}
-                valueStyle={{ color: '#52c41a' }}
+                styles={{ content: { color: '#52c41a' } }}
               />
             </Col>
           </Row>
@@ -260,14 +260,14 @@ export const PaymentResultPage: React.FC = () => {
               <Statistic
                 title="Remaining Balance"
                 value={formatMoneyVND(orderData.summary?.remainingAmount || 0)}
-                valueStyle={{ color: '#faad14' }}
+                styles={{ content: { color: '#faad14' } }}
               />
             </Col>
           </Row>
 
           <Alert
             style={{ marginTop: 16 }}
-            message="Deposit Payment Confirmed"
+            title="Deposit Payment Confirmed"
             description="Your deposit payment has been received. Please complete the remaining balance to finish your booking."
             type="info"
             showIcon
@@ -285,7 +285,7 @@ export const PaymentResultPage: React.FC = () => {
         title="Payment Processing"
         subTitle="Please wait while we verify your payment from Momo..."
         extra={[
-          <Space key="actions" direction="vertical" className="w-full">
+          <Space key="actions" orientation="vertical" className="w-full">
             <p className="text-gray-600">
               This page will automatically update when payment is confirmed.
             </p>
@@ -322,7 +322,7 @@ export const PaymentResultPage: React.FC = () => {
 
           <Alert
             style={{ marginTop: 16 }}
-            message="Payment Verification In Progress"
+            title="Payment Verification In Progress"
             description={
               gatewayConfirmed
                 ? "MoMo has confirmed the payment. We're waiting for the studio system to finish syncing the order status."
@@ -345,7 +345,7 @@ export const PaymentResultPage: React.FC = () => {
                   <Statistic
                     title="Current Status"
                     value={orderData.status || 'UNPAID'}
-                    valueStyle={{ color: '#faad14' }}
+                    styles={{ content: { color: '#faad14' } }}
                   />
                 </Col>
               </Row>
@@ -379,7 +379,7 @@ export const PaymentResultPage: React.FC = () => {
     >
       <Card style={{ marginTop: 24 }}>
         <Alert
-          message="What to do next"
+          title="What to do next"
           description={
             <ul>
               <li>✅ Check your Momo app - confirm the payment was sent</li>
@@ -420,7 +420,7 @@ export const PaymentResultPage: React.FC = () => {
         {error && (
           <Alert
             style={{ marginTop: 16 }}
-            message="Error Details"
+            title="Error Details"
             description={error}
             type="error"
             showIcon

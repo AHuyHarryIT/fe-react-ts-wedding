@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react';
-import { message } from 'antd';
+import { App } from 'antd';
 import type { Order, CheckoutRequest, PayRemainingRequest } from '@types';
 import { ordersService } from '@services/OrdersService';
 
@@ -10,6 +10,7 @@ interface UseCheckoutState {
 }
 
 export const useCheckout = (bookingId: string) => {
+  const { message } = App.useApp();
   const [state, setState] = useState<UseCheckoutState>({
     order: null,
     loading: false,
@@ -35,23 +36,27 @@ export const useCheckout = (bookingId: string) => {
   }, [bookingId]);
 
   // Create new order or pay deposit
-  const checkout = useCallback(async (data: CheckoutRequest) => {
-    try {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
-      const order = await ordersService.checkout(data);
-      setState((prev) => ({ ...prev, order, loading: false }));
-      message.success('Checkout successful!');
-      return order;
-    } catch (error: unknown) {
-      const axiosError = error as {
-        response?: { data?: { message?: string } };
-      };
-      const errorMsg = axiosError?.response?.data?.message || 'Checkout failed';
-      setState((prev) => ({ ...prev, error: errorMsg, loading: false }));
-      message.error(errorMsg);
-      return null;
-    }
-  }, []);
+  const checkout = useCallback(
+    async (data: CheckoutRequest) => {
+      try {
+        setState((prev) => ({ ...prev, loading: true, error: null }));
+        const order = await ordersService.checkout(data);
+        setState((prev) => ({ ...prev, order, loading: false }));
+        message.success('Checkout successful!');
+        return order;
+      } catch (error: unknown) {
+        const axiosError = error as {
+          response?: { data?: { message?: string } };
+        };
+        const errorMsg =
+          axiosError?.response?.data?.message || 'Checkout failed';
+        setState((prev) => ({ ...prev, error: errorMsg, loading: false }));
+        message.error(errorMsg);
+        return null;
+      }
+    },
+    [message]
+  );
 
   // Pay remaining balance
   const payRemaining = useCallback(
@@ -73,7 +78,7 @@ export const useCheckout = (bookingId: string) => {
         return null;
       }
     },
-    []
+    [message]
   );
 
   // Get order status

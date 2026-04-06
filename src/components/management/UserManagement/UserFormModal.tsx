@@ -238,10 +238,9 @@ export function UserFormModal({
                   <Select
                     mode="multiple"
                     allowClear
-                    showSearch
+                    showSearch={{ optionFilterProp: 'label' }}
                     maxTagCount="responsive"
                     placeholder="Select one or more jobs"
-                    optionFilterProp="label"
                     options={jobs.map((job) => ({
                       label: job.name,
                       value: job.id,

@@ -1,7 +1,7 @@
 import { ordersService } from '@services/OrdersService';
 import type { CheckoutRequest, Order, PaymentMethod } from '@types';
 import { formatMoneyVND } from '@utils/money';
-import { Button, Col, Divider, Form, Input, Radio, Row, message } from 'antd';
+import { App, Button, Col, Divider, Form, Input, Radio, Row } from 'antd';
 import React, { useMemo, useState } from 'react';
 
 interface CheckoutFormProps {
@@ -29,6 +29,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
   onCheckoutSuccess,
   onClose,
 }) => {
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [paymentOption, setPaymentOption] = useState<'deposit' | 'full'>(

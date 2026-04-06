@@ -335,11 +335,13 @@ const StatisticsSection: React.FC = () => {
                 <Statistic
                   value={stat.number}
                   suffix={stat.suffix}
-                  valueStyle={{
-                    color: 'white',
-                    fontSize: '3rem',
-                    fontWeight: 300,
-                    lineHeight: 1,
+                  styles={{
+                    content: {
+                      color: 'white',
+                      fontSize: '3rem',
+                      fontWeight: 300,
+                      lineHeight: 1,
+                    },
                   }}
                 />
                 <Text className="!text-white/80 text-lg font-light tracking-wider uppercase">

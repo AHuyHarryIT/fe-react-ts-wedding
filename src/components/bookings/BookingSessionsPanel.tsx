@@ -6,6 +6,7 @@ import type {
   UpdateBookingSessionRequest,
 } from '@types';
 import {
+  App,
   Button,
   Card,
   DatePicker,
@@ -18,7 +19,6 @@ import {
   Space,
   Tag,
   Typography,
-  message,
 } from 'antd';
 import {
   CalendarOutlined,
@@ -77,6 +77,7 @@ export function BookingSessionsPanel({
   canManage,
   onChanged,
 }: BookingSessionsPanelProps) {
+  const { message } = App.useApp();
   const [form] = Form.useForm<BookingSessionFormValues>();
   const [editingSession, setEditingSession] = useState<BookingSession | null>(
     null

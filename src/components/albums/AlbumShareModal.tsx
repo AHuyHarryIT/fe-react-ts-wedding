@@ -1,11 +1,4 @@
-import {
-  Modal,
-  Input,
-  Button,
-  Space,
-  Typography,
-  message as antdMessage,
-} from 'antd';
+import { App, Modal, Input, Button, Space, Typography } from 'antd';
 import { CopyOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -25,9 +18,11 @@ export function AlbumShareModal({
   onRevoke,
   onCancel,
 }: AlbumShareModalProps) {
+  const { message } = App.useApp();
+
   const handleCopyLink = () => {
-    navigator.clipboard.writeText(shareLink);
-    antdMessage.success('Share link copied to clipboard');
+    void navigator.clipboard.writeText(shareLink);
+    message.success('Share link copied to clipboard');
   };
 
   return (
@@ -42,14 +37,14 @@ export function AlbumShareModal({
       ]}
       width={600}
     >
-      <Space direction="vertical" size="middle" style={{ width: '100%' }}>
+      <Space orientation="vertical" size="middle" style={{ width: '100%' }}>
         <div>
           <Text type="secondary">
             Share this link to allow others to view this album:
           </Text>
         </div>
 
-        <Input.Group compact style={{ display: 'flex' }}>
+        <Space.Compact style={{ display: 'flex', width: '100%' }}>
           <Input value={shareLink} readOnly style={{ flex: 1 }} />
           <Button
             type="primary"
@@ -58,7 +53,7 @@ export function AlbumShareModal({
           >
             Copy
           </Button>
-        </Input.Group>
+        </Space.Compact>
 
         <div>
           <Button

@@ -79,10 +79,9 @@ export function ServiceFormModal({
         <Form.Item name="jobId" label="Job">
           <Select
             allowClear
-            showSearch
+            showSearch={{ optionFilterProp: 'label' }}
             loading={jobsLoading}
             placeholder="Optional managed job for this service"
-            optionFilterProp="label"
             options={jobs
               .slice()
               .sort((a, b) => a.name.localeCompare(b.name))

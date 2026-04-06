@@ -147,7 +147,7 @@ export function AlbumGrid({
                       </Text>
                     )}
                     <Space
-                      direction="vertical"
+                      orientation="vertical"
                       size={4}
                       style={{ width: '100%' }}
                     >

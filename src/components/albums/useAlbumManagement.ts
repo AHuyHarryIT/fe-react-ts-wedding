@@ -1,5 +1,5 @@
 import { useState, useRef } from 'react';
-import { Form, message } from 'antd';
+import { App, Form } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   AddFilesToAlbumRequest,
@@ -39,7 +39,8 @@ const albumKeys = {
 
 export function useAlbumManagement() {
   const queryClient = useQueryClient();
-  const [messageApi, contextHolder] = message.useMessage();
+  const { message: messageApi } = App.useApp();
+  const contextHolder = null;
   const [createForm] = Form.useForm<AlbumFormData>();
   const [editForm] = Form.useForm<AlbumFormData>();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -113,13 +114,13 @@ export function useAlbumManagement() {
     mutationFn: (data: CreateAlbumRequest) => albumApi.create(data),
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
-      message.success(
+      messageApi.success(
         response.message ||
           'Album created successfully! OneDrive folder created.'
       );
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to create album');
+      messageApi.error(error.message || 'Failed to create album');
     },
   });
 
@@ -131,10 +132,10 @@ export function useAlbumManagement() {
         queryKey: albumKeys.detail(variables.id),
       });
       queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
-      message.success(response.message || 'Album updated successfully');
+      messageApi.success(response.message || 'Album updated successfully');
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to update album');
+      messageApi.error(error.message || 'Failed to update album');
     },
   });
 
@@ -143,10 +144,10 @@ export function useAlbumManagement() {
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
       queryClient.invalidateQueries({ queryKey: albumKeys.deletedAlbums() });
-      message.success(response.message || 'Album deleted successfully');
+      messageApi.success(response.message || 'Album deleted successfully');
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to delete album');
+      messageApi.error(error.message || 'Failed to delete album');
     },
   });
 
@@ -155,10 +156,10 @@ export function useAlbumManagement() {
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
       queryClient.invalidateQueries({ queryKey: albumKeys.deletedAlbums() });
-      message.success(response.message || 'Album restored successfully');
+      messageApi.success(response.message || 'Album restored successfully');
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to restore album');
+      messageApi.error(error.message || 'Failed to restore album');
     },
   });
 
@@ -167,10 +168,10 @@ export function useAlbumManagement() {
     onSuccess: (response) => {
       queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
       queryClient.invalidateQueries({ queryKey: albumKeys.deletedAlbums() });
-      message.success(response.message || 'Album permanently deleted');
+      messageApi.success(response.message || 'Album permanently deleted');
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to permanently delete album');
+      messageApi.error(error.message || 'Failed to permanently delete album');
     },
   });
 
@@ -182,10 +183,12 @@ export function useAlbumManagement() {
         queryKey: albumKeys.detail(variables.id),
       });
       queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
-      message.success(response.message || 'Files added to album successfully');
+      messageApi.success(
+        response.message || 'Files added to album successfully'
+      );
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to add files');
+      messageApi.error(error.message || 'Failed to add files');
     },
   });
 
@@ -205,10 +208,10 @@ export function useAlbumManagement() {
         queryKey: albumKeys.deletedFiles(variables.id),
       });
       queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
-      message.success(response.message || 'Files moved to trash');
+      messageApi.success(response.message || 'Files moved to trash');
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to remove files');
+      messageApi.error(error.message || 'Failed to remove files');
     },
   });
 
@@ -228,10 +231,10 @@ export function useAlbumManagement() {
         queryKey: albumKeys.deletedFiles(variables.id),
       });
       queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
-      message.success(response.message || 'Files restored successfully');
+      messageApi.success(response.message || 'Files restored successfully');
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to restore files');
+      messageApi.error(error.message || 'Failed to restore files');
     },
   });
 
@@ -251,10 +254,10 @@ export function useAlbumManagement() {
         queryKey: albumKeys.deletedFiles(variables.id),
       });
       queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
-      message.success(response.message || 'Files permanently deleted');
+      messageApi.success(response.message || 'Files permanently deleted');
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to delete files permanently');
+      messageApi.error(error.message || 'Failed to delete files permanently');
     },
   });
 
@@ -273,7 +276,7 @@ export function useAlbumManagement() {
       queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to generate share token');
+      messageApi.error(error.message || 'Failed to generate share token');
     },
   });
 
@@ -282,10 +285,12 @@ export function useAlbumManagement() {
     onSuccess: (response, id) => {
       queryClient.invalidateQueries({ queryKey: albumKeys.detail(id) });
       queryClient.invalidateQueries({ queryKey: albumKeys.lists() });
-      message.success(response.message || 'Share token revoked successfully');
+      messageApi.success(
+        response.message || 'Share token revoked successfully'
+      );
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to revoke share token');
+      messageApi.error(error.message || 'Failed to revoke share token');
     },
   });
 
@@ -327,9 +332,9 @@ export function useAlbumManagement() {
       // Check if any files failed (partial success)
       const hasFailed = uploadProgress.some((p) => p.status === 'failed');
       if (hasFailed) {
-        message.warning(response.message || 'Some images failed to upload');
+        messageApi.warning(response.message || 'Some images failed to upload');
       } else {
-        message.success(response.message || 'Images uploaded successfully');
+        messageApi.success(response.message || 'Images uploaded successfully');
       }
 
       // Keep progress visible for 2s so user can see final status
@@ -338,7 +343,7 @@ export function useAlbumManagement() {
       }, 2000);
     },
     onError: (error) => {
-      message.error(error.message || 'Failed to upload images');
+      messageApi.error(error.message || 'Failed to upload images');
       // Keep progress visible for 3s so user can see which files failed
       setTimeout(() => {
         setUploadProgress([]);
@@ -516,7 +521,7 @@ export function useAlbumManagement() {
     if (uploadAbortRef.current) {
       uploadAbortRef.current.abort();
       uploadAbortRef.current = null;
-      message.warning('Upload cancelled');
+      messageApi.warning('Upload cancelled');
     }
   };
 

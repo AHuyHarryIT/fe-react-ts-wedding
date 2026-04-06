@@ -232,7 +232,7 @@ export function ChatPage({ customerId, staffId }: ChatPageProps) {
             >
               {error && (
                 <Alert
-                  message="Error"
+                  title="Error"
                   description={error}
                   type="error"
                   closable

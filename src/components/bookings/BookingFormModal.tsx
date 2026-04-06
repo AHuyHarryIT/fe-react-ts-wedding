@@ -416,7 +416,13 @@ export function BookingFormModal({
         <Form.Item
           name="customerId"
           label="Customer"
-          rules={[{ required: true, message: 'Please select a customer' }]}
+          rules={[
+            {
+              required: true,
+              type: 'string',
+              message: 'Please select a customer',
+            },
+          ]}
         >
           <Select
             placeholder="Select a customer"
@@ -665,7 +671,7 @@ export function BookingFormModal({
           <>
             <Divider>Assign Staff</Divider>
             <Space
-              direction="vertical"
+              orientation="vertical"
               style={{ width: '100%', marginBottom: 16 }}
               size="middle"
             >
@@ -690,16 +696,17 @@ export function BookingFormModal({
                   <Select
                     allowClear
                     placeholder="Select staff member"
-                    showSearch
-                    filterOption={false}
+                    showSearch={{
+                      filterOption: false,
+                      onSearch: staffOptions.onSearch,
+                      optionFilterProp: 'label',
+                    }}
                     value={row.staffId || undefined}
                     onChange={(value) =>
                       updateAssignmentRow(index, { staffId: value })
                     }
                     loading={staffOptions.loading}
                     options={getAssignedStaffOptionsForRow(row)}
-                    onSearch={staffOptions.onSearch}
-                    optionFilterProp="label"
                     onPopupScroll={(e) => {
                       const target = e.target as HTMLDivElement;
                       if (
@@ -718,7 +725,13 @@ export function BookingFormModal({
                       })
                     }
                     options={assignedJobOptions}
-                    onSearch={jobOptions.onSearch}
+                    showSearch={{
+                      onSearch: jobOptions.onSearch,
+                      filterOption: (inputValue, option) =>
+                        String(option?.value ?? '')
+                          .toLowerCase()
+                          .includes(inputValue.toLowerCase()),
+                    }}
                     onPopupScroll={(e) => {
                       const target = e.target as HTMLDivElement;
                       if (
@@ -728,11 +741,6 @@ export function BookingFormModal({
                         jobOptions.loadMore();
                       }
                     }}
-                    filterOption={(inputValue, option) =>
-                      String(option?.value ?? '')
-                        .toLowerCase()
-                        .includes(inputValue.toLowerCase())
-                    }
                     notFoundContent={
                       jobOptions.options.length > 0
                         ? 'No matching jobs'
@@ -789,7 +797,11 @@ export function BookingFormModal({
           </>
         )}
 
-        <Form.Item name="notes" label="Notes">
+        <Form.Item
+          name="notes"
+          label="Notes"
+          rules={[{ type: 'string', message: 'Notes must be text' }]}
+        >
           <TextArea
             rows={4}
             placeholder="Add any additional notes about this booking"

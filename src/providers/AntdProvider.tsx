@@ -1,5 +1,5 @@
 import React from 'react';
-import { ConfigProvider } from 'antd';
+import { App, ConfigProvider } from 'antd';
 import { getLightTheme, getDarkTheme } from '@config/antd-theme';
 
 interface AntdProviderProps {
@@ -15,7 +15,7 @@ export const AntdProvider: React.FC<AntdProviderProps> = ({
 
   return (
     <ConfigProvider theme={currentTheme} componentSize="middle">
-      {children}
+      <App>{children}</App>
     </ConfigProvider>
   );
 };

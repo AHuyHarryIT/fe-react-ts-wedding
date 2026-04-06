@@ -249,7 +249,7 @@ const Navigation: React.FC<NavigationProps> = ({ transparent = false }) => {
         onClose={() => setMobileMenuOpen(false)}
         open={mobileMenuOpen}
         className={darkMode ? '[&_.ant-drawer-content]:bg-gray-900' : ''}
-        width={280}
+        size={280}
       >
         <motion.div
           initial={{ opacity: 0 }}

@@ -1,4 +1,5 @@
 import {
+  App,
   Modal,
   Typography,
   Tag,
@@ -44,6 +45,7 @@ const ImageGrid = memo(function ImageGrid({
   files: AlbumImage[];
   onRemoveFile?: (fileId: string) => void;
 }) {
+  const { modal } = App.useApp();
   return (
     <Image.PreviewGroup>
       <Row gutter={[12, 12]}>
@@ -106,7 +108,7 @@ const ImageGrid = memo(function ImageGrid({
                   icon={<DeleteOutlined />}
                   onClick={(e) => {
                     e.stopPropagation();
-                    Modal.confirm({
+                    modal.confirm({
                       title: 'Move to Trash',
                       content: `Move "${albumFile.image.name}" to trash? You can restore it later.`,
                       okText: 'Move to Trash',
@@ -200,6 +202,7 @@ export function AlbumDetailsModal({
   onRefresh,
   onCancelUpload,
 }: AlbumDetailsModalProps) {
+  const { modal } = App.useApp();
   const [uploadFileList, setUploadFileList] = useState<UploadFile[]>([]);
   const [uploadForm] = Form.useForm();
   const [currentPage, setCurrentPage] = useState(1);
@@ -225,7 +228,7 @@ export function AlbumDetailsModal({
   // Guard modal close — ask for confirmation if upload is in progress
   const handleCancel = useCallback(() => {
     if (isUploading) {
-      Modal.confirm({
+      modal.confirm({
         title: 'Upload in progress',
         icon: <ExclamationCircleOutlined />,
         content:
@@ -238,7 +241,7 @@ export function AlbumDetailsModal({
       return;
     }
     onCancel();
-  }, [isUploading, onCancel]);
+  }, [isUploading, modal, onCancel]);
 
   const files = albumWithFiles?.files || [];
   const paginatedFiles = files.slice(
@@ -500,7 +503,7 @@ export function AlbumDetailsModal({
                   <Button
                     danger
                     onClick={() => {
-                      Modal.confirm({
+                      modal.confirm({
                         title: 'Cancel upload?',
                         icon: <ExclamationCircleOutlined />,
                         content:
@@ -863,7 +866,7 @@ export function AlbumDetailsModal({
                                   icon={<DeleteOutlined />}
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    Modal.confirm({
+                                    modal.confirm({
                                       title: 'Permanently Delete',
                                       icon: <ExclamationCircleOutlined />,
                                       content: `Permanently delete "${albumFile.image.name}"? This will remove it from OneDrive and cannot be undone!`,

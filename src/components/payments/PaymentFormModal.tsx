@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import {
+  App,
   Modal,
   Form,
   Input,
@@ -7,7 +8,6 @@ import {
   Select,
   Button,
   Space,
-  message,
   Spin,
 } from 'antd';
 import { paymentApi, type MomoPaymentRequest } from '@services/PaymentService';
@@ -27,6 +27,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
   totalAmount,
   onPaymentSuccess,
 }) => {
+  const { message } = App.useApp();
   const [form] = Form.useForm();
   const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'MOMO'>('CASH');
