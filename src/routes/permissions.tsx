@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { AdminLayout } from '@components/layouts/AdminLayout';
-import { PermissionManagement } from '@components/permissions';
+import { AdminLayout } from '@shared/components/AdminLayout';
+import { PermissionManagement } from '@features/permissions';
 import { requireStaffAuth } from '@utils/authGuard';
 
 export const Route = createFileRoute('/permissions')({

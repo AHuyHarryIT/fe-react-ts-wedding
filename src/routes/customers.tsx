@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { AdminLayout } from '@components/layouts/AdminLayout';
-import { CustomerManagement } from '@components/management/CustomerManagement';
+import { AdminLayout } from '@shared/components/AdminLayout';
+import { CustomerManagement } from '@features/customers';
 import { requireStaffAuth } from '@utils/authGuard';
 
 export const Route = createFileRoute('/customers')({

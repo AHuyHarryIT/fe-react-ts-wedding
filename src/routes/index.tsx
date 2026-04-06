@@ -8,8 +8,8 @@ import {
   TeamOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { AdminLayout } from '@components/layouts/AdminLayout';
-import { StatCard } from '@components/ui/StatCard';
+import { AdminLayout } from '@shared/components/AdminLayout';
+import { StatCard } from '@shared/components/ui/StatCard';
 import { useTheme } from '@hooks';
 import { useAuthStore } from '@stores/authStore';
 import { requireStaffAuth } from '@utils/authGuard';

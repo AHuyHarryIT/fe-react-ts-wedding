@@ -2,6 +2,6 @@
 export { useTheme } from './useTheme';
 export { useNotifications } from './useNotifications';
 export { useWeddingForm } from './useWeddingForm';
-export { useAuth } from './useAuth';
+export { useAuth } from '@features/auth/hooks/useAuth';
 export { useCheckout } from './useCheckout';
 export { useChat } from './useChat';

@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { UserManagement } from '@components/management/UserManagement';
-import { AdminLayout } from '@components/layouts/AdminLayout';
+import { UserManagement } from '@features/users';
+import { AdminLayout } from '@shared/components/AdminLayout';
 import { requireStaffAuth } from '@utils/authGuard';
 
 export const Route = createFileRoute('/users')({

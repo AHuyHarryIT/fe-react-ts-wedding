@@ -1,6 +1,6 @@
 import { createFileRoute } from '@tanstack/react-router';
-import { ChatPage } from '@components/chat/ChatPage';
-import { AdminLayout } from '@components/layouts/AdminLayout';
+import { ChatPage } from '@features/chat/ChatPage';
+import { AdminLayout } from '@shared/components/AdminLayout';
 import { useAuthStore } from '@stores/authStore';
 import { requireStaffAuth } from '@utils/authGuard';
 
