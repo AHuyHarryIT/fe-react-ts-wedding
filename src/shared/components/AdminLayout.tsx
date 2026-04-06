@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQuery } from '@tanstack/react-query';
 import { useNavigate } from '@tanstack/react-router';
 import { Grid, Layout, message } from 'antd';
 import { useEffect, useState, type ReactNode } from 'react';
@@ -31,25 +31,27 @@ export function AdminLayout({
   const screens = useBreakpoint();
   const isMobile = !screens.lg;
 
+  // Hydrate user from API - data fetching via useQuery, side effects via useEffect
+  const { data: currentUser, error: hydrateError } = useQuery({
+    queryKey: ['admin-layout-current-user'],
+    queryFn: () => authApi.getCurrentUser(),
+    enabled: !isAuthenticated && !user?.id,
+    retry: false,
+    staleTime: 0,
+  });
+
   useEffect(() => {
-    if (isAuthenticated || user?.id) {
-      return;
+    if (currentUser?.id) {
+      setAuth(currentUser);
     }
+  }, [currentUser, setAuth]);
 
-    const hydrateUser = async () => {
-      try {
-        const currentUser = await authApi.getCurrentUser();
-        if (currentUser?.id) {
-          setAuth(currentUser);
-        }
-      } catch {
-        clearAuth();
-        navigate({ to: '/login' });
-      }
-    };
-
-    void hydrateUser();
-  }, [isAuthenticated, user?.id, setAuth, clearAuth, navigate]);
+  useEffect(() => {
+    if (hydrateError) {
+      clearAuth();
+      navigate({ to: '/login' });
+    }
+  }, [hydrateError, clearAuth, navigate]);
 
   useEffect(() => {
     if (!isMobile) {

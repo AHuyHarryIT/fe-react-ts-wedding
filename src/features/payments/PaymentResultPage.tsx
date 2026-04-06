@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   Result,
   Button,
@@ -15,20 +15,23 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
 } from '@ant-design/icons';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { ordersService } from '@services/OrdersService';
-import type { Order } from '@types';
 import { formatMoneyVND } from '@utils/money';
 
 /**
  * Payment Result Page - Shows payment status after redirect from Momo
  *
  * Key features:
- * - Polls backend for payment status every 2 seconds
+ * - Polls backend for payment status every 2 seconds using useQuery refetchInterval
+ * - Uses separate useQuery for Momo gateway status checking
  * - Waits for IPN callback to confirm payment
  * - Shows real-time status updates
  * - Handles successful, partial, and pending states
  */
 export const PaymentResultPage: React.FC = () => {
+  const queryClient = useQueryClient();
+
   // Get orderId from URL query params
   const searchParams = new URLSearchParams(window.location.search);
   const bookingId =
@@ -41,154 +44,136 @@ export const PaymentResultPage: React.FC = () => {
   const momoResultCode = searchParams.get('resultCode');
   const momoMessage = searchParams.get('message');
 
-  const [orderData, setOrderData] = useState<Order | null>(null);
-  const [loading, setLoading] = useState(Boolean(bookingId));
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollCountRef = useRef(0);
+  const elapsedRef = useRef(0);
+
   const [isPolling, setIsPolling] = useState(true);
-  const [pollCount, setPollCount] = useState(0);
   const [error, setError] = useState<string | null>(null);
-  const [elapsedTime, setElapsedTime] = useState(0);
   const [gatewayConfirmed, setGatewayConfirmed] = useState(false);
+  const [pollCount, setPollCount] = useState(0);
+  const [elapsedTime, setElapsedTime] = useState(0);
 
-  const fetchOrderStatus = useCallback(async () => {
-    if (!bookingId) return;
+  // Early exit: Momo payment failed
+  const momoFailed = momoResultCode && Number(momoResultCode) !== 0;
+  const hasBookingId = !!bookingId;
 
-    try {
-      const order = await ordersService.getOrder(bookingId);
-
-      console.log(
-        `📊 Poll #${pollCount + 1} (${elapsedTime}s): Status=${order.status}, Paid=${order.summary?.totalPaid}/${order.summary?.totalPrice}`
-      );
-
-      setOrderData(order);
-      setError(null);
-      setLoading(false);
-
-      // If payment is fully paid, stop polling immediately
-      if (order.summary?.isPaid || order.status === 'PAID') {
-        console.log('✅ PAYMENT CONFIRMED! Stopping polls.');
-        setIsPolling(false);
-        localStorage.removeItem('currentBookingId');
-        localStorage.removeItem('currentMomoOrderId');
-      }
-    } catch (err: unknown) {
-      const errorMsg =
-        err instanceof Error ? err.message : 'Failed to load order status';
-      console.error('❌ Poll error:', err);
-      // Don't set error on network failures, just log
-      if (!orderData) {
-        setError(errorMsg);
-      }
-      setLoading(false);
-    }
-  }, [bookingId, pollCount, elapsedTime, orderData]);
-
+  // Initialize polling and handle early exits
   useEffect(() => {
-    if (momoResultCode && Number(momoResultCode) !== 0) {
-      setError(momoMessage || 'MoMo did not confirm the payment.');
-      setLoading(false);
+    if (!hasBookingId) {
+      setError('No order ID found. Please go back and try again.');
       setIsPolling(false);
       return;
     }
 
-    if (!bookingId) {
-      setError('No order ID found. Please go back and try again.');
-      setLoading(false);
+    if (momoFailed) {
+      setError(momoMessage || 'MoMo did not confirm the payment.');
       setIsPolling(false);
       return;
     }
 
     console.log('🔄 PaymentResultPage: Loaded for bookingId:', bookingId);
     localStorage.setItem('currentBookingId', bookingId);
+  }, [hasBookingId, bookingId, momoFailed, momoMessage]);
 
-    // Initial fetch
-    fetchOrderStatus();
+  // Query 1: Order status polling via useQuery
+  const { data: orderData, isFetching: isLoading } = useQuery({
+    queryKey: ['payment-order-status', bookingId],
+    queryFn: () => ordersService.getOrder(bookingId!),
+    enabled: isPolling && hasBookingId && !momoFailed,
+    refetchInterval: () => {
+      elapsedRef.current += 2;
+      pollCountRef.current += 1;
+      setElapsedTime(elapsedRef.current);
+      setPollCount(pollCountRef.current);
 
-    // Set up polling interval (every 2 seconds)
-    const pollInterval = setInterval(() => {
-      setPollCount((c) => c + 1);
-      setElapsedTime((t) => t + 2);
-      fetchOrderStatus();
-    }, 2000);
+      if (elapsedRef.current >= 60) {
+        console.log('⏰ Polling timeout - stopped after 60 seconds');
+        return false;
+      }
 
-    // Stop polling after 60 seconds
-    const timeoutHandle = setTimeout(() => {
-      console.log('⏰ Polling timeout - stopped after 60 seconds');
+      return 2000;
+    },
+    retry: false,
+    staleTime: 0,
+  });
+
+  // Query 2: Momo gateway status polling via useQuery
+  const { data: gatewayStatus } = useQuery({
+    queryKey: ['momo-gateway-status', momoOrderId],
+    queryFn: () => ordersService.checkMomoPaymentStatus(momoOrderId!),
+    enabled: isPolling && !!momoOrderId && hasBookingId && !momoFailed,
+    refetchInterval: 4000,
+    retry: false,
+    staleTime: 0,
+  });
+
+  // Stop polling when payment is confirmed
+  const stopPollingIfPaid = useCallback(() => {
+    if (orderData?.summary?.isPaid || orderData?.status === 'PAID') {
+      console.log('✅ PAYMENT CONFIRMED! Stopping polls.');
       setIsPolling(false);
-      clearInterval(pollInterval);
-    }, 60000);
-
-    return () => {
-      clearInterval(pollInterval);
-      clearTimeout(timeoutHandle);
-    };
-  }, [bookingId, fetchOrderStatus, momoMessage, momoResultCode]);
+      localStorage.removeItem('currentBookingId');
+      localStorage.removeItem('currentMomoOrderId');
+    }
+  }, [orderData?.summary?.isPaid, orderData?.status]);
 
   useEffect(() => {
-    if (!momoOrderId || !isPolling) {
-      return;
+    stopPollingIfPaid();
+  }, [stopPollingIfPaid]);
+
+  // Track gateway confirmation
+  useEffect(() => {
+    if (gatewayStatus) {
+      if (gatewayStatus.resultCode === 0) {
+        setGatewayConfirmed(true);
+      } else if (gatewayStatus.resultCode !== 1000) {
+        setError(gatewayStatus.message || 'MoMo did not confirm the payment.');
+        setIsPolling(false);
+      }
     }
+  }, [gatewayStatus]);
 
-    let cancelled = false;
+  // Log polling progress
+  useEffect(() => {
+    if (orderData && isPolling) {
+      console.log(
+        `📊 Poll #${pollCount} (${elapsedTime}s): Status=${orderData.status}, Paid=${orderData.summary?.totalPaid}/${orderData.summary?.totalPrice}`
+      );
+    }
+  }, [orderData, pollCount, elapsedTime, isPolling]);
 
-    const checkGatewayStatus = async () => {
-      try {
-        const status = await ordersService.checkMomoPaymentStatus(momoOrderId);
-
-        if (cancelled) {
-          return;
-        }
-
-        if (status.resultCode === 0) {
-          setGatewayConfirmed(true);
-        } else if (status.resultCode !== 1000) {
-          setError(status.message || 'MoMo did not confirm the payment.');
-          setIsPolling(false);
-        }
-      } catch (statusError) {
-        console.warn('Failed to verify Momo gateway status:', statusError);
+  // Cleanup on unmount
+  useEffect(() => {
+    const currentTimer = timerRef.current;
+    return () => {
+      if (currentTimer) {
+        clearInterval(currentTimer);
       }
     };
-
-    void checkGatewayStatus();
-    const interval = window.setInterval(() => {
-      void checkGatewayStatus();
-    }, 4000);
-
-    return () => {
-      cancelled = true;
-      window.clearInterval(interval);
-    };
-  }, [isPolling, momoOrderId]);
+  }, []);
 
   const handleRetry = () => {
     console.log('🔄 Manually retrying...');
+    pollCountRef.current = 0;
+    elapsedRef.current = 0;
     setPollCount(0);
     setElapsedTime(0);
     setIsPolling(true);
-    setLoading(true);
     setError(null);
-
-    fetchOrderStatus();
-
-    const pollInterval = setInterval(() => {
-      setPollCount((c) => c + 1);
-      setElapsedTime((t) => t + 2);
-      fetchOrderStatus();
-    }, 2000);
-
-    const timeoutHandle = setTimeout(() => {
-      setIsPolling(false);
-      clearInterval(pollInterval);
-    }, 60000);
-
-    return () => {
-      clearInterval(pollInterval);
-      clearTimeout(timeoutHandle);
-    };
+    // Invalidate queries to trigger immediate refetch
+    queryClient.invalidateQueries({
+      queryKey: ['payment-order-status', bookingId],
+    });
+    if (momoOrderId) {
+      queryClient.invalidateQueries({
+        queryKey: ['momo-gateway-status', momoOrderId],
+      });
+    }
   };
 
   // Still loading initial state
-  if (loading && !orderData) {
+  if (isLoading && !orderData) {
     return (
       <div className="flex justify-center items-center h-screen">
         <Spin
@@ -356,12 +341,16 @@ export const PaymentResultPage: React.FC = () => {
     );
   }
 
-  // ❌ Payment not confirmed after timeout
+  // ❌ Payment not confirmed after timeout or error
   return (
     <Result
       status="warning"
-      title="Payment Verification Timeout"
-      subTitle="We couldn't verify your payment within the expected time. Please check your Momo app and try again."
+      title={error ? 'Payment Error' : 'Payment Verification Timeout'}
+      subTitle={
+        error
+          ? error
+          : "We couldn't verify your payment within the expected time. Please check your Momo app and try again."
+      }
       extra={[
         <Space key="actions">
           <Button

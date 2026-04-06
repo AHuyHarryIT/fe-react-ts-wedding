@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   Alert,
   Table,
@@ -34,47 +35,38 @@ const { Text } = Typography;
 
 export const OrdersPage: React.FC = () => {
   const { darkMode } = useTheme();
-  const [orders, setOrders] = useState<Order[]>([]);
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(false);
+  const { data: orders = [], isLoading: isLoadingOrders } = useQuery({
+    queryKey: ['orders-list'],
+    queryFn: async () => {
+      const response = await ordersService.getOrders({ limit: 50, page: 1 });
+      return (response.data || []) as Order[];
+    },
+  });
+
+  const { data: bookings = [], isLoading: isLoadingBookings } = useQuery({
+    queryKey: ['orders-bookings'],
+    queryFn: async () => {
+      const response = await bookingApi.getAll({
+        limit: 20,
+        page: 1,
+        includeCustomer: true,
+        includePackages: true,
+        includeServices: true,
+      });
+      const bookingItems = response.data || [];
+      return bookingItems.filter(
+        (b: Booking) => b.status !== 'CANCELLED' && b.status !== 'COMPLETED'
+      );
+    },
+  });
+
+  const loading = isLoadingOrders || isLoadingBookings;
+  const queryClient = useQueryClient();
+
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [detailModalVisible, setDetailModalVisible] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [bookingModalVisible, setBookingModalVisible] = useState(false);
-
-  useEffect(() => {
-    void loadOrdersPageData();
-  }, []);
-
-  const loadOrdersPageData = async () => {
-    try {
-      setLoading(true);
-      const [ordersResponse, bookingsResponse] = await Promise.all([
-        ordersService.getOrders({ limit: 50, page: 1 }),
-        bookingApi.getAll({
-          limit: 20,
-          page: 1,
-          includeCustomer: true,
-          includePackages: true,
-          includeServices: true,
-        }),
-      ]);
-
-      const ordersData = ordersResponse.data || [];
-      setOrders(Array.isArray(ordersData) ? ordersData : []);
-
-      const bookingItems = bookingsResponse.data || [];
-      const actionableBookings = bookingItems.filter(
-        (booking) =>
-          booking.status !== 'CANCELLED' && booking.status !== 'COMPLETED'
-      );
-      setBookings(actionableBookings);
-    } catch (error) {
-      console.error('Failed to load orders:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
 
   const handleViewDetail = (order: Order) => {
     setSelectedOrder(order);
@@ -390,7 +382,8 @@ export const OrdersPage: React.FC = () => {
         onClose={() => {
           setBookingModalVisible(false);
           setSelectedBooking(null);
-          void loadOrdersPageData();
+          void queryClient.invalidateQueries({ queryKey: ['orders-list'] });
+          void queryClient.invalidateQueries({ queryKey: ['orders-bookings'] });
         }}
       />
     </div>
