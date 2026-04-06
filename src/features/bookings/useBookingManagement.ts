@@ -220,9 +220,7 @@ export function useBookingManagement() {
 
     const bookingData: CreateBookingRequest = {
       customerId: values.customerId,
-      packageIds: createSelectedItems
-        .filter((item) => item.type === 'package')
-        .map((item) => item.id),
+      packageIds: [],
       serviceIds: createSelectedItems
         .filter((item) => item.type === 'service')
         .map((item) => item.id),
@@ -249,15 +247,13 @@ export function useBookingManagement() {
     if (!selectedBooking) return;
 
     if (editSelectedItems.length === 0) {
-      messageApi.error('Please select at least 1 package or service');
+      messageApi.error('Please select at least 1 service');
       return;
     }
 
     const updateData: UpdateBookingRequest = {
       customerId: values.customerId,
-      packageIds: editSelectedItems
-        .filter((item) => item.type === 'package')
-        .map((item) => item.id),
+      packageIds: [],
       serviceIds: editSelectedItems
         .filter((item) => item.type === 'service')
         .map((item) => item.id),
@@ -297,20 +293,7 @@ export function useBookingManagement() {
     const freshBooking = bookingDetail.data;
     const items: BookingSelectedItem[] = [];
 
-    if (freshBooking.packages && freshBooking.packages.length > 0) {
-      freshBooking.packages.forEach((bp) => {
-        if (bp.package) {
-          items.push({
-            id: bp.package.id,
-            type: 'package',
-            name: bp.package.name,
-            price: bp.package.price || 0,
-            quantity: bp.quantity || 1,
-          });
-        }
-      });
-    }
-
+    // Add all booking services
     if (freshBooking.services && freshBooking.services.length > 0) {
       freshBooking.services.forEach((bs) => {
         if (bs.service) {

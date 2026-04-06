@@ -108,26 +108,19 @@ const getRequiredServiceAssignments = (
   }
 
   const assignments: RequiredServiceAssignment[] = [];
-  const packageMap = new Map<string, PackageExtra>();
   const serviceMap = new Map<string, ServiceExtra>();
 
-  for (const pkg of availablePackages) {
-    packageMap.set(pkg.id, pkg);
-  }
-
-  for (const svc of availableServices) {
-    serviceMap.set(svc.id, svc);
-  }
-
-  for (const item of booking?.packages ?? []) {
-    if (item.package) {
-      packageMap.set(item.package.id, item.package as PackageExtra);
-    }
-  }
-
+  // First priority: use booking's actual service data (has job info from backend)
   for (const item of booking?.services ?? []) {
     if (item.service) {
       serviceMap.set(item.service.id, item.service as ServiceExtra);
+    }
+  }
+
+  // Second priority: use paginated availableServices as fallback
+  for (const svc of availableServices) {
+    if (!serviceMap.has(svc.id)) {
+      serviceMap.set(svc.id, svc);
     }
   }
 
@@ -149,28 +142,6 @@ const getRequiredServiceAssignments = (
         requiredJobName: jobName,
         requiresLocation: Boolean(service?.isLocation),
         requiresTime: Boolean(service?.isTime),
-      });
-      continue;
-    }
-
-    const pkg = packageMap.get(item.id);
-
-    for (const pkgService of pkg?.services ?? []) {
-      const jobId = pkgService.service?.jobId;
-      const jobName = pkgService.service?.job?.name;
-
-      if (!jobId || !jobName) {
-        continue;
-      }
-
-      const serviceLabel = `${pkg?.name || item.name || 'Package'} / ${pkgService.service?.name || 'Service'}`;
-      assignments.push({
-        sourceKey: `package:${pkg?.id || item.id}:service:${pkgService.serviceId}`,
-        serviceLabel,
-        requiredJobId: jobId,
-        requiredJobName: jobName,
-        requiresLocation: Boolean(pkgService.service?.isLocation),
-        requiresTime: Boolean(pkgService.service?.isTime),
       });
     }
   }
@@ -473,7 +444,7 @@ export function BookingFormModal({
         </Form.Item>
 
         <Form.Item
-          label="Select Packages or Services (at least 1)"
+          label="Select Services (at least 1)"
           required
           rules={[
             {
@@ -482,122 +453,63 @@ export function BookingFormModal({
                   return;
                 }
 
-                throw new Error('Please select at least 1 package or service');
+                throw new Error('Please select at least 1 service');
               },
             },
           ]}
         >
-          <div className="grid grid-cols-[1fr_1fr] gap-4">
-            <Form.Item name="packages" label="Packages" noStyle>
-              <Select
-                placeholder="Select packages"
-                allowClear
-                showSearch={{
-                  filterOption: false,
-                  onSearch: packageOptions.onSearch,
-                }}
-                loading={packageOptions.loading}
-                options={packageOptions.options.map((pkg) => ({
-                  label: `${pkg.name} - ${formatMoneyVND(pkg.price)}`,
-                  value: pkg.id,
-                }))}
-                onPopupScroll={(e) => {
-                  const target = e.target as HTMLDivElement;
-                  if (
-                    target.scrollTop + target.offsetHeight >=
-                    target.scrollHeight - 8
-                  ) {
-                    packageOptions.loadMore();
-                  }
-                }}
-                onChange={(pkgId: string) => {
-                  if (!pkgId) return;
+          <Select
+            placeholder="Select services"
+            allowClear
+            showSearch={{
+              filterOption: false,
+              onSearch: serviceOptions.onSearch,
+            }}
+            loading={serviceOptions.loading}
+            options={serviceOptions.options.map((svc) => ({
+              label: `${svc.name} - ${formatMoneyVND(svc.price)}`,
+              value: svc.id,
+            }))}
+            onPopupScroll={(e) => {
+              const target = e.target as HTMLDivElement;
+              if (
+                target.scrollTop + target.offsetHeight >=
+                target.scrollHeight - 8
+              ) {
+                serviceOptions.loadMore();
+              }
+            }}
+            onChange={(svcId: string) => {
+              if (!svcId) return;
 
-                  const existingItem = selectedItems.find(
-                    (item) => item.id === pkgId && item.type === 'package'
-                  );
+              const existingItem = selectedItems.find(
+                (item) => item.id === svcId && item.type === 'service'
+              );
 
-                  if (existingItem) {
-                    onItemQuantityChange(
-                      pkgId,
-                      'package',
-                      existingItem.quantity + 1
-                    );
-                  } else {
-                    const pkg = packageOptions.options.find(
-                      (p) => p.id === pkgId
-                    );
-                    if (pkg) {
-                      onItemAdd({
-                        id: pkg.id,
-                        type: 'package',
-                        name: pkg.name,
-                        price: pkg.price,
-                        quantity: 1,
-                      });
-                    }
-                  }
-                }}
-              />
-            </Form.Item>
-
-            <Form.Item name="services" label="Services" noStyle>
-              <Select
-                placeholder="Select services"
-                allowClear
-                showSearch={{
-                  filterOption: false,
-                  onSearch: serviceOptions.onSearch,
-                }}
-                loading={serviceOptions.loading}
-                options={serviceOptions.options.map((svc) => ({
-                  label: `${svc.name} - ${formatMoneyVND(svc.price)}`,
-                  value: svc.id,
-                }))}
-                onPopupScroll={(e) => {
-                  const target = e.target as HTMLDivElement;
-                  if (
-                    target.scrollTop + target.offsetHeight >=
-                    target.scrollHeight - 8
-                  ) {
-                    serviceOptions.loadMore();
-                  }
-                }}
-                onChange={(svcId: string) => {
-                  if (!svcId) return;
-
-                  const existingItem = selectedItems.find(
-                    (item) => item.id === svcId && item.type === 'service'
-                  );
-
-                  if (existingItem) {
-                    onItemQuantityChange(
-                      svcId,
-                      'service',
-                      existingItem.quantity + 1
-                    );
-                  } else {
-                    const svc = serviceOptions.options.find(
-                      (s) => s.id === svcId
-                    );
-                    if (svc) {
-                      onItemAdd({
-                        id: svc.id,
-                        type: 'service',
-                        name: svc.name,
-                        price: svc.price,
-                        quantity: 1,
-                      });
-                    }
-                  }
-                }}
-              />
-            </Form.Item>
-          </div>
+              if (existingItem) {
+                onItemQuantityChange(
+                  svcId,
+                  'service',
+                  existingItem.quantity + 1
+                );
+              } else {
+                const svc = serviceOptions.options.find((s) => s.id === svcId);
+                if (svc) {
+                  onItemAdd({
+                    id: svc.id,
+                    type: 'service',
+                    name: svc.name,
+                    price: svc.price,
+                    quantity: 1,
+                  });
+                }
+              }
+            }}
+          />
         </Form.Item>
 
-        {/* Selected Items Display */}
-        <Form.Item label="Selected Items">
+        {/* Selected Services Display */}
+        <Form.Item label="Selected Services">
           {selectedItems.length === 0 ? (
             <Empty
               description="No items selected"
@@ -607,25 +519,22 @@ export function BookingFormModal({
             <Card
               size="small"
               style={{ marginBottom: 16 }}
-              title={`Selected Items (${selectedItems.length})`}
+              title={`Selected Services (${selectedItems.length})`}
             >
               <div className="flex flex-col gap-3">
                 {selectedItems.map((item) => (
                   <div
-                    key={`${item.type}-${item.id}`}
-                    className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 p-3"
+                    key={`service-${item.id}`}
+                    className="flex items-center justify-between gap-4 rounded-lg border border-green-200 bg-green-50/30 p-3 dark:border-green-800 dark:bg-green-950/20"
                   >
                     <div className="flex items-center gap-3">
-                      <Tag color={item.type === 'package' ? 'blue' : 'green'}>
-                        {item.type === 'package' ? '📦' : '🎯'}
-                      </Tag>
+                      <Tag color="green">🎯</Tag>
                       <div>
-                        <div className="font-medium">{item.name}</div>
+                        <div className="font-medium text-green-700 dark:text-green-300">
+                          {item.name}
+                        </div>
                         <div className="text-sm text-gray-500">
-                          {formatMoneyVND(item.price)} × {item.quantity} ={' '}
-                          {formatMoneyVND(
-                            (item.price || 0) * (item.quantity || 1)
-                          )}
+                          {formatMoneyVND(item.price)} × {item.quantity}
                         </div>
                       </div>
                     </div>
@@ -634,7 +543,7 @@ export function BookingFormModal({
                         min={1}
                         value={item.quantity}
                         onChange={(value) =>
-                          onItemQuantityChange(item.id, item.type, value || 1)
+                          onItemQuantityChange(item.id, 'service', value || 1)
                         }
                         style={{ width: 60 }}
                       />
@@ -642,7 +551,7 @@ export function BookingFormModal({
                         type="text"
                         danger
                         icon={<DeleteOutlined />}
-                        onClick={() => onItemRemove(item.id, item.type)}
+                        onClick={() => onItemRemove(item.id, 'service')}
                       />
                     </div>
                   </div>

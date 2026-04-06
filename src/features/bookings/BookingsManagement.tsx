@@ -123,7 +123,7 @@ export function BookingsManagement() {
             type="edit"
             open={isEditModalOpen}
             loading={loadingBooking}
-            selectedBooking={selectedBooking}
+            selectedBooking={detailBooking || selectedBooking}
             form={editForm}
             selectedItems={editSelectedItems}
             onCancel={handleCloseEditModal}

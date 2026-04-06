@@ -94,14 +94,19 @@ const getBookingStaffAssignments = (booking: Booking | null) => {
         : undefined;
     const job =
       'job' in staff && typeof staff.job === 'string' ? staff.job : undefined;
-    const dedupeKey =
-      sourceKey || `${staff.id}:${job || ''}:${serviceLabel || ''}`;
+    // Use sourceKey for dedup - it's unique per assignment row on backend
+    // so same staff on different services each has a distinct sourceKey
+    const dedupeKey = sourceKey;
+    if (!dedupeKey) {
+      continue;
+    }
 
     if (seenKeys.has(dedupeKey)) {
       continue;
     }
 
     seenKeys.add(dedupeKey);
+
     normalizedAssignments.push({
       sourceKey,
       id: staff.id,
@@ -512,28 +517,19 @@ export const BookingDetailWithOrders: React.FC<
                                           (pkgService) => {
                                             const svcName =
                                               pkgService.service?.name;
-                                            const svcJob =
-                                              pkgService.service?.job?.name;
-                                            // Match staff to this template service
-                                            const relatedStaffRaw =
+                                            const pkgName = item.package?.name;
+                                            // Match staff specifically to this package service
+                                            const packageServiceLabel =
+                                              pkgName && svcName
+                                                ? `${pkgName} / ${svcName}`
+                                                : null;
+                                            const relatedStaff =
                                               assignedStaff.filter(
                                                 (s) =>
-                                                  s.serviceLabel === svcName ||
-                                                  s.job === svcJob
+                                                  s.serviceLabel ===
+                                                    packageServiceLabel ||
+                                                  s.serviceLabel === svcName
                                               );
-                                            // Deduplicate by staff ID
-                                            const staffMap = new Map<
-                                              string,
-                                              AssignedStaffMember
-                                            >();
-                                            for (const staff of relatedStaffRaw) {
-                                              if (!staffMap.has(staff.id)) {
-                                                staffMap.set(staff.id, staff);
-                                              }
-                                            }
-                                            const relatedStaff = [
-                                              ...staffMap.values(),
-                                            ];
 
                                             return (
                                               <div
@@ -645,28 +641,15 @@ export const BookingDetailWithOrders: React.FC<
                           <div className="flex flex-col gap-3">
                             {currentBooking.services.map((item) => {
                               const serviceName = item.service?.name;
-                              const jobName = item.service?.job?.name;
-                              const relatedStaffRaw = assignedStaff.filter(
+                              // Match staff assigned specifically to THIS service
+                              const relatedStaff = assignedStaff.filter(
                                 (s) =>
                                   s.serviceLabel === serviceName ||
                                   (serviceName &&
                                     s.serviceLabel?.endsWith(
                                       ` / ${serviceName}`
-                                    )) ||
-                                  s.job === jobName
+                                    ))
                               );
-                              const relatedStaffMap = new Map<
-                                string,
-                                AssignedStaffMember
-                              >();
-                              for (const staff of relatedStaffRaw) {
-                                if (!relatedStaffMap.has(staff.id)) {
-                                  relatedStaffMap.set(staff.id, staff);
-                                }
-                              }
-                              const relatedStaff = [
-                                ...relatedStaffMap.values(),
-                              ];
 
                               return (
                                 <div
