@@ -444,7 +444,12 @@ export function BookingFormModal({
         <Form.Item
           name="eventDate"
           label="Event Date"
-          rules={[{ required: true, message: 'Please select event date' }]}
+          rules={[
+            {
+              required: true,
+              message: 'Please select event date',
+            },
+          ]}
           getValueProps={(value) => ({
             value: value ? dayjs(value) : undefined,
           })}
@@ -461,7 +466,21 @@ export function BookingFormModal({
           />
         </Form.Item>
 
-        <Form.Item label="Select Packages or Services (at least 1)" required>
+        <Form.Item
+          label="Select Packages or Services (at least 1)"
+          required
+          rules={[
+            {
+              validator: async () => {
+                if (selectedItems.length > 0) {
+                  return;
+                }
+
+                throw new Error('Please select at least 1 package or service');
+              },
+            },
+          ]}
+        >
           <div className="grid grid-cols-[1fr_1fr] gap-4">
             <Form.Item name="packages" label="Packages" noStyle>
               <Select
@@ -660,14 +679,14 @@ export function BookingFormModal({
                   key={row.sourceKey || `${row.staffId || 'new'}-${index}`}
                   className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-2"
                 >
-                  {row.isRequired && row.serviceLabel ? (
+                  {row.isRequired && row.serviceLabel && (
                     <div className="md:col-span-2">
                       <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
                         <Tag color="blue">{row.serviceLabel}</Tag>
                         <Tag color="purple">Job: {row.requiredJobName}</Tag>
                       </div>
                     </div>
-                  ) : null}
+                  )}
                   <Select
                     allowClear
                     placeholder="Select staff member"
@@ -723,7 +742,7 @@ export function BookingFormModal({
                     disabled={Boolean(row.isRequired)}
                     className="w-full"
                   />
-                  {row.requiresLocation ? (
+                  {row.requiresLocation && (
                     <Input
                       value={row.locationName}
                       onChange={(event) =>
@@ -733,8 +752,8 @@ export function BookingFormModal({
                       }
                       placeholder="Location"
                     />
-                  ) : null}
-                  {row.requiresTime ? (
+                  )}
+                  {row.requiresTime && (
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
                       <DatePicker
                         value={parseAssignmentDateTime(row.startTime)}
@@ -763,7 +782,7 @@ export function BookingFormModal({
                         placeholder="End time"
                       />
                     </div>
-                  ) : null}
+                  )}
                 </div>
               ))}
             </Space>
