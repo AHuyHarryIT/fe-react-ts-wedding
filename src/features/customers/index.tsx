@@ -42,7 +42,7 @@ export function CustomerManagement() {
       dataIndex: 'weddingDate',
       key: 'weddingDate',
       width: 150,
-      render: (value) =>
+      render: (value: string) =>
         value ? new Date(value).toLocaleDateString('vi-VN') : '-',
     },
     {

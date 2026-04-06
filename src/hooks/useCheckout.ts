@@ -1,110 +1,95 @@
-import { useState, useCallback } from 'react';
-import { App } from 'antd';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type { Order, CheckoutRequest, PayRemainingRequest } from '@types';
+import { getMutationError } from '@utils/mutationError';
 import { ordersService } from '@services/OrdersService';
 
-interface UseCheckoutState {
+interface UseCheckoutReturn {
   order: Order | null;
   loading: boolean;
   error: string | null;
+  loadOrder: () => void;
+  checkout: (data: CheckoutRequest) => void;
+  payRemaining: (data: PayRemainingRequest) => void;
+  getStatus: () => void;
+  reset: () => void;
 }
 
-export const useCheckout = (bookingId: string) => {
-  const { message } = App.useApp();
-  const [state, setState] = useState<UseCheckoutState>({
-    order: null,
-    loading: false,
-    error: null,
+export const useCheckout = (bookingId: string): UseCheckoutReturn => {
+  const queryClient = useQueryClient();
+
+  // Query: load existing order
+  const {
+    data: orderData,
+    isLoading: isLoadingOrder,
+    refetch: refetchOrder,
+  } = useQuery({
+    queryKey: ['checkout-order', bookingId],
+    queryFn: () => ordersService.getOrder(bookingId),
+    enabled: false,
+    retry: false,
+    staleTime: 0,
   });
 
-  // Load existing order
-  const loadOrder = useCallback(async () => {
-    try {
-      setState((prev) => ({ ...prev, loading: true, error: null }));
-      const order = await ordersService.getOrder(bookingId);
-      setState((prev) => ({ ...prev, order, loading: false }));
-      return order;
-    } catch (error: unknown) {
-      const axiosError = error as {
-        response?: { data?: { message?: string } };
-      };
-      const errorMsg =
-        axiosError?.response?.data?.message || 'Failed to load order';
-      setState((prev) => ({ ...prev, error: errorMsg, loading: false }));
-      return null;
-    }
-  }, [bookingId]);
-
-  // Create new order or pay deposit
-  const checkout = useCallback(
-    async (data: CheckoutRequest) => {
-      try {
-        setState((prev) => ({ ...prev, loading: true, error: null }));
-        const order = await ordersService.checkout(data);
-        setState((prev) => ({ ...prev, order, loading: false }));
-        message.success('Checkout successful!');
-        return order;
-      } catch (error: unknown) {
-        const axiosError = error as {
-          response?: { data?: { message?: string } };
-        };
-        const errorMsg =
-          axiosError?.response?.data?.message || 'Checkout failed';
-        setState((prev) => ({ ...prev, error: errorMsg, loading: false }));
-        message.error(errorMsg);
-        return null;
-      }
+  // Mutation: checkout / create order
+  const checkoutMutation = useMutation({
+    mutationFn: (data: CheckoutRequest) => ordersService.checkout(data),
+    onError: (error) => {
+      console.error('Checkout failed', error);
     },
-    [message]
-  );
+  });
 
-  // Pay remaining balance
-  const payRemaining = useCallback(
-    async (bookingId: string, data: PayRemainingRequest) => {
-      try {
-        setState((prev) => ({ ...prev, loading: true, error: null }));
-        const order = await ordersService.payRemaining(bookingId, data);
-        setState((prev) => ({ ...prev, order, loading: false }));
-        message.success('Payment completed successfully!');
-        return order;
-      } catch (error: unknown) {
-        const axiosError = error as {
-          response?: { data?: { message?: string } };
-        };
-        const errorMsg =
-          axiosError?.response?.data?.message || 'Payment failed';
-        setState((prev) => ({ ...prev, error: errorMsg, loading: false }));
-        message.error(errorMsg);
-        return null;
-      }
+  // Mutation: pay remaining balance
+  const payRemainingMutation = useMutation({
+    mutationFn: (data: PayRemainingRequest) =>
+      ordersService.payRemaining(bookingId, data),
+    onError: (error) => {
+      console.error('Payment failed', error);
     },
-    [message]
-  );
+  });
 
-  // Get order status
-  const getStatus = useCallback(async (bookingId: string) => {
-    try {
-      return await ordersService.getOrderStatus(bookingId);
-    } catch (error: unknown) {
-      const axiosError = error as {
-        response?: { data?: { message?: string } };
-      };
-      const errorMsg =
-        axiosError?.response?.data?.message || 'Failed to get order status';
-      setState((prev) => ({ ...prev, error: errorMsg }));
-      return null;
-    }
-  }, []);
+  const loadOrder = () => {
+    void refetchOrder();
+  };
 
-  // Clear state
-  const reset = useCallback(() => {
-    setState({ order: null, loading: false, error: null });
-  }, []);
+  const checkout = (data: CheckoutRequest) => {
+    checkoutMutation.mutate(data, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ['checkout-order', bookingId],
+        });
+        void refetchOrder();
+      },
+    });
+  };
+
+  const payRemaining = (data: PayRemainingRequest) => {
+    payRemainingMutation.mutate(data, {
+      onSuccess: () => {
+        queryClient.invalidateQueries({
+          queryKey: ['checkout-order', bookingId],
+        });
+        void refetchOrder();
+      },
+    });
+  };
+
+  const getStatus = () => {
+    void refetchOrder();
+  };
+
+  const reset = () => {
+    queryClient.removeQueries({ queryKey: ['checkout-order', bookingId] });
+  };
 
   return {
-    order: state.order,
-    loading: state.loading,
-    error: state.error,
+    order: orderData ?? null,
+    loading:
+      isLoadingOrder ||
+      checkoutMutation.isPending ||
+      payRemainingMutation.isPending,
+    error: getMutationError(
+      checkoutMutation.error ?? payRemainingMutation.error
+    ),
     loadOrder,
     checkout,
     payRemaining,

@@ -403,8 +403,11 @@ export function BookingSessionsPanel({
               rules={[
                 { required: true, message: 'End time is required' },
                 ({ getFieldValue }) => ({
-                  validator(_, value) {
-                    const startsAt = getFieldValue('startsAt');
+                  validator(_rule, _value: BookingSessionFormValues['endsAt']) {
+                    const startsAt = getFieldValue(
+                      'startsAt'
+                    ) as BookingSessionFormValues['startsAt'];
+                    const value = _value;
                     if (
                       !startsAt ||
                       !value ||

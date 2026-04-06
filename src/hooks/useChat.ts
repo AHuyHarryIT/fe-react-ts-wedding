@@ -127,11 +127,14 @@ export const useChat = (userId: string): UseChatReturn => {
     newSocket.on('message_received', handleMessageReceived);
 
     // Listen for typing indicators
-    newSocket.on('user_typing', (data) => {
-      if (data.userId !== userId) {
-        setOtherUserTyping(data.isTyping);
+    newSocket.on(
+      'user_typing',
+      (data: { userId: string; isTyping: boolean }) => {
+        if (data.userId !== userId) {
+          setOtherUserTyping(data.isTyping);
+        }
       }
-    });
+    );
 
     // Listen for messages marked as read
     newSocket.on('messages_marked_read', (data) => {
@@ -145,29 +148,32 @@ export const useChat = (userId: string): UseChatReturn => {
     });
 
     // Listen for notifications
-    newSocket.on('new_message_notification', async (data) => {
-      console.log('New message notification:', data);
+    newSocket.on(
+      'new_message_notification',
+      async (data: { chatId: string }) => {
+        console.log('New message notification:', data);
 
-      // Optimistically refresh sidebar row instantly before API roundtrip.
-      if (data?.chatId) {
-        promoteChat(data.chatId, {
-          lastMessageAt: new Date().toISOString(),
-          lastMessage: 'New message',
-        });
-      }
+        // Optimistically refresh sidebar row instantly before API roundtrip.
+        if (data?.chatId) {
+          promoteChat(data.chatId, {
+            lastMessageAt: new Date().toISOString(),
+            lastMessage: 'New message',
+          });
+        }
 
-      try {
-        await refreshChats();
-      } catch (refreshError) {
-        console.error(
-          'Failed to refresh chats after notification:',
-          refreshError
-        );
+        try {
+          await refreshChats();
+        } catch (refreshError) {
+          console.error(
+            'Failed to refresh chats after notification:',
+            refreshError
+          );
+        }
       }
-    });
+    );
 
     // Listen for errors (but only connection errors, not message send errors)
-    newSocket.on('error', (error) => {
+    newSocket.on('error', (error: { message: string }) => {
       // Only show connection/authentication errors, not send_message errors
       // because REST API is primary, WebSocket is secondary
       if (error.message !== 'User not authenticated') {

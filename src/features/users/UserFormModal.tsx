@@ -63,12 +63,13 @@ export function UserFormModal({
       <Form
         form={form}
         layout="vertical"
-        onFinish={(values) => {
-          const payloadValues = {
-            ...values,
-          } as typeof values & { confirmPassword?: string };
-          delete payloadValues.confirmPassword;
-          onSubmit(payloadValues);
+        onFinish={(values: Record<string, never>) => {
+          const { confirmPassword: _conf, ...payloadValues } = values as Record<
+            string,
+            string | string[]
+          > & { confirmPassword?: string };
+          void _conf;
+          onSubmit(payloadValues as CreateUserRequest & UpdateUserRequest);
         }}
         autoComplete="off"
       >

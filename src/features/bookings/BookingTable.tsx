@@ -60,7 +60,7 @@ export function BookingTable({
       dataIndex: 'eventDate',
       key: 'eventDate',
       width: 150,
-      render: (date) => new Date(date).toLocaleDateString(),
+      render: (date: string) => new Date(date).toLocaleDateString(),
     },
     {
       title: 'Total Price',
@@ -85,7 +85,7 @@ export function BookingTable({
       dataIndex: 'createdAt',
       key: 'createdAt',
       width: 140,
-      render: (date) => new Date(date).toLocaleDateString(),
+      render: (date: string) => new Date(date).toLocaleDateString(),
     },
     {
       title: 'Actions',

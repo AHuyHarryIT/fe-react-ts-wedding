@@ -456,10 +456,10 @@ export function BookingFormModal({
               message: 'Please select event date',
             },
           ]}
-          getValueProps={(value) => ({
+          getValueProps={(value: string | null) => ({
             value: value ? dayjs(value) : undefined,
           })}
-          normalize={(value) => value?.toISOString()}
+          normalize={(value: dayjs.Dayjs | null) => value?.toISOString()}
           initialValue={dayjs()}
         >
           <DatePicker
@@ -510,7 +510,7 @@ export function BookingFormModal({
                     packageOptions.loadMore();
                   }
                 }}
-                onChange={(pkgId) => {
+                onChange={(pkgId: string) => {
                   if (!pkgId) return;
 
                   const existingItem = selectedItems.find(
@@ -563,7 +563,7 @@ export function BookingFormModal({
                     serviceOptions.loadMore();
                   }
                 }}
-                onChange={(svcId) => {
+                onChange={(svcId: string) => {
                   if (!svcId) return;
 
                   const existingItem = selectedItems.find(

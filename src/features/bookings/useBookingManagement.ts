@@ -232,17 +232,13 @@ export function useBookingManagement() {
       status: values.status,
     };
 
-    try {
-      const createResponse = await createMutation.mutateAsync(bookingData);
+    const createResponse = await createMutation.mutateAsync(bookingData);
 
-      if (staffAssignments?.length) {
-        await assignStaffMutation.mutateAsync({
-          id: createResponse.data.id,
-          staffAssignments,
-        });
-      }
-    } catch {
-      // Error already handled by mutation onError
+    if (staffAssignments?.length) {
+      await assignStaffMutation.mutateAsync({
+        id: createResponse.data.id,
+        staffAssignments,
+      });
     }
   };
 
@@ -271,20 +267,16 @@ export function useBookingManagement() {
       status: values.status,
     };
 
-    try {
-      await updateMutation.mutateAsync({
-        id: selectedBooking.id,
-        data: updateData,
-      });
+    await updateMutation.mutateAsync({
+      id: selectedBooking.id,
+      data: updateData,
+    });
 
-      if (staffAssignments?.length) {
-        await assignStaffMutation.mutateAsync({
-          id: selectedBooking.id,
-          staffAssignments,
-        });
-      }
-    } catch {
-      // Error already handled by mutation onError
+    if (staffAssignments?.length) {
+      await assignStaffMutation.mutateAsync({
+        id: selectedBooking.id,
+        staffAssignments,
+      });
     }
   };
 

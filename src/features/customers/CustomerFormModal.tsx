@@ -52,19 +52,19 @@ export function CustomerFormModal({
       <Form
         form={form}
         layout="vertical"
-        onFinish={(values) => {
-          const payloadValues = {
-            ...values,
-          } as typeof values & { confirmPassword?: string };
-          delete payloadValues.confirmPassword;
-          const payload = {
-            ...payloadValues,
-            weddingDate: payloadValues.weddingDate
-              ? dayjs(payloadValues.weddingDate).toISOString()
-              : payloadValues.weddingDate === null
+        onFinish={(values: Record<string, unknown>) => {
+          const valuesTyped = values as Record<string, string | null>;
+          const payload: CreateCustomerRequest | UpdateCustomerRequest = {
+            ...valuesTyped,
+            weddingDate: valuesTyped.weddingDate
+              ? dayjs(valuesTyped.weddingDate).toISOString()
+              : valuesTyped.weddingDate === null
                 ? null
                 : undefined,
-          };
+          } as Customer;
+          if ('confirmPassword' in payload) {
+            delete (payload as Record<string, unknown>).confirmPassword;
+          }
           onSubmit(payload);
         }}
         autoComplete="off"

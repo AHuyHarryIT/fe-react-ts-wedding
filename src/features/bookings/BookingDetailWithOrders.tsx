@@ -20,7 +20,7 @@ import {
   Space,
   Empty,
 } from 'antd';
-import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   EditOutlined,
   DeleteOutlined,
@@ -141,18 +141,10 @@ export const BookingDetailWithOrders: React.FC<
   // Use TanStack Query for booking details
   const { data: detailedBooking } = useQuery({
     queryKey: ['booking-detail', booking?.id],
-    queryFn: async () => {
-      if (!booking?.id) return booking;
-      try {
-        const response = await bookingApi.getOne(booking.id);
-        return response.data;
-      } catch {
-        return booking;
-      }
-    },
+    queryFn: () => bookingApi.getOne(booking!.id).then((r) => r.data),
     enabled: !!booking?.id,
+    retry: 1,
     refetchOnWindowFocus: false,
-    select: (data) => data ?? booking,
     staleTime: 0,
   });
 
@@ -165,6 +157,41 @@ export const BookingDetailWithOrders: React.FC<
     enabled: !!booking?.id,
     retry: false,
     refetchOnWindowFocus: false,
+  });
+
+  // Mutations
+  const deleteMutation = useMutation({
+    mutationFn: (id: string) => bookingApi.delete(id),
+    onSuccess: (_data, id) => {
+      message.success('Booking deleted successfully');
+      onClose();
+      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      void queryClient.invalidateQueries({ queryKey: ['booking-detail', id] });
+    },
+  });
+
+  const cancelMutation = useMutation({
+    mutationFn: (id: string) => bookingApi.cancel(id),
+    onSuccess: (data) => {
+      message.success('Booking cancelled successfully');
+      onBookingUpdated?.(data.data);
+      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['booking-detail', data.data.id],
+      });
+    },
+  });
+
+  const markCompletedMutation = useMutation({
+    mutationFn: (id: string) => bookingApi.update(id, { status: 'COMPLETED' }),
+    onSuccess: (data) => {
+      message.success('Booking marked as completed');
+      onBookingUpdated?.(data.data);
+      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['booking-detail', data.data.id],
+      });
+    },
   });
 
   const assignedStaff = useMemo(
@@ -226,18 +253,8 @@ export const BookingDetailWithOrders: React.FC<
       content: 'Are you sure you want to delete this booking?',
       okText: 'Delete',
       okType: 'danger',
-      onOk: async () => {
-        try {
-          await bookingApi.delete(currentBooking!.id);
-          message.success('Booking deleted successfully');
-          onClose();
-          await queryClient.invalidateQueries({ queryKey: ['bookings'] });
-          await queryClient.invalidateQueries({
-            queryKey: ['booking-detail', currentBooking!.id],
-          });
-        } catch {
-          message.error('Failed to delete booking');
-        }
+      onOk: () => {
+        deleteMutation.mutate(currentBooking!.id);
       },
     });
   };
@@ -258,27 +275,13 @@ export const BookingDetailWithOrders: React.FC<
         'This will mark the booking as cancelled and hide payment actions for the customer. Continue?',
       okText: 'Cancel Booking',
       okButtonProps: { danger: true },
-      onOk: async () => {
-        try {
-          const response = await bookingApi.cancel(currentBooking.id);
-          message.success('Booking cancelled successfully');
-          queryClient.setQueryData(
-            ['booking-detail', currentBooking.id],
-            response.data
-          );
-          onBookingUpdated?.(response.data);
-          await queryClient.invalidateQueries({ queryKey: ['bookings'] });
-        } catch (error) {
-          const errorMessage =
-            (error as { response?: { data?: { message?: string } } })?.response
-              ?.data?.message || 'Failed to cancel booking';
-          message.error(errorMessage);
-        }
+      onOk: () => {
+        cancelMutation.mutate(currentBooking.id);
       },
     });
   };
 
-  const handleMarkCompleted = async () => {
+  const handleMarkCompleted = () => {
     if (!currentBooking) {
       return;
     }
@@ -295,24 +298,8 @@ export const BookingDetailWithOrders: React.FC<
       content:
         'This will lock the booking from further edits. Continue to mark it as completed?',
       okText: 'Mark Completed',
-      onOk: async () => {
-        try {
-          const response = await bookingApi.update(currentBooking.id, {
-            status: 'COMPLETED',
-          });
-          message.success('Booking marked as completed');
-          queryClient.setQueryData(
-            ['booking-detail', currentBooking.id],
-            response.data
-          );
-          onBookingUpdated?.(response.data);
-          await queryClient.invalidateQueries({ queryKey: ['bookings'] });
-        } catch (error) {
-          const errorMessage =
-            (error as { response?: { data?: { message?: string } } })?.response
-              ?.data?.message || 'Failed to mark booking as completed';
-          message.error(errorMessage);
-        }
+      onOk: () => {
+        markCompletedMutation.mutate(currentBooking.id);
       },
     });
   };

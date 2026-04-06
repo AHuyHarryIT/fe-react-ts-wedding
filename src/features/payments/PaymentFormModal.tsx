@@ -51,7 +51,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
         if (result.data) {
           message.success('Cash payment recorded successfully');
           if (onPaymentSuccess) {
-            onPaymentSuccess(result.data.id);
+            onPaymentSuccess(String(result.data.id));
           }
           form.resetFields();
           onClose();
