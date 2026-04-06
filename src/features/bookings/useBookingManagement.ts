@@ -9,7 +9,7 @@ import type {
   UpdateBookingRequest,
 } from '@types';
 import { Form, message } from 'antd';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export function useBookingManagement() {
   const queryClient = useQueryClient();
@@ -298,8 +298,10 @@ export function useBookingManagement() {
     setIsLoadingBooking(true);
   };
 
-  // React to booking detail query result
-  if (bookingDetail && !isLoadingDetail) {
+  // React to booking detail query result to populate edit form
+  useEffect(() => {
+    if (!bookingDetail || isLoadingDetail || isDetailError) return;
+
     const freshBooking = bookingDetail.data;
     const items: BookingSelectedItem[] = [];
 
@@ -342,12 +344,15 @@ export function useBookingManagement() {
     });
     setIsEditModalOpen(true);
     setIsLoadingBooking(false);
-  }
+  }, [bookingDetail, isLoadingDetail, isDetailError, editForm]);
 
-  if (isDetailError) {
-    messageApi.error('Failed to load booking details');
-    setIsLoadingBooking(false);
-  }
+  // Handle detail query errors
+  useEffect(() => {
+    if (isDetailError) {
+      messageApi.error('Failed to load booking details');
+      setIsLoadingBooking(false);
+    }
+  }, [isDetailError, messageApi]);
 
   const handleViewBooking = (booking: Booking) => {
     setDetailBooking(booking);
