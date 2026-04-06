@@ -2,29 +2,14 @@ import { bookingApi } from '@services/BookingService';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   Booking,
+  BookingFormData,
+  BookingSelectedItem,
   BookingStaffAssignmentInput,
-  BookingStatus,
   CreateBookingRequest,
   UpdateBookingRequest,
 } from '@types';
 import { Form, message } from 'antd';
 import { useState } from 'react';
-
-interface SelectedItem {
-  id: string;
-  type: 'package' | 'service';
-  name: string;
-  price: number;
-  quantity: number;
-}
-
-interface BookingFormData {
-  customerId: string;
-  notes?: string;
-  eventDate: string;
-  totalPrice?: number;
-  status?: BookingStatus;
-}
 
 export function useBookingManagement() {
   const queryClient = useQueryClient();
@@ -44,11 +29,11 @@ export function useBookingManagement() {
 
   // Selected items state for create and edit
   const [createSelectedItems, setCreateSelectedItems] = useState<
-    SelectedItem[]
+    BookingSelectedItem[]
   >([]);
-  const [editSelectedItems, setEditSelectedItems] = useState<SelectedItem[]>(
-    []
-  );
+  const [editSelectedItems, setEditSelectedItems] = useState<
+    BookingSelectedItem[]
+  >([]);
 
   // Queries
   const { data: bookingsData, isLoading: bookingsLoading } = useQuery({
@@ -97,7 +82,7 @@ export function useBookingManagement() {
   };
 
   // Add item to selected items (create)
-  const handleAddCreateItem = (item: SelectedItem) => {
+  const handleAddCreateItem = (item: BookingSelectedItem) => {
     setCreateSelectedItems((prev) => {
       if (prev.some((i) => i.id === item.id && i.type === item.type)) {
         return prev;
@@ -117,7 +102,7 @@ export function useBookingManagement() {
   };
 
   // Add item to selected items (edit)
-  const handleAddEditItem = (item: SelectedItem) => {
+  const handleAddEditItem = (item: BookingSelectedItem) => {
     setEditSelectedItems((prev) => {
       if (prev.some((i) => i.id === item.id && i.type === item.type)) {
         return prev;
@@ -269,7 +254,7 @@ export function useBookingManagement() {
       const freshBooking = response.data;
 
       setSelectedBooking(freshBooking);
-      const items: SelectedItem[] = [];
+      const items: BookingSelectedItem[] = [];
 
       // Add packages from booking
       if (freshBooking.packages && freshBooking.packages.length > 0) {

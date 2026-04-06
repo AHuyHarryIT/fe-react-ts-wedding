@@ -63,6 +63,63 @@ export interface BookingStaffAssignmentInput {
   endTime?: string | null;
 }
 
+export interface BookingFormData {
+  customerId: User['id'];
+  packageIds?: Package['id'][];
+  serviceIds?: Service['id'][];
+  notes?: string;
+  eventDate: string;
+  totalPrice?: number;
+  status?: BookingStatus;
+}
+
+export interface BookingSelectedItem {
+  id: string;
+  type: 'package' | 'service';
+  name: string;
+  price: number;
+  quantity: number;
+}
+
+export interface StaffAssignmentRow {
+  staffId: string;
+  job: string;
+  requiredJobId?: string;
+  requiredJobName?: string;
+  serviceLabel?: string;
+  sourceKey?: string;
+  isRequired?: boolean;
+  requiresLocation?: boolean;
+  requiresTime?: boolean;
+  locationName?: string;
+  startTime?: string;
+  endTime?: string;
+}
+
+export interface RequiredServiceAssignment {
+  sourceKey: string;
+  serviceLabel: string;
+  requiredJobId: string;
+  requiredJobName: string;
+  requiresLocation?: boolean;
+  requiresTime?: boolean;
+}
+
+export type AssignedStaffMember = {
+  sourceKey?: string;
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  email?: string;
+  phoneNumber?: string;
+  isActive?: boolean;
+  job?: string;
+  serviceLabel?: string;
+  locationName?: string | null;
+  startTime?: string | null;
+  endTime?: string | null;
+};
+
 export interface BookingSession {
   id: string;
   title: string;

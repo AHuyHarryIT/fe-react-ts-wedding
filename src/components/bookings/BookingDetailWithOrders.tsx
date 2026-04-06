@@ -1,5 +1,11 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
-import type { Booking, BookingStatus, Order, User } from '@types';
+import type {
+  AssignedStaffMember,
+  Booking,
+  BookingStatus,
+  Order,
+  User,
+} from '@types';
 import {
   Card,
   Col,
@@ -30,21 +36,6 @@ import { OrderDetail } from '@components/orders/OrderDetail';
 import { formatMoneyVND } from '@utils/money';
 import { BookingSessionsPanel } from '@components/bookings/BookingSessionsPanel';
 import { formatAssignmentDateTime } from '@utils/assignmentDateTime';
-
-type AssignedStaffMember = {
-  sourceKey?: string;
-  id: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  phoneNumber?: string;
-  isActive?: boolean;
-  job?: string;
-  serviceLabel?: string;
-  locationName?: string | null;
-  startTime?: string | null;
-  endTime?: string | null;
-};
 
 interface BookingDetailWithOrdersProps {
   open: boolean;

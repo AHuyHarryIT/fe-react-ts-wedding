@@ -2,8 +2,11 @@ import { DeleteOutlined } from '@ant-design/icons';
 import { useGenericSelect } from '@hooks/useGenericSelect';
 import type {
   Booking,
+  BookingFormData,
+  BookingSelectedItem,
   BookingStaffAssignmentInput,
-  BookingStatus,
+  RequiredServiceAssignment,
+  StaffAssignmentRow,
   User,
 } from '@types';
 import { formatMoneyVND } from '@utils/money';
@@ -32,61 +35,19 @@ import { useEffect, useMemo, useState } from 'react';
 
 const { TextArea } = Input;
 
-interface BookingFormData {
-  customerId: string;
-  packageIds?: string[];
-  serviceIds?: string[];
-  notes?: string;
-  eventDate: string;
-  totalPrice?: number;
-  status?: BookingStatus;
-}
-
-type StaffAssignmentRow = {
-  staffId: string;
-  job: string;
-  requiredJobId?: string;
-  requiredJobName?: string;
-  serviceLabel?: string;
-  sourceKey?: string;
-  isRequired?: boolean;
-  requiresLocation?: boolean;
-  requiresTime?: boolean;
-  locationName?: string;
-  startTime?: string;
-  endTime?: string;
-};
-
-type RequiredServiceAssignment = {
-  sourceKey: string;
-  serviceLabel: string;
-  requiredJobId: string;
-  requiredJobName: string;
-  requiresLocation?: boolean;
-  requiresTime?: boolean;
-};
-
-interface SelectedItem {
-  id: string;
-  type: 'package' | 'service';
-  name: string;
-  price: number;
-  quantity: number;
-}
-
 interface BookingFormModalProps {
   type: 'create' | 'edit';
   open: boolean;
   loading: boolean;
   selectedBooking: Booking | null;
   form: FormInstance<BookingFormData>;
-  selectedItems: SelectedItem[];
+  selectedItems: BookingSelectedItem[];
   onCancel: () => void;
   onSubmit: (
     values: BookingFormData,
     staffAssignments?: BookingStaffAssignmentInput[]
   ) => void;
-  onItemAdd: (item: SelectedItem) => void;
+  onItemAdd: (item: BookingSelectedItem) => void;
   onItemRemove: (itemId: string, type: 'package' | 'service') => void;
   onItemQuantityChange: (
     itemId: string,
@@ -137,7 +98,7 @@ type PackageExtra = {
 };
 
 const getRequiredServiceAssignments = (
-  selectedItems: SelectedItem[],
+  selectedItems: BookingSelectedItem[],
   booking: Booking | null,
   availablePackages: PackageExtra[],
   availableServices: ServiceExtra[]
