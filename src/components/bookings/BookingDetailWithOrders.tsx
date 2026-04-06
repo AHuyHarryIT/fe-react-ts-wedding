@@ -29,6 +29,7 @@ import { CheckoutForm } from '@components/orders/CheckoutForm';
 import { OrderDetail } from '@components/orders/OrderDetail';
 import { formatMoneyVND } from '@utils/money';
 import { BookingSessionsPanel } from '@components/bookings/BookingSessionsPanel';
+import { formatAssignmentDateTime } from '@utils/assignmentDateTime';
 
 type AssignedStaffMember = {
   sourceKey?: string;
@@ -156,8 +157,8 @@ const formatStaffLabel = (staff?: AssignedStaffMember | User | null) =>
     (('startTime' in staff && staff.startTime) ||
       ('endTime' in staff && staff.endTime))
       ? `@ ${[
-          'startTime' in staff ? staff.startTime : '',
-          'endTime' in staff ? staff.endTime : '',
+          'startTime' in staff ? formatAssignmentDateTime(staff.startTime) : '',
+          'endTime' in staff ? formatAssignmentDateTime(staff.endTime) : '',
         ]
           .filter(Boolean)
           .join(' - ')}`

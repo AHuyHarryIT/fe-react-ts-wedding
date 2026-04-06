@@ -21,9 +21,12 @@ import {
   Select,
   Space,
   Tag,
-  TimePicker,
   type FormInstance,
 } from 'antd';
+import {
+  ASSIGNMENT_DATETIME_FORMAT,
+  parseAssignmentDateTime,
+} from '@utils/assignmentDateTime';
 import dayjs from 'dayjs';
 import { useEffect, useMemo, useState } from 'react';
 
@@ -772,37 +775,29 @@ export function BookingFormModal({
                   ) : null}
                   {row.requiresTime ? (
                     <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <TimePicker
-                        value={
-                          row.startTime
-                            ? dayjs(`2000-01-01T${row.startTime}:00`)
-                            : null
-                        }
+                      <DatePicker
+                        value={parseAssignmentDateTime(row.startTime)}
                         onChange={(value) =>
                           updateAssignmentRow(index, {
-                            startTime: value ? value.format('HH:mm') : '',
+                            startTime: value ? value.toISOString() : '',
                           })
                         }
-                        format="HH:mm"
-                        minuteStep={5}
-                        use12Hours={false}
+                        format={ASSIGNMENT_DATETIME_FORMAT}
+                        showTime={{ format: 'HH:mm', minuteStep: 5 }}
+                        inputReadOnly
                         className="w-full"
                         placeholder="Start time"
                       />
-                      <TimePicker
-                        value={
-                          row.endTime
-                            ? dayjs(`2000-01-01T${row.endTime}:00`)
-                            : null
-                        }
+                      <DatePicker
+                        value={parseAssignmentDateTime(row.endTime)}
                         onChange={(value) =>
                           updateAssignmentRow(index, {
-                            endTime: value ? value.format('HH:mm') : '',
+                            endTime: value ? value.toISOString() : '',
                           })
                         }
-                        format="HH:mm"
-                        minuteStep={5}
-                        use12Hours={false}
+                        format={ASSIGNMENT_DATETIME_FORMAT}
+                        showTime={{ format: 'HH:mm', minuteStep: 5 }}
+                        inputReadOnly
                         className="w-full"
                         placeholder="End time"
                       />
