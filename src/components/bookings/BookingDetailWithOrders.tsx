@@ -1,10 +1,9 @@
-import React, { useState, useEffect, useCallback, useMemo } from 'react';
+import React, { useState, useMemo } from 'react';
 import type {
   AssignedStaffMember,
   Booking,
   BookingStatus,
   Order,
-  User,
 } from '@types';
 import {
   App,
@@ -20,9 +19,8 @@ import {
   Tabs,
   Space,
   Empty,
-  Spin,
 } from 'antd';
-import { useQueryClient } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   EditOutlined,
   DeleteOutlined,
@@ -132,102 +130,62 @@ const getBookingStaffAssignments = (booking: Booking | null) => {
   return normalizedAssignments;
 };
 
-const formatStaffLabel = (staff?: AssignedStaffMember | User | null) =>
-  [
-    staff && 'serviceLabel' in staff && staff.serviceLabel
-      ? `${staff.serviceLabel}:`
-      : '',
-    `${staff?.lastName || ''} ${staff?.firstName || ''}`.trim(),
-    staff?.phoneNumber ? `(${staff.phoneNumber})` : '',
-    staff?.id ? `[${staff.id}]` : '',
-    staff && 'job' in staff && staff.job ? `- ${staff.job}` : '',
-    staff && 'locationName' in staff && staff.locationName
-      ? `- ${staff.locationName}`
-      : '',
-    staff &&
-    (('startTime' in staff && staff.startTime) ||
-      ('endTime' in staff && staff.endTime))
-      ? `@ ${[
-          'startTime' in staff ? formatAssignmentDateTime(staff.startTime) : '',
-          'endTime' in staff ? formatAssignmentDateTime(staff.endTime) : '',
-        ]
-          .filter(Boolean)
-          .join(' - ')}`
-      : '',
-  ]
-    .filter(Boolean)
-    .join(' ')
-    .trim();
-
 export const BookingDetailWithOrders: React.FC<
   BookingDetailWithOrdersProps
 > = ({ open, booking, onClose, onBookingUpdated, onEditBooking }) => {
   const { message, modal } = App.useApp();
-  const [resolvedBooking, setResolvedBooking] = useState<Booking | null>(null);
-  const [order, setOrder] = useState<Order | null>(null);
-  const [loadingOrder, setLoadingOrder] = useState(false);
-  const [loadingBookingDetails, setLoadingBookingDetails] = useState(false);
   const [checkoutModalOpen, setCheckoutModalOpen] = useState(false);
   const [activeTab, setActiveTab] = useState('details');
   const queryClient = useQueryClient();
-  const currentBooking = resolvedBooking ?? booking;
+
+  // Use TanStack Query for booking details
+  const { data: detailedBooking } = useQuery({
+    queryKey: ['booking-detail', booking?.id],
+    queryFn: async () => {
+      if (!booking?.id) return booking;
+      try {
+        const response = await bookingApi.getOne(booking.id);
+        return response.data;
+      } catch {
+        return booking;
+      }
+    },
+    enabled: !!booking?.id,
+    refetchOnWindowFocus: false,
+    select: (data) => data ?? booking,
+    staleTime: 0,
+  });
+
+  const currentBooking = detailedBooking ?? booking;
+
+  // Use TanStack Query for order
+  const { data: order, isLoading: isLoadingOrder } = useQuery({
+    queryKey: ['order-by-booking', booking?.id],
+    queryFn: () => ordersService.getOrderByBookingId(booking!.id),
+    enabled: !!booking?.id,
+    retry: false,
+    refetchOnWindowFocus: false,
+  });
+
   const assignedStaff = useMemo(
     () => getBookingStaffAssignments(currentBooking),
     [currentBooking]
   );
 
-  // Load order for this booking
-  const loadOrder = useCallback(async () => {
-    if (!currentBooking?.id) return;
-    try {
-      setLoadingOrder(true);
-      const data = await ordersService.getOrderByBookingId(currentBooking.id);
-      setOrder(data);
-    } catch {
-      // Order may not exist yet
-      setOrder(null);
-    } finally {
-      setLoadingOrder(false);
-    }
-  }, [currentBooking?.id]);
-
-  const loadBookingDetails = useCallback(async () => {
-    if (!booking?.id) return;
-
-    try {
-      setLoadingBookingDetails(true);
-      const response = await bookingApi.getOne(booking.id);
-      setResolvedBooking(response.data);
-    } catch {
-      setResolvedBooking(booking);
-    } finally {
-      setLoadingBookingDetails(false);
-    }
-  }, [booking]);
-
-  useEffect(() => {
-    if (open && booking?.id) {
-      setResolvedBooking(booking);
-      loadOrder();
-      loadBookingDetails();
-    }
-  }, [open, booking, loadOrder, loadBookingDetails]);
-
-  useEffect(() => {
-    if (open) {
-      setActiveTab('details');
-    }
-  }, [open, booking?.id]);
-
   const handleCheckoutSuccess = async (updatedOrder: Order | null) => {
-    // Immediately update with the returned order data
-    if (updatedOrder) {
-      setOrder(updatedOrder);
+    if (updatedOrder && currentBooking?.id) {
+      queryClient.setQueryData(
+        ['order-by-booking', currentBooking.id],
+        updatedOrder
+      );
     }
     setCheckoutModalOpen(false);
-    // Also reload to ensure we have the latest data
-    await loadOrder();
-    // Refresh booking to reflect order association
+    await queryClient.invalidateQueries({
+      queryKey: ['order-by-booking', currentBooking?.id],
+    });
+    await queryClient.invalidateQueries({
+      queryKey: ['booking-detail', currentBooking?.id],
+    });
     await queryClient.invalidateQueries({ queryKey: ['bookings'] });
   };
 
@@ -274,6 +232,9 @@ export const BookingDetailWithOrders: React.FC<
           message.success('Booking deleted successfully');
           onClose();
           await queryClient.invalidateQueries({ queryKey: ['bookings'] });
+          await queryClient.invalidateQueries({
+            queryKey: ['booking-detail', currentBooking!.id],
+          });
         } catch {
           message.error('Failed to delete booking');
         }
@@ -301,7 +262,10 @@ export const BookingDetailWithOrders: React.FC<
         try {
           const response = await bookingApi.cancel(currentBooking.id);
           message.success('Booking cancelled successfully');
-          setResolvedBooking(response.data);
+          queryClient.setQueryData(
+            ['booking-detail', currentBooking.id],
+            response.data
+          );
           onBookingUpdated?.(response.data);
           await queryClient.invalidateQueries({ queryKey: ['bookings'] });
         } catch (error) {
@@ -337,7 +301,10 @@ export const BookingDetailWithOrders: React.FC<
             status: 'COMPLETED',
           });
           message.success('Booking marked as completed');
-          setResolvedBooking(response.data);
+          queryClient.setQueryData(
+            ['booking-detail', currentBooking.id],
+            response.data
+          );
           onBookingUpdated?.(response.data);
           await queryClient.invalidateQueries({ queryKey: ['bookings'] });
         } catch (error) {
@@ -441,28 +408,6 @@ export const BookingDetailWithOrders: React.FC<
                       {currentBooking.customer?.phoneNumber || '-'}
                     </Descriptions.Item>
 
-                    <Descriptions.Item label="Assigned Staff" span={2}>
-                      {assignedStaff.length > 0 ? (
-                        <Space wrap>
-                          {assignedStaff.map((staff) => (
-                            <Tag
-                              key={
-                                staff.sourceKey ||
-                                `${staff.id}-${staff.job || ''}-${staff.serviceLabel || ''}`
-                              }
-                              color="blue"
-                            >
-                              {formatStaffLabel(staff)}
-                            </Tag>
-                          ))}
-                        </Space>
-                      ) : (
-                        <span style={{ color: '#8c8c8c' }}>
-                          No staff assigned yet
-                        </span>
-                      )}
-                    </Descriptions.Item>
-
                     <Descriptions.Item label="Event Date" span={1}>
                       <strong>
                         {new Date(currentBooking.eventDate).toLocaleDateString(
@@ -532,56 +477,169 @@ export const BookingDetailWithOrders: React.FC<
                             {currentBooking.packages.map((item) => (
                               <div
                                 key={item.packageId}
-                                className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 p-3"
+                                className="rounded-lg border border-gray-200 p-3"
                               >
-                                <div className="flex items-center gap-3">
-                                  <Tag color="blue">📦</Tag>
-                                  <div>
-                                    <div className="font-medium">
-                                      {item.package?.name}
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                      {item.package?.description}
-                                    </div>
-                                    {item.package?.services?.some(
-                                      (pkgService) =>
-                                        pkgService.service?.job?.name
-                                    ) ? (
-                                      <div className="text-xs text-blue-500">
-                                        Jobs:
-                                        {[
-                                          ...new Set(
-                                            item.package.services
-                                              .map(
-                                                (pkgService) =>
-                                                  pkgService.service?.job?.name
-                                              )
-                                              .filter(Boolean)
-                                          ),
-                                        ].join(', ')}
+                                <div className="flex items-center justify-between gap-4">
+                                  <div className="flex items-center gap-3">
+                                    <Tag color="blue">📦</Tag>
+                                    <div>
+                                      <div className="font-medium">
+                                        {item.package?.name}
                                       </div>
-                                    ) : null}
+                                      <div className="text-xs text-gray-500">
+                                        {item.package?.description}
+                                      </div>
+                                    </div>
+                                  </div>
+                                  <div style={{ textAlign: 'right' }}>
+                                    <div
+                                      style={{
+                                        fontSize: '12px',
+                                        color: '#666',
+                                      }}
+                                    >
+                                      {formatMoneyVND(item.price)} ×{' '}
+                                      {item.quantity}
+                                    </div>
+                                    <div
+                                      style={{
+                                        fontWeight: 'bold',
+                                        fontSize: '14px',
+                                        color: '#1890ff',
+                                      }}
+                                    >
+                                      {formatMoneyVND(
+                                        (item.price || 0) * (item.quantity || 1)
+                                      )}
+                                    </div>
                                   </div>
                                 </div>
-                                <div style={{ textAlign: 'right' }}>
-                                  <div
-                                    style={{ fontSize: '12px', color: '#666' }}
-                                  >
-                                    {formatMoneyVND(item.price)} ×{' '}
-                                    {item.quantity}
-                                  </div>
-                                  <div
-                                    style={{
-                                      fontWeight: 'bold',
-                                      fontSize: '14px',
-                                      color: '#1890ff',
-                                    }}
-                                  >
-                                    {formatMoneyVND(
-                                      (item.price || 0) * (item.quantity || 1)
-                                    )}
-                                  </div>
-                                </div>
+                                {item.package?.services &&
+                                  item.package.services.length > 0 && (
+                                    <div className="mt-2 ml-8 border-t border-gray-100 pt-2">
+                                      <div className="text-xs font-medium text-gray-500 mb-1">
+                                        Included services:
+                                      </div>
+                                      <div className="flex flex-col gap-1">
+                                        {item.package.services.map(
+                                          (pkgService) => {
+                                            const svcName =
+                                              pkgService.service?.name;
+                                            const svcJob =
+                                              pkgService.service?.job?.name;
+                                            // Match staff to this template service
+                                            const relatedStaffRaw =
+                                              assignedStaff.filter(
+                                                (s) =>
+                                                  s.serviceLabel === svcName ||
+                                                  s.job === svcJob
+                                              );
+                                            // Deduplicate by staff ID
+                                            const staffMap = new Map<
+                                              string,
+                                              AssignedStaffMember
+                                            >();
+                                            for (const staff of relatedStaffRaw) {
+                                              if (!staffMap.has(staff.id)) {
+                                                staffMap.set(staff.id, staff);
+                                              }
+                                            }
+                                            const relatedStaff = [
+                                              ...staffMap.values(),
+                                            ];
+
+                                            return (
+                                              <div
+                                                key={pkgService.serviceId}
+                                                className="flex flex-col gap-1 rounded border border-gray-100 p-2"
+                                              >
+                                                <div className="flex items-center justify-between gap-2 text-sm">
+                                                  <div className="flex items-center gap-2">
+                                                    <span className="text-green-500">
+                                                      ✓
+                                                    </span>
+                                                    <span>
+                                                      {pkgService.service
+                                                        ?.name ||
+                                                        'Unnamed service'}
+                                                    </span>
+                                                  </div>
+                                                  {pkgService.service?.job
+                                                    ?.name ? (
+                                                    <Tag
+                                                      color="blue"
+                                                      className="text-[10px] px-1 py-0"
+                                                    >
+                                                      {
+                                                        pkgService.service.job
+                                                          .name
+                                                      }
+                                                    </Tag>
+                                                  ) : null}
+                                                </div>
+                                                {relatedStaff.length > 0 && (
+                                                  <div className="ml-5 mt-1 flex flex-col gap-1">
+                                                    {relatedStaff.map(
+                                                      (staff) => (
+                                                        <div
+                                                          key={staff.id}
+                                                          className="flex flex-wrap items-center gap-x-1 gap-y-0.5 text-xs"
+                                                        >
+                                                          <span className="text-blue-600">
+                                                            👤
+                                                          </span>
+                                                          <span className="font-medium text-gray-700 dark:text-gray-300">
+                                                            {staff.lastName}{' '}
+                                                            {staff.firstName}
+                                                          </span>
+                                                          {staff.phoneNumber ? (
+                                                            <span className="text-gray-400">
+                                                              (
+                                                              {
+                                                                staff.phoneNumber
+                                                              }
+                                                              )
+                                                            </span>
+                                                          ) : null}
+                                                          {staff.locationName ? (
+                                                            <Tag
+                                                              color="orange"
+                                                              className="text-[10px] px-1 py-0"
+                                                            >
+                                                              📍{' '}
+                                                              {
+                                                                staff.locationName
+                                                              }
+                                                            </Tag>
+                                                          ) : null}
+                                                          {staff.startTime ||
+                                                          staff.endTime ? (
+                                                            <Tag
+                                                              color="purple"
+                                                              className="text-[10px] px-1 py-0"
+                                                            >
+                                                              🕐{' '}
+                                                              {formatAssignmentDateTime(
+                                                                staff.startTime
+                                                              )}{' '}
+                                                              -{' '}
+                                                              {formatAssignmentDateTime(
+                                                                staff.endTime
+                                                              )}
+                                                            </Tag>
+                                                          ) : null}
+                                                        </div>
+                                                      )
+                                                    )}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                          }
+                                        )}
+                                      </div>
+                                    </div>
+                                  )}
                               </div>
                             ))}
                           </div>
@@ -589,7 +647,7 @@ export const BookingDetailWithOrders: React.FC<
                       </>
                     )}
 
-                  {/* Services */}
+                  {/* All Booking Services */}
                   {currentBooking.services &&
                     currentBooking.services.length > 0 && (
                       <>
@@ -598,67 +656,135 @@ export const BookingDetailWithOrders: React.FC<
                         </Divider>
                         <Card size="small">
                           <div className="flex flex-col gap-3">
-                            {currentBooking.services.map((item) => (
-                              <div
-                                key={item.serviceId}
-                                className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 p-3"
-                              >
-                                <div className="flex items-center gap-3">
-                                  <Tag color="green">🎯</Tag>
-                                  <div>
-                                    <div className="font-medium">
-                                      {item.service?.name}
-                                    </div>
-                                    <div className="text-xs text-gray-500">
-                                      {item.service?.description}
-                                    </div>
-                                    {item.service?.job?.name ? (
-                                      <div className="text-xs text-blue-500">
-                                        Job: {item.service.job.name}
+                            {currentBooking.services.map((item) => {
+                              const serviceName = item.service?.name;
+                              const jobName = item.service?.job?.name;
+                              const relatedStaffRaw = assignedStaff.filter(
+                                (s) =>
+                                  s.serviceLabel === serviceName ||
+                                  (serviceName &&
+                                    s.serviceLabel?.endsWith(
+                                      ` / ${serviceName}`
+                                    )) ||
+                                  s.job === jobName
+                              );
+                              const relatedStaffMap = new Map<
+                                string,
+                                AssignedStaffMember
+                              >();
+                              for (const staff of relatedStaffRaw) {
+                                if (!relatedStaffMap.has(staff.id)) {
+                                  relatedStaffMap.set(staff.id, staff);
+                                }
+                              }
+                              const relatedStaff = [
+                                ...relatedStaffMap.values(),
+                              ];
+
+                              return (
+                                <div
+                                  key={item.serviceId}
+                                  className="rounded-lg border border-gray-200 p-3"
+                                >
+                                  <div className="flex items-center justify-between gap-4">
+                                    <div className="flex items-center gap-3">
+                                      <Tag color="green">🎯</Tag>
+                                      <div>
+                                        <div className="font-medium">
+                                          {item.service?.name}
+                                        </div>
+                                        <div className="text-xs text-gray-500">
+                                          {item.service?.description}
+                                        </div>
+                                        {item.service?.job?.name ? (
+                                          <div className="text-xs text-blue-500">
+                                            Job: {item.service.job.name}
+                                          </div>
+                                        ) : null}
                                       </div>
-                                    ) : null}
+                                    </div>
+                                    <div style={{ textAlign: 'right' }}>
+                                      <div
+                                        style={{
+                                          fontSize: '12px',
+                                          color: '#666',
+                                        }}
+                                      >
+                                        {formatMoneyVND(item.price)} ×{' '}
+                                        {item.quantity}
+                                      </div>
+                                      <div
+                                        style={{
+                                          fontWeight: 'bold',
+                                          fontSize: '14px',
+                                          color: '#52c41a',
+                                        }}
+                                      >
+                                        {formatMoneyVND(
+                                          (item.price || 0) *
+                                            (item.quantity || 1)
+                                        )}
+                                      </div>
+                                    </div>
                                   </div>
+                                  {relatedStaff.length > 0 && (
+                                    <div className="mt-2 ml-8 border-t border-gray-100 pt-2">
+                                      <div className="text-xs font-medium text-gray-500 mb-1">
+                                        Assigned staff:
+                                      </div>
+                                      <div className="flex flex-col gap-1">
+                                        {relatedStaff.map((staff) => (
+                                          <div
+                                            key={staff.id}
+                                            className="flex items-center gap-2 text-xs"
+                                          >
+                                            <span className="text-blue-600">
+                                              👤
+                                            </span>
+                                            <span className="font-medium text-gray-700 dark:text-gray-300">
+                                              {staff.lastName} {staff.firstName}
+                                            </span>
+                                            {staff.phoneNumber ? (
+                                              <span className="text-gray-400">
+                                                ({staff.phoneNumber})
+                                              </span>
+                                            ) : null}
+                                            {staff.locationName ? (
+                                              <Tag
+                                                color="orange"
+                                                className="text-[10px] px-1 py-0"
+                                              >
+                                                📍 {staff.locationName}
+                                              </Tag>
+                                            ) : null}
+                                            {staff.startTime ||
+                                            staff.endTime ? (
+                                              <Tag
+                                                color="purple"
+                                                className="text-[10px] px-1 py-0"
+                                              >
+                                                🕐{' '}
+                                                {formatAssignmentDateTime(
+                                                  staff.startTime
+                                                )}{' '}
+                                                -{' '}
+                                                {formatAssignmentDateTime(
+                                                  staff.endTime
+                                                )}
+                                              </Tag>
+                                            ) : null}
+                                          </div>
+                                        ))}
+                                      </div>
+                                    </div>
+                                  )}
                                 </div>
-                                <div style={{ textAlign: 'right' }}>
-                                  <div
-                                    style={{ fontSize: '12px', color: '#666' }}
-                                  >
-                                    {formatMoneyVND(item.price)} ×{' '}
-                                    {item.quantity}
-                                  </div>
-                                  <div
-                                    style={{
-                                      fontWeight: 'bold',
-                                      fontSize: '14px',
-                                      color: '#52c41a',
-                                    }}
-                                  >
-                                    {formatMoneyVND(
-                                      (item.price || 0) * (item.quantity || 1)
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            ))}
+                              );
+                            })}
                           </div>
                         </Card>
                       </>
                     )}
-
-                  <Divider>Staff Assignment</Divider>
-                  <Card size="small">
-                    {loadingBookingDetails ? (
-                      <div style={{ padding: '24px 0', textAlign: 'center' }}>
-                        <Spin tip="Loading booking assignment..." />
-                      </div>
-                    ) : (
-                      <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300">
-                        Staff can only be assigned while editing the booking.
-                        Open <strong>Edit</strong> to assign staff by the jobs
-                        required by this booking’s services.
-                      </div>
-                    )}
-                  </Card>
 
                   {/* Action Buttons */}
                   <Divider />
@@ -722,7 +848,7 @@ export const BookingDetailWithOrders: React.FC<
               ),
               children: (
                 <div>
-                  {loadingOrder ? (
+                  {isLoadingOrder ? (
                     <div style={{ textAlign: 'center', padding: '40px' }}>
                       Loading order information...
                     </div>
