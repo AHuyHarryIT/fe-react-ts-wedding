@@ -50,6 +50,19 @@ export function useBookingManagement() {
       }),
   });
 
+  // Query for individual booking detail
+  const {
+    data: bookingDetail,
+    isLoading: isLoadingDetail,
+    isError: isDetailError,
+  } = useQuery({
+    queryKey: ['booking-detail-management', selectedBooking?.id],
+    queryFn: () => bookingApi.getOne(selectedBooking!.id),
+    enabled: !!selectedBooking?.id,
+    staleTime: 0,
+    retry: false,
+  });
+
   // Mutations
   const deleteMutation = useMutation({
     mutationFn: (id: string) => bookingApi.delete(id),
@@ -63,6 +76,54 @@ export function useBookingManagement() {
           ?.data?.message || 'Failed to delete booking';
       messageApi.error(errorMessage);
     },
+  });
+
+  const createMutation = useMutation({
+    mutationFn: (data: CreateBookingRequest) => bookingApi.create(data),
+    onSuccess: (data) => {
+      messageApi.success('Booking created successfully');
+      setIsCreateModalOpen(false);
+      createForm.resetFields();
+      setCreateSelectedItems([]);
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      return data;
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message || 'Failed to create booking';
+      messageApi.error(errorMessage);
+    },
+  });
+
+  const updateMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: UpdateBookingRequest }) =>
+      bookingApi.update(id, data),
+    onSuccess: () => {
+      messageApi.success('Booking updated successfully');
+      setIsEditModalOpen(false);
+      setSelectedBooking(null);
+      editForm.resetFields();
+      setEditSelectedItems([]);
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message || 'Failed to update booking';
+      messageApi.error(errorMessage);
+    },
+  });
+
+  const assignStaffMutation = useMutation({
+    mutationFn: ({
+      id,
+      staffAssignments,
+    }: {
+      id: string;
+      staffAssignments: BookingStaffAssignmentInput[];
+    }) => bookingApi.assignStaff(id, staffAssignments),
+    retry: false,
   });
 
   // Calculate total price for create
@@ -172,23 +233,16 @@ export function useBookingManagement() {
     };
 
     try {
-      const createResponse = await bookingApi.create(bookingData);
+      const createResponse = await createMutation.mutateAsync(bookingData);
 
       if (staffAssignments?.length) {
-        await bookingApi.assignStaff(createResponse.data.id, staffAssignments);
+        await assignStaffMutation.mutateAsync({
+          id: createResponse.data.id,
+          staffAssignments,
+        });
       }
-
-      messageApi.success('Booking created successfully');
-      setIsCreateModalOpen(false);
-      createForm.resetFields();
-      setCreateSelectedItems([]);
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      return createResponse;
-    } catch (error) {
-      const errorMessage =
-        (error as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message || 'Failed to create booking';
-      messageApi.error(errorMessage);
+    } catch {
+      // Error already handled by mutation onError
     }
   };
 
@@ -218,27 +272,19 @@ export function useBookingManagement() {
     };
 
     try {
-      const updateResponse = await bookingApi.update(
-        selectedBooking.id,
-        updateData
-      );
+      await updateMutation.mutateAsync({
+        id: selectedBooking.id,
+        data: updateData,
+      });
 
-      if (staffAssignments) {
-        await bookingApi.assignStaff(selectedBooking.id, staffAssignments);
+      if (staffAssignments?.length) {
+        await assignStaffMutation.mutateAsync({
+          id: selectedBooking.id,
+          staffAssignments,
+        });
       }
-
-      messageApi.success('Booking updated successfully');
-      setIsEditModalOpen(false);
-      setSelectedBooking(null);
-      editForm.resetFields();
-      setEditSelectedItems([]);
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      return updateResponse;
-    } catch (error) {
-      const errorMessage =
-        (error as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message || 'Failed to update booking';
-      messageApi.error(errorMessage);
+    } catch {
+      // Error already handled by mutation onError
     }
   };
 
@@ -246,79 +292,67 @@ export function useBookingManagement() {
     deleteMutation.mutate(id);
   };
 
-  const handleOpenEdit = async (booking: Booking) => {
-    try {
-      setIsLoadingBooking(true);
-      // Fetch fresh booking data by ID
-      const response = await bookingApi.getOne(booking.id);
-      const freshBooking = response.data;
-
-      setSelectedBooking(freshBooking);
-      const items: BookingSelectedItem[] = [];
-
-      // Add packages from booking
-      if (freshBooking.packages && freshBooking.packages.length > 0) {
-        freshBooking.packages.forEach((bp) => {
-          if (bp.package) {
-            items.push({
-              id: bp.package.id,
-              type: 'package',
-              name: bp.package.name,
-              price: bp.package.price || 0,
-              quantity: bp.quantity || 1,
-            });
-          }
-        });
-      }
-
-      // Add services from booking
-      if (freshBooking.services && freshBooking.services.length > 0) {
-        freshBooking.services.forEach((bs) => {
-          if (bs.service) {
-            items.push({
-              id: bs.service.id,
-              type: 'service',
-              name: bs.service.name,
-              price: bs.service.price || 0,
-              quantity: bs.quantity || 1,
-            });
-          }
-        });
-      }
-
-      setEditSelectedItems(items);
-      editForm.setFieldsValue({
-        customerId: freshBooking.customerId,
-        notes: freshBooking.notes || '',
-        eventDate: freshBooking.eventDate,
-        totalPrice: freshBooking.totalPrice,
-        status: freshBooking.status,
-      });
-      setIsEditModalOpen(true);
-    } catch (error) {
-      const errorMessage =
-        (error as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message || 'Failed to load booking details';
-      messageApi.error(errorMessage);
-    } finally {
-      setIsLoadingBooking(false);
-    }
+  const handleOpenEdit = (booking: Booking) => {
+    // Trigger the detail query by setting selected booking
+    setSelectedBooking(booking);
+    setIsLoadingBooking(true);
   };
 
-  const handleViewBooking = async (booking: Booking) => {
+  // React to booking detail query result
+  if (bookingDetail && !isLoadingDetail) {
+    const freshBooking = bookingDetail.data;
+    const items: BookingSelectedItem[] = [];
+
+    if (freshBooking.packages && freshBooking.packages.length > 0) {
+      freshBooking.packages.forEach((bp) => {
+        if (bp.package) {
+          items.push({
+            id: bp.package.id,
+            type: 'package',
+            name: bp.package.name,
+            price: bp.package.price || 0,
+            quantity: bp.quantity || 1,
+          });
+        }
+      });
+    }
+
+    if (freshBooking.services && freshBooking.services.length > 0) {
+      freshBooking.services.forEach((bs) => {
+        if (bs.service) {
+          items.push({
+            id: bs.service.id,
+            type: 'service',
+            name: bs.service.name,
+            price: bs.service.price || 0,
+            quantity: bs.quantity || 1,
+          });
+        }
+      });
+    }
+
+    setSelectedBooking(freshBooking);
+    setEditSelectedItems(items);
+    editForm.setFieldsValue({
+      customerId: freshBooking.customerId,
+      notes: freshBooking.notes || '',
+      eventDate: freshBooking.eventDate,
+      totalPrice: freshBooking.totalPrice,
+      status: freshBooking.status,
+    });
+    setIsEditModalOpen(true);
+    setIsLoadingBooking(false);
+  }
+
+  if (isDetailError) {
+    messageApi.error('Failed to load booking details');
+    setIsLoadingBooking(false);
+  }
+
+  const handleViewBooking = (booking: Booking) => {
     setDetailBooking(booking);
     setIsDetailModalOpen(true);
-    try {
-      setIsLoadingBooking(true);
-      // Fetch fresh booking data by ID
-      const response = await bookingApi.getOne(booking.id);
-      setDetailBooking(response.data);
-    } catch (error) {
-      console.error('Failed to load booking details:', error);
-      messageApi.error('Failed to load booking details');
-    } finally {
-      setIsLoadingBooking(false);
-    }
+    setIsLoadingBooking(true);
   };
 
   const handleCloseDetailModal = () => {
