@@ -3,6 +3,7 @@ import type { CheckoutRequest, Order, PaymentMethod } from '@types';
 import { formatMoneyVND } from '@utils/money';
 import { App, Button, Col, Divider, Form, Input, Radio, Row } from 'antd';
 import React, { useMemo, useState } from 'react';
+import { useMutation } from '@tanstack/react-query';
 
 interface CheckoutFormProps {
   bookingId: string;
@@ -31,7 +32,6 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
 }) => {
   const { message } = App.useApp();
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
   const [paymentOption, setPaymentOption] = useState<'deposit' | 'full'>(
     'full'
   );
@@ -47,16 +47,87 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
     };
   }, [totalPrice]);
 
+  // Mutation: Checkout
+  const checkoutMutation = useMutation({
+    mutationFn: (data: CheckoutRequest) => ordersService.checkout(data),
+  });
+
+  // Mutation: Pay Remaining
+  const payRemainingMutation = useMutation({
+    mutationFn: ({
+      bookingId,
+      data,
+    }: {
+      bookingId: string;
+      data: {
+        paymentAmount: number;
+        paymentMethod: PaymentMethod;
+        note: string;
+      };
+    }) => ordersService.payRemaining(bookingId, data),
+  });
+
+  // Mutation: Initiate MoMo Payment
+  const momoMutation = useMutation({
+    mutationFn: ({
+      bookingId,
+      paymentId,
+      returnUrl,
+    }: {
+      bookingId: string;
+      paymentId: string;
+      returnUrl: string;
+    }) => ordersService.initiateMomoPayment(bookingId, paymentId, returnUrl),
+  });
+
+  // Combined loading state
+  const isPending =
+    checkoutMutation.isPending ||
+    payRemainingMutation.isPending ||
+    momoMutation.isPending;
+
   interface CheckoutFormValues {
     paymentMethod?: PaymentMethod;
     note?: string;
     [key: string]: unknown;
   }
 
+  // Calculate remaining amount from API data
+  const calculateRemaining = () => {
+    if (!existingOrder) return 0;
+    // Use summary data from API first, fallback to calculated values
+    if (existingOrder.summary?.remainingAmount !== undefined) {
+      return existingOrder.summary.remainingAmount;
+    }
+    const total = existingOrder.totalPrice || 0;
+    const paid =
+      existingOrder.summary?.totalPaid ??
+      (existingOrder.depositPaid || 0) + (existingOrder.remainingPaid || 0);
+    return Math.max(0, total - paid);
+  };
+
+  // Handle MoMo payment redirect logic
+  const handleMomoRedirect = (
+    momoResponse: { payUrl?: string; orderId?: string } | undefined,
+    orderId: string
+  ) => {
+    if (momoResponse?.payUrl) {
+      localStorage.setItem(CURRENT_BOOKING_ID_KEY, orderId);
+      localStorage.setItem('currentOrderId', orderId);
+      localStorage.setItem('orderId', orderId);
+      if (momoResponse.orderId) {
+        localStorage.setItem(CURRENT_MOMO_ORDER_ID_KEY, momoResponse.orderId);
+      }
+      window.location.assign(momoResponse.payUrl);
+      return true;
+    } else {
+      message.error('Failed to initiate MOMO payment');
+      return false;
+    }
+  };
+
   const handleCheckout = async (values: CheckoutFormValues) => {
     try {
-      setLoading(true);
-
       if (existingOrder && existingOrder.bookingId) {
         // Second checkout: pay remaining
         if (!values.paymentMethod) {
@@ -81,10 +152,8 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
           note: values.note || '',
         };
 
-        const updatedOrder = await ordersService.payRemaining(
-          existingOrder.bookingId,
-          payRemainingData
-        );
+        const updatedOrder =
+          await payRemainingMutation.mutateAsync(payRemainingData);
 
         // Handle MOMO payment for E-WALLET
         if (values.paymentMethod === 'E_WALLET') {
@@ -98,29 +167,13 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             return;
           }
 
-          const momoResponse = await ordersService.initiateMomoPayment(
-            existingOrder.bookingId,
-            remainingPayment.id,
-            getStaffPaymentResultUrl(existingOrder.bookingId)
-          );
+          const momoResponse = await momoMutation.mutateAsync({
+            bookingId: existingOrder.bookingId,
+            paymentId: remainingPayment.id,
+            returnUrl: getStaffPaymentResultUrl(existingOrder.bookingId),
+          });
 
-          if (momoResponse?.payUrl) {
-            localStorage.setItem(
-              CURRENT_BOOKING_ID_KEY,
-              existingOrder.bookingId
-            );
-            localStorage.setItem('currentOrderId', existingOrder.bookingId);
-            localStorage.setItem('orderId', existingOrder.bookingId);
-            if (momoResponse.orderId) {
-              localStorage.setItem(
-                CURRENT_MOMO_ORDER_ID_KEY,
-                momoResponse.orderId
-              );
-            }
-            window.location.assign(momoResponse.payUrl);
-            return;
-          } else {
-            message.error('Failed to initiate MOMO payment');
+          if (!handleMomoRedirect(momoResponse, existingOrder.bookingId)) {
             return;
           }
         }
@@ -129,13 +182,13 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
         onCheckoutSuccess?.(updatedOrder);
       } else {
         // First checkout: create order with appropriate payment option
-        if (paymentOption === 'deposit') {
-          // Pay 30% deposit
+        if (paymentOption === 'deposit' || paymentOption === 'full') {
           const checkoutData: CheckoutRequest = {
             bookingId,
-            makeDeposit: true,
-            depositValue: MIN_DEPOSIT_PERCENTAGE,
-            isDepositPercentage: true,
+            makeDeposit: paymentOption === 'deposit',
+            depositValue:
+              paymentOption === 'deposit' ? MIN_DEPOSIT_PERCENTAGE : totalPrice,
+            isDepositPercentage: paymentOption === 'deposit',
             paymentMethod: values.paymentMethod as PaymentMethod | undefined,
             note: values.note || '',
           };
@@ -143,7 +196,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
           // Handle MOMO payment for E-WALLET
           if (values.paymentMethod === 'E_WALLET') {
             // First create the order
-            const order = await ordersService.checkout(checkoutData);
+            const order = await checkoutMutation.mutateAsync(checkoutData);
 
             // Extract payment ID from the created order
             const paymentId = order.payments?.[0]?.id;
@@ -153,83 +206,21 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             }
 
             // Then initiate MOMO payment with payment ID
-            const momoResponse = await ordersService.initiateMomoPayment(
-              order.bookingId,
+            const momoResponse = await momoMutation.mutateAsync({
+              bookingId: order.bookingId,
               paymentId,
-              getStaffPaymentResultUrl(order.bookingId)
-            );
+              returnUrl: getStaffPaymentResultUrl(order.bookingId),
+            });
 
-            if (momoResponse?.payUrl) {
-              localStorage.setItem(CURRENT_BOOKING_ID_KEY, order.bookingId);
-              localStorage.setItem('currentOrderId', order.bookingId);
-              localStorage.setItem('orderId', order.bookingId);
-              if (momoResponse.orderId) {
-                localStorage.setItem(
-                  CURRENT_MOMO_ORDER_ID_KEY,
-                  momoResponse.orderId
-                );
-              }
-              window.location.assign(momoResponse.payUrl);
-              return;
-            } else {
-              message.error('Failed to initiate MOMO payment');
+            if (!handleMomoRedirect(momoResponse, order.bookingId)) {
               return;
             }
           }
 
-          const order = await ordersService.checkout(checkoutData);
-          message.success('Deposit payment processed successfully!');
-          onCheckoutSuccess?.(order);
-        } else if (paymentOption === 'full') {
-          // Pay full amount
-          const checkoutData: CheckoutRequest = {
-            bookingId,
-            makeDeposit: false,
-            depositValue: totalPrice,
-            isDepositPercentage: false,
-            paymentMethod: values.paymentMethod as PaymentMethod | undefined,
-            note: values.note || '',
-          };
-
-          // Handle MOMO payment for E-WALLET
-          if (values.paymentMethod === 'E_WALLET') {
-            // First create the order
-            const order = await ordersService.checkout(checkoutData);
-
-            // Extract payment ID from the created order
-            const paymentId = order.payments?.[0]?.id;
-            if (!paymentId) {
-              message.error('Payment not created - unable to initiate MOMO');
-              return;
-            }
-
-            // Then initiate MOMO payment with payment ID
-            const momoResponse = await ordersService.initiateMomoPayment(
-              order.bookingId,
-              paymentId,
-              getStaffPaymentResultUrl(order.bookingId)
-            );
-
-            if (momoResponse?.payUrl) {
-              localStorage.setItem(CURRENT_BOOKING_ID_KEY, order.bookingId);
-              localStorage.setItem('currentOrderId', order.bookingId);
-              localStorage.setItem('orderId', order.bookingId);
-              if (momoResponse.orderId) {
-                localStorage.setItem(
-                  CURRENT_MOMO_ORDER_ID_KEY,
-                  momoResponse.orderId
-                );
-              }
-              window.location.assign(momoResponse.payUrl);
-              return;
-            } else {
-              message.error('Failed to initiate MOMO payment');
-              return;
-            }
-          }
-
-          const order = await ordersService.checkout(checkoutData);
-          message.success('Full payment processed successfully!');
+          const order = await checkoutMutation.mutateAsync(checkoutData);
+          message.success(
+            `${paymentOption === 'deposit' ? 'Deposit' : 'Full'} payment processed successfully!`
+          );
           onCheckoutSuccess?.(order);
         }
       }
@@ -242,23 +233,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
           ? error.message
           : axiosError?.response?.data?.message || 'Checkout failed';
       message.error(errorMessage);
-    } finally {
-      setLoading(false);
     }
-  };
-
-  // Calculate remaining amount from API data
-  const calculateRemaining = () => {
-    if (!existingOrder) return 0;
-    // Use summary data from API first, fallback to calculated values
-    if (existingOrder.summary?.remainingAmount !== undefined) {
-      return existingOrder.summary.remainingAmount;
-    }
-    const total = existingOrder.totalPrice || 0;
-    const paid =
-      existingOrder.summary?.totalPaid ??
-      (existingOrder.depositPaid || 0) + (existingOrder.remainingPaid || 0);
-    return Math.max(0, total - paid);
   };
 
   // Get total paid from API data
@@ -443,7 +418,7 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             <Button
               type="primary"
               htmlType="submit"
-              loading={loading}
+              loading={isPending}
               block
               size="large"
             >

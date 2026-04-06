@@ -10,6 +10,7 @@ import {
   Space,
   Spin,
 } from 'antd';
+import { useMutation } from '@tanstack/react-query';
 import { paymentApi, type MomoPaymentRequest } from '@services/PaymentService';
 
 interface PaymentFormModalProps {
@@ -29,20 +30,24 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
 }) => {
   const { message } = App.useApp();
   const [form] = Form.useForm();
-  const [loading, setLoading] = useState(false);
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'MOMO'>('CASH');
 
-  const handlePaymentMethodChange = (value: string) => {
-    setPaymentMethod(value as 'CASH' | 'MOMO');
-    form.resetFields();
-  };
-
-  const handleSubmit = async (amount: number) => {
-    try {
-      setLoading(true);
-
-      if (paymentMethod === 'CASH') {
-        const result = await paymentApi.createCash(bookingId, amount);
+  const createPaymentMutation = useMutation({
+    mutationFn: ({
+      method,
+      amount,
+    }: {
+      method: 'CASH' | 'MOMO';
+      amount: number;
+    }) => {
+      if (method === 'CASH') {
+        return paymentApi.createCash(bookingId, amount);
+      }
+      const paymentData: MomoPaymentRequest = { amount, bookingId };
+      return paymentApi.createMomo(paymentData);
+    },
+    onSuccess: (result, variables) => {
+      if (variables.method === 'CASH') {
         if (result.data) {
           message.success('Cash payment recorded successfully');
           if (onPaymentSuccess) {
@@ -51,37 +56,35 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
           form.resetFields();
           onClose();
         }
-      } else if (paymentMethod === 'MOMO') {
-        const paymentData: MomoPaymentRequest = {
-          amount: amount,
-          bookingId,
-        };
-
-        const result = await paymentApi.createMomo(paymentData);
-
-        if (result.data) {
-          const response = result.data;
-          if (response.success && response.payUrl) {
-            // Store orderId in localStorage for PaymentResultPage
-            localStorage.setItem('currentOrderId', bookingId);
-            localStorage.setItem('orderId', bookingId);
-
-            if (onPaymentSuccess) {
-              onPaymentSuccess(response.paymentId);
-            }
-
-            window.location.assign(response.payUrl);
-            return;
-          } else {
-            message.error(response.message || 'Failed to create Momo payment');
+      } else {
+        const response = result.data;
+        if (response?.success && response?.payUrl) {
+          localStorage.setItem('currentOrderId', bookingId);
+          localStorage.setItem('orderId', bookingId);
+          if (onPaymentSuccess) {
+            onPaymentSuccess(response.paymentId);
           }
+          window.location.assign(response.payUrl);
+        } else {
+          message.error(response?.message || 'Failed to create Momo payment');
         }
       }
-    } catch (error) {
+    },
+    onError: (error) => {
       message.error(error instanceof Error ? error.message : 'Payment failed');
-    } finally {
-      setLoading(false);
-    }
+    },
+  });
+
+  const handlePaymentMethodChange = (value: string) => {
+    setPaymentMethod(value as 'CASH' | 'MOMO');
+    form.resetFields();
+  };
+
+  const handleSubmit = async (values: { amount: number }) => {
+    createPaymentMutation.mutate({
+      method: paymentMethod,
+      amount: values.amount,
+    });
   };
 
   return (
@@ -92,7 +95,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
       footer={null}
       width={500}
     >
-      <Spin spinning={loading}>
+      <Spin spinning={createPaymentMutation.isPending}>
         <Form
           form={form}
           layout="vertical"
@@ -157,7 +160,7 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
             <Button
               type="primary"
               htmlType="submit"
-              loading={loading}
+              loading={createPaymentMutation.isPending}
               danger={paymentMethod === 'MOMO'}
             >
               {paymentMethod === 'CASH'

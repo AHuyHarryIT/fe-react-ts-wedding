@@ -1,4 +1,6 @@
+import { useMutation } from '@tanstack/react-query';
 import { bookingSessionApi } from '@services/BookingSessionService';
+import { extractErrorMessage } from '@utils/error';
 import type {
   BookingSession,
   BookingStatus,
@@ -83,8 +85,6 @@ export function BookingSessionsPanel({
     null
   );
   const [modalOpen, setModalOpen] = useState(false);
-  const [saving, setSaving] = useState(false);
-  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   const orderedSessions = useMemo(
     () =>
@@ -93,6 +93,54 @@ export function BookingSessionsPanel({
       ),
     [sessions]
   );
+
+  const createSessionMutation = useMutation({
+    mutationFn: (data: CreateBookingSessionRequest) =>
+      bookingSessionApi.create(data),
+    onSuccess: () => {
+      message.success('Booking session created successfully');
+      closeModal();
+      onChanged?.();
+    },
+    onError: (error) => {
+      message.error(
+        extractErrorMessage(error) || 'Failed to save booking session'
+      );
+    },
+  });
+
+  const updateSessionMutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: UpdateBookingSessionRequest;
+    }) => bookingSessionApi.update(id, data),
+    onSuccess: () => {
+      message.success('Booking session updated successfully');
+      closeModal();
+      onChanged?.();
+    },
+    onError: (error) => {
+      message.error(
+        extractErrorMessage(error) || 'Failed to save booking session'
+      );
+    },
+  });
+
+  const deleteSessionMutation = useMutation({
+    mutationFn: (id: string) => bookingSessionApi.delete(id),
+    onSuccess: () => {
+      message.success('Booking session deleted successfully');
+      onChanged?.();
+    },
+    onError: (error) => {
+      message.error(
+        extractErrorMessage(error) || 'Failed to delete booking session'
+      );
+    },
+  });
 
   const openCreateModal = () => {
     setEditingSession(null);
@@ -139,41 +187,20 @@ export function BookingSessionsPanel({
       status: values.status || 'PENDING',
     };
 
-    try {
-      setSaving(true);
-      if (editingSession) {
-        await bookingSessionApi.update(editingSession.id, payload);
-        message.success('Booking session updated successfully');
-      } else {
-        await bookingSessionApi.create(payload as CreateBookingSessionRequest);
-        message.success('Booking session created successfully');
-      }
-      closeModal();
-      await onChanged?.();
-    } catch (error) {
-      const errorMessage =
-        (error as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message || 'Failed to save booking session';
-      message.error(errorMessage);
-    } finally {
-      setSaving(false);
+    if (editingSession) {
+      await updateSessionMutation.mutateAsync({
+        id: editingSession.id,
+        data: payload,
+      });
+    } else {
+      await createSessionMutation.mutateAsync(
+        payload as CreateBookingSessionRequest
+      );
     }
   };
 
-  const handleDelete = async (sessionId: string) => {
-    try {
-      setDeletingId(sessionId);
-      await bookingSessionApi.delete(sessionId);
-      message.success('Booking session deleted successfully');
-      await onChanged?.();
-    } catch (error) {
-      const errorMessage =
-        (error as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message || 'Failed to delete booking session';
-      message.error(errorMessage);
-    } finally {
-      setDeletingId(null);
-    }
+  const handleDelete = (sessionId: string) => {
+    deleteSessionMutation.mutate(sessionId);
   };
 
   return (
@@ -255,7 +282,7 @@ export function BookingSessionsPanel({
                         okText="Delete"
                         okButtonProps={{
                           danger: true,
-                          loading: deletingId === session.id,
+                          loading: deleteSessionMutation.isPending,
                         }}
                         onConfirm={() => handleDelete(session.id)}
                       >
@@ -263,7 +290,7 @@ export function BookingSessionsPanel({
                           size="small"
                           danger
                           icon={<DeleteOutlined />}
-                          loading={deletingId === session.id}
+                          loading={deleteSessionMutation.isPending}
                         >
                           Delete
                         </Button>
@@ -317,7 +344,9 @@ export function BookingSessionsPanel({
         open={modalOpen}
         onCancel={closeModal}
         onOk={() => form.submit()}
-        confirmLoading={saving}
+        confirmLoading={
+          createSessionMutation.isPending || updateSessionMutation.isPending
+        }
         destroyOnHidden
         okText={editingSession ? 'Update Session' : 'Create Session'}
       >
