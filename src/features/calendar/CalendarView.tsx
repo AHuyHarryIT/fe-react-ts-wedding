@@ -56,12 +56,14 @@ export function CalendarView() {
       }),
   });
 
-  const bookings: BookingCalendarItem[] = (data?.data ?? [])
-    .filter((b: BookingCalendarItem) => {
+  const bookings: BookingCalendarItem[] = (
+    (data?.data ?? []) as BookingCalendarItem[]
+  )
+    .filter((b) => {
       const d = dayjs(b.eventDate);
       return d.isSameOrAfter(start, 'day') && d.isSameOrBefore(end, 'day');
     })
-    .filter((b: BookingCalendarItem) => {
+    .filter((b) => {
       if (!search) return true;
       const fn = b.customer?.firstName?.toLowerCase() ?? '';
       const ln = b.customer?.lastName?.toLowerCase() ?? '';
