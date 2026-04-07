@@ -10,27 +10,23 @@ import {
   Select,
 } from 'antd';
 import { useQuery } from '@tanstack/react-query';
-import dayjs, { Dayjs } from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
+import { Line, Column, Pie } from '@ant-design/plots';
 import { bookingApi } from '@services/BookingService';
-import {
-  LineChart,
-  Line,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  BarChart,
-  Bar,
-  Legend,
-} from 'recharts';
 
 const { RangePicker } = DatePicker;
 
 const STATUS_COLORS: Record<string, string> = {
+  CONFIRMED: '#1890ff',
+  DEPOSIT_PAID: '#13c2c2',
+  PENDING: '#faad14',
+  COMPLETED: '#52c41a',
+  CANCELLED: '#f5222d',
+  RESCHEDULED: '#722ed1',
+  NO_SHOW: '#d9d9d9',
+};
+
+const ANTD_STATUS_COLORS: Record<string, string> = {
   CONFIRMED: 'blue',
   DEPOSIT_PAID: 'cyan',
   PENDING: 'orange',
@@ -65,14 +61,12 @@ interface BookingReportItem {
 
 /* ---------- chart data helpers ---------- */
 
-// 1. Revenue trend — daily revenue for each day in the selected range (last 30 days default)
 function buildRevenueTrend(
   bookings: BookingReportItem[],
   start: Dayjs,
   end: Dayjs
 ) {
   const dayMap = new Map<string, number>();
-  // seed every day so gaps show up
   for (
     let d = start;
     d.isBefore(end) || d.isSame(end, 'day');
@@ -96,18 +90,16 @@ function buildRevenueTrend(
   }));
 }
 
-// 2. Bookings by status — pie chart counts
 function buildStatusPie(bookings: BookingReportItem[]) {
   const countMap = new Map<string, number>();
   for (const b of bookings) {
     countMap.set(b.status, (countMap.get(b.status) ?? 0) + 1);
   }
   return Array.from(countMap.entries())
-    .map(([name, value]) => ({ name, value }))
+    .map(([type, value]) => ({ type, value }))
     .sort((a, b) => b.value - a.value);
 }
 
-// 3. Staff workload — bookings per staff member
 function buildStaffWorkload(bookings: BookingReportItem[]) {
   const staffMap = new Map<string, { name: string; count: number }>();
   for (const b of bookings) {
@@ -128,17 +120,13 @@ function buildStaffWorkload(bookings: BookingReportItem[]) {
     .slice(0, 10);
 }
 
-// 4. Top services — most booked services
 function buildTopServices(bookings: BookingReportItem[]) {
   const svcMap = new Map<string, { name: string; count: number }>();
   for (const b of bookings) {
     for (const s of b.services ?? []) {
       const key = s.serviceId;
       if (!svcMap.has(key)) {
-        svcMap.set(key, {
-          name: s.service?.name ?? s.serviceId,
-          count: 0,
-        });
+        svcMap.set(key, { name: s.service?.name ?? s.serviceId, count: 0 });
       }
       svcMap.get(key)!.count++;
     }
@@ -147,6 +135,8 @@ function buildTopServices(bookings: BookingReportItem[]) {
     .sort((a, b) => b.count - a.count)
     .slice(0, 10);
 }
+
+const formatVND = (v: number) => `${new Intl.NumberFormat('vi-VN').format(v)}₫`;
 
 export function ReportsView() {
   const [dateRange, setDateRange] = useState<[Dayjs, Dayjs] | null>([
@@ -181,7 +171,6 @@ export function ReportsView() {
       return b.status === statusFilter;
     });
 
-  // summary stats
   const totalRevenue = bookings
     .filter((b) => b.status === 'COMPLETED' || b.status === 'CONFIRMED')
     .reduce((s, b) => s + b.totalPrice, 0);
@@ -200,7 +189,6 @@ export function ReportsView() {
     (b) => b.status === 'CANCELLED'
   ).length;
 
-  // chart data (derived from *filtered* bookings)
   const revenueTrend = useMemo(
     () => buildRevenueTrend(bookings, start, end),
     [bookings, start, end]
@@ -227,19 +215,74 @@ export function ReportsView() {
       dataIndex: 'status',
       key: 'status',
       render: (s: string) => (
-        <Tag color={STATUS_COLORS[s] ?? 'default'}>{s}</Tag>
+        <Tag color={ANTD_STATUS_COLORS[s] ?? 'default'}>{s}</Tag>
       ),
     },
     {
       title: 'Total',
       dataIndex: 'totalPrice',
       key: 'totalPrice',
-      render: (v: number) => `${new Intl.NumberFormat('vi-VN').format(v)}₫`,
+      render: (v: number) => formatVND(v),
     },
   ];
 
-  const formatVND = (v: number) =>
-    `${new Intl.NumberFormat('vi-VN').format(v)}₫`;
+  const lineConfig = {
+    data: revenueTrend,
+    xField: 'label',
+    yField: 'revenue',
+    height: 300,
+    smooth: true,
+    point: { size: 3 },
+    yAxis: { label: { formatter: (v: string) => formatVND(Number(v)) } },
+    tooltip: {
+      formatter: (datum: { label: string; revenue: number }) => ({
+        name: 'Revenue',
+        value: formatVND(datum.revenue),
+      }),
+    },
+    animation: false,
+  };
+
+  const pieConfig = {
+    data: statusPie,
+    angleField: 'value',
+    colorField: 'type',
+    radius: 0.8,
+    innerRadius: 0.6,
+    height: 300,
+    label: { text: 'type', style: { fontWeight: 'bold' } },
+    color: PIE_COLORS,
+    legend: { position: 'bottom' as const },
+    tooltip: {
+      formatter: (datum: { type: string; value: number }) => ({
+        name: datum.type,
+        value: String(datum.value),
+      }),
+    },
+    animation: false,
+  };
+
+  const staffConfig = {
+    data: staffWorkload,
+    xField: 'count',
+    yField: 'name',
+    height: 300,
+    seriesField: 'name',
+    color: '#722ed1',
+    label: { position: 'right' as const },
+    animation: false,
+  };
+
+  const servicesConfig = {
+    data: topServices,
+    xField: 'name',
+    yField: 'count',
+    height: 300,
+    seriesField: 'name',
+    color: '#13c2c2',
+    label: { position: 'top' as const },
+    animation: false,
+  };
 
   return (
     <div style={{ padding: 24 }}>
@@ -259,10 +302,7 @@ export function ReportsView() {
           onChange={setStatusFilter}
           options={[
             { label: 'All Status', value: 'all' },
-            ...Object.keys(STATUS_COLORS).map((s) => ({
-              label: s,
-              value: s,
-            })),
+            ...Object.keys(STATUS_COLORS).map((s) => ({ label: s, value: s })),
           ]}
         />
       </div>
@@ -336,26 +376,7 @@ export function ReportsView() {
             No revenue data in selected range
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <LineChart data={revenueTrend}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="label" tick={{ fontSize: 12 }} />
-              <YAxis
-                tick={{ fontSize: 12 }}
-                tickFormatter={(v: number) => formatVND(v)}
-              />
-              <Tooltip formatter={(v: number) => formatVND(v)} />
-              <Line
-                type="monotone"
-                dataKey="revenue"
-                name="Revenue"
-                stroke="#1890ff"
-                strokeWidth={2}
-                dot={{ r: 3 }}
-                activeDot={{ r: 5 }}
-              />
-            </LineChart>
-          </ResponsiveContainer>
+          <Line {...lineConfig} />
         )}
       </Card>
 
@@ -364,82 +385,24 @@ export function ReportsView() {
         <Col xs={24} md={12}>
           <Card title="Bookings by Status" style={{ height: '100%' }}>
             {statusPie.length === 0 ? (
-              <div
-                style={{
-                  textAlign: 'center',
-                  color: '#999',
-                  padding: 20,
-                }}
-              >
+              <div style={{ textAlign: 'center', color: '#999', padding: 20 }}>
                 No data in selected range
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <PieChart>
-                  <Pie
-                    data={statusPie}
-                    dataKey="value"
-                    nameKey="name"
-                    cx="50%"
-                    cy="50%"
-                    innerRadius={60}
-                    outerRadius={100}
-                    paddingAngle={2}
-                    label={({ name, value }) => `${name}: ${value}`}
-                  >
-                    {statusPie.map((_, i) => (
-                      <Cell
-                        key={`cell-${i}`}
-                        fill={
-                          PIE_COLORS[i % PIE_COLORS.length] ??
-                          STATUS_COLORS[statusPie[i].name] ??
-                          '#999'
-                        }
-                      />
-                    ))}
-                  </Pie>
-                  <Tooltip />
-                  <Legend />
-                </PieChart>
-              </ResponsiveContainer>
+              <Pie {...pieConfig} />
             )}
           </Card>
         </Col>
 
-        {/* 3. Staff Workload — Bar Chart */}
+        {/* 3. Staff Workload — Horizontal Bar Chart */}
         <Col xs={24} md={12}>
           <Card title="Staff Workload" style={{ height: '100%' }}>
             {staffWorkload.length === 0 ? (
-              <div
-                style={{
-                  textAlign: 'center',
-                  color: '#999',
-                  padding: 20,
-                }}
-              >
+              <div style={{ textAlign: 'center', color: '#999', padding: 20 }}>
                 No staff assignments in selected range
               </div>
             ) : (
-              <ResponsiveContainer width="100%" height={300}>
-                <BarChart data={staffWorkload} layout="vertical">
-                  <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" allowDecimals={false} />
-                  <YAxis
-                    type="category"
-                    dataKey="name"
-                    width={110}
-                    tick={{ fontSize: 12 }}
-                  />
-                  <Tooltip />
-                  <Legend />
-                  <Bar
-                    dataKey="count"
-                    name="Assignments"
-                    fill="#722ed1"
-                    radius={[0, 4, 4, 0]}
-                  />
-                </BarChart>
-              </ResponsiveContainer>
+              <Column {...staffConfig} />
             )}
           </Card>
         </Col>
@@ -452,21 +415,7 @@ export function ReportsView() {
             No service data in selected range
           </div>
         ) : (
-          <ResponsiveContainer width="100%" height={300}>
-            <BarChart data={topServices}>
-              <CartesianGrid strokeDasharray="3 3" />
-              <XAxis dataKey="name" tick={{ fontSize: 12 }} />
-              <YAxis allowDecimals={false} />
-              <Tooltip />
-              <Legend />
-              <Bar
-                dataKey="count"
-                name="Bookings"
-                fill="#13c2c2"
-                radius={[4, 4, 0, 0]}
-              />
-            </BarChart>
-          </ResponsiveContainer>
+          <Column {...servicesConfig} />
         )}
       </Card>
 
