@@ -1,9 +1,13 @@
-import React, { lazy, Suspense } from 'react';
+import { lazy, Suspense } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { AdminLayout } from '@shared/components/AdminLayout';
 import { Spin } from 'antd';
 
-const ReportsView = lazy(() => import('@features/reports/ReportsView'));
+const ReportsView = lazy(() =>
+  import('@features/reports/ReportsView').then((mod) => ({
+    default: mod.ReportsView,
+  }))
+);
 
 export const Route = createFileRoute('/reports')({
   component: ReportsPage,
