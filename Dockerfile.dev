@@ -8,4 +8,5 @@ RUN npm ci
 
 EXPOSE 5173
 
-CMD ["sh", "-c", "if [ ! -d node_modules/.bin ]; then npm ci; fi && npm run dev -- --host 0.0.0.0 --port 5173"]
+# Always install dependencies on container start to pick up new packages
+CMD ["sh", "-c", "npm ci && npm run dev -- --host 0.0.0.0 --port 5173"]
