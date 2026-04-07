@@ -5,12 +5,14 @@ import {
   DashboardOutlined,
   DollarOutlined,
   FileImageOutlined,
+  FileTextOutlined,
   GiftOutlined,
   ToolOutlined,
   KeyOutlined,
   MessageOutlined,
   SafetyOutlined,
   TeamOutlined,
+  ApartmentOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from '@tanstack/react-router';
 import { Drawer, Layout, Menu, Typography } from 'antd';
@@ -55,6 +57,12 @@ export function Sidebar({
       onClick: () => navigate({ to: '/bookings' }),
     },
     {
+      key: 'quotations',
+      icon: <FileTextOutlined />,
+      label: 'Quotations',
+      onClick: () => navigate({ to: '/quotations' }),
+    },
+    {
       key: 'orders',
       icon: <DollarOutlined />,
       label: 'Orders',
@@ -82,6 +90,12 @@ export function Sidebar({
       icon: <GiftOutlined />,
       label: 'Packages',
       onClick: () => navigate({ to: '/packages' }),
+    },
+    {
+      key: 'inventory',
+      icon: <ApartmentOutlined />,
+      label: 'Inventory',
+      onClick: () => navigate({ to: '/inventory' }),
     },
     {
       key: 'albums',
