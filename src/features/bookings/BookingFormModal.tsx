@@ -16,13 +16,11 @@ import {
   Card,
   DatePicker,
   Divider,
-  Empty,
   Form,
   Input,
   InputNumber,
   Modal,
   Select,
-  Space,
   Tag,
   type FormInstance,
 } from 'antd';
@@ -457,9 +455,10 @@ export function BookingFormModal({
               },
             },
           ]}
+          style={{ marginBottom: 0 }}
         >
           <Select
-            placeholder="Select services"
+            placeholder="Click to add services..."
             allowClear
             showSearch={{
               filterOption: false,
@@ -467,7 +466,7 @@ export function BookingFormModal({
             }}
             loading={serviceOptions.loading}
             options={serviceOptions.options.map((svc) => ({
-              label: `${svc.name} - ${formatMoneyVND(svc.price)}`,
+              label: `${svc.name} - ${formatMoneyVND(svc.price)}${svc.job?.name ? ` [${svc.job.name}]` : ''}`,
               value: svc.id,
             }))}
             onPopupScroll={(e) => {
@@ -508,202 +507,203 @@ export function BookingFormModal({
           />
         </Form.Item>
 
-        {/* Selected Services Display */}
-        <Form.Item label="Selected Services">
-          {selectedItems.length === 0 ? (
-            <Empty
-              description="No items selected"
-              style={{ marginTop: 20, marginBottom: 20 }}
-            />
-          ) : (
-            <Card
-              size="small"
-              style={{ marginBottom: 16 }}
-              title={`Selected Services (${selectedItems.length})`}
-            >
-              <div className="flex flex-col gap-3">
-                {selectedItems.map((item) => (
+        {/* Selected Services with staff assignment */}
+        {selectedItems.length > 0 && (
+          <div>
+            <Divider style={{ margin: '8px 0 16px' }} />
+            <div className="flex flex-col gap-4">
+              {selectedItems.map((item) => {
+                const rowIndex = assignedStaffRows.findIndex(
+                  (r) =>
+                    r.sourceKey === `service:${item.id}` ||
+                    (r.serviceLabel === item.name && r.isRequired)
+                );
+                const assignmentRow =
+                  rowIndex >= 0 ? assignedStaffRows[rowIndex] : null;
+
+                return (
                   <div
                     key={`service-${item.id}`}
-                    className="flex items-center justify-between gap-4 rounded-lg border border-green-200 bg-green-50/30 p-3 dark:border-green-800 dark:bg-green-950/20"
+                    className="rounded-xl border border-green-200 bg-green-50/40 p-4 dark:border-green-800 dark:bg-green-950/20"
                   >
-                    <div className="flex items-center gap-3">
-                      <Tag color="green">🎯</Tag>
-                      <div>
-                        <div className="font-medium text-green-700 dark:text-green-300">
-                          {item.name}
-                        </div>
-                        <div className="text-sm text-gray-500">
-                          {formatMoneyVND(item.price)} × {item.quantity}
+                    {/* Service info header */}
+                    <div className="mb-3 flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-3">
+                        <Tag color="green">🎯</Tag>
+                        <div>
+                          <div className="font-medium text-green-700 dark:text-green-300">
+                            {item.name}
+                          </div>
+                          <div className="flex items-center gap-2 text-sm text-gray-500">
+                            <span>{formatMoneyVND(item.price)}</span>
+                            {item.quantity > 1 && (
+                              <>
+                                <span>×</span>
+                                <InputNumber
+                                  min={1}
+                                  size="small"
+                                  value={item.quantity}
+                                  onChange={(value) =>
+                                    onItemQuantityChange(
+                                      item.id,
+                                      'service',
+                                      value || 1
+                                    )
+                                  }
+                                  style={{ width: 60 }}
+                                />
+                              </>
+                            )}
+                            <span className="font-semibold text-gray-700 dark:text-gray-300">
+                              = {formatMoneyVND(item.price * item.quantity)}
+                            </span>
+                          </div>
                         </div>
                       </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <InputNumber
-                        min={1}
-                        value={item.quantity}
-                        onChange={(value) =>
-                          onItemQuantityChange(item.id, 'service', value || 1)
-                        }
-                        style={{ width: 60 }}
-                      />
                       <Button
                         type="text"
                         danger
+                        size="small"
                         icon={<DeleteOutlined />}
                         onClick={() => onItemRemove(item.id, 'service')}
                       />
                     </div>
+
+                    {/* Staff assignment inline */}
+                    {assignmentRow && (
+                      <div className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
+                        <div className="mb-2 flex items-center gap-2 text-xs">
+                          <Tag color="blue">{assignmentRow.serviceLabel}</Tag>
+                          <Tag color="purple">
+                            Job: {assignmentRow.requiredJobName}
+                          </Tag>
+                        </div>
+                        <div className="grid gap-3 md:grid-cols-2">
+                          <Select
+                            allowClear
+                            placeholder="Select staff member"
+                            showSearch={{
+                              filterOption: false,
+                              onSearch: staffOptions.onSearch,
+                              optionFilterProp: 'label',
+                            }}
+                            value={assignmentRow.staffId || undefined}
+                            onChange={(value) =>
+                              updateAssignmentRow(rowIndex, { staffId: value })
+                            }
+                            loading={staffOptions.loading}
+                            options={getAssignedStaffOptionsForRow(
+                              assignmentRow
+                            )}
+                            onPopupScroll={(e) => {
+                              const target = e.target as HTMLDivElement;
+                              if (
+                                target.scrollTop + target.offsetHeight >=
+                                target.scrollHeight - 8
+                              ) {
+                                staffOptions.loadMore();
+                              }
+                            }}
+                          />
+                          <AutoComplete
+                            value={assignmentRow.job}
+                            onChange={(value) =>
+                              updateAssignmentRow(rowIndex, { job: value })
+                            }
+                            options={assignedJobOptions}
+                            showSearch={{
+                              onSearch: jobOptions.onSearch,
+                              filterOption: (inputValue, option) =>
+                                String(option?.value ?? '')
+                                  .toLowerCase()
+                                  .includes(inputValue.toLowerCase()),
+                            }}
+                            onPopupScroll={(e) => {
+                              const target = e.target as HTMLDivElement;
+                              if (
+                                target.scrollTop + target.offsetHeight >=
+                                target.scrollHeight - 8
+                              ) {
+                                jobOptions.loadMore();
+                              }
+                            }}
+                            notFoundContent={
+                              jobOptions.options.length > 0
+                                ? 'No matching jobs'
+                                : 'No managed jobs yet'
+                            }
+                            placeholder="Select or type a job"
+                            disabled={Boolean(assignmentRow.isRequired)}
+                            className="w-full"
+                          />
+                          {assignmentRow.requiresLocation && (
+                            <Input
+                              value={assignmentRow.locationName}
+                              onChange={(event) =>
+                                updateAssignmentRow(rowIndex, {
+                                  locationName: event.target.value,
+                                })
+                              }
+                              placeholder="Location"
+                            />
+                          )}
+                          {assignmentRow.requiresTime && (
+                            <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+                              <DatePicker
+                                value={parseAssignmentDateTime(
+                                  assignmentRow.startTime
+                                )}
+                                onChange={(value) =>
+                                  updateAssignmentRow(rowIndex, {
+                                    startTime: value ? value.toISOString() : '',
+                                  })
+                                }
+                                format={ASSIGNMENT_DATETIME_FORMAT}
+                                showTime={{ format: 'HH:mm', minuteStep: 5 }}
+                                inputReadOnly
+                                className="w-full"
+                                placeholder="Start time"
+                              />
+                              <DatePicker
+                                value={parseAssignmentDateTime(
+                                  assignmentRow.endTime
+                                )}
+                                onChange={(value) =>
+                                  updateAssignmentRow(rowIndex, {
+                                    endTime: value ? value.toISOString() : '',
+                                  })
+                                }
+                                format={ASSIGNMENT_DATETIME_FORMAT}
+                                showTime={{ format: 'HH:mm', minuteStep: 5 }}
+                                inputReadOnly
+                                className="w-full"
+                                placeholder="End time"
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                ))}
+                );
+              })}
+            </div>
+
+            {/* Total price */}
+            <Card
+              style={{
+                backgroundColor: '#f0f5ff',
+                marginTop: 16,
+                marginBottom: 16,
+                borderColor: '#1890ff',
+                borderWidth: 2,
+              }}
+            >
+              <div className="font-bold text-lg">
+                Total Price: {formatMoneyVND(totalPrice)}
               </div>
             </Card>
-          )}
-        </Form.Item>
-
-        {selectedItems.length > 0 && (
-          <Card
-            style={{
-              backgroundColor: '#f0f5ff',
-              marginBottom: 16,
-              borderColor: '#1890ff',
-              borderWidth: 2,
-            }}
-          >
-            <div className="font-bold text-lg">
-              Total Price: {formatMoneyVND(totalPrice)}
-            </div>
-          </Card>
-        )}
-
-        {assignedStaffRows.length > 0 && (
-          <>
-            <Divider>Assign Staff</Divider>
-            <Space
-              orientation="vertical"
-              style={{ width: '100%', marginBottom: 16 }}
-              size="middle"
-            >
-              <div className="rounded-2xl border border-dashed border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-500 dark:border-slate-700 dark:bg-slate-950/40 dark:text-slate-300">
-                Services with configured jobs are listed automatically below.
-                Each service row can use the same staff member or a different
-                one.
-              </div>
-              {assignedStaffRows.map((row, index) => (
-                <div
-                  key={row.sourceKey || `${row.staffId || 'new'}-${index}`}
-                  className="grid gap-3 rounded-xl border border-slate-200 bg-white p-3 dark:border-slate-700 dark:bg-slate-900 md:grid-cols-2"
-                >
-                  {row.isRequired && row.serviceLabel && (
-                    <div className="md:col-span-2">
-                      <div className="mb-2 flex flex-wrap items-center gap-2 text-xs">
-                        <Tag color="blue">{row.serviceLabel}</Tag>
-                        <Tag color="purple">Job: {row.requiredJobName}</Tag>
-                      </div>
-                    </div>
-                  )}
-                  <Select
-                    allowClear
-                    placeholder="Select staff member"
-                    showSearch={{
-                      filterOption: false,
-                      onSearch: staffOptions.onSearch,
-                      optionFilterProp: 'label',
-                    }}
-                    value={row.staffId || undefined}
-                    onChange={(value) =>
-                      updateAssignmentRow(index, { staffId: value })
-                    }
-                    loading={staffOptions.loading}
-                    options={getAssignedStaffOptionsForRow(row)}
-                    onPopupScroll={(e) => {
-                      const target = e.target as HTMLDivElement;
-                      if (
-                        target.scrollTop + target.offsetHeight >=
-                        target.scrollHeight - 8
-                      ) {
-                        staffOptions.loadMore();
-                      }
-                    }}
-                  />
-                  <AutoComplete
-                    value={row.job}
-                    onChange={(value) =>
-                      updateAssignmentRow(index, {
-                        job: value,
-                      })
-                    }
-                    options={assignedJobOptions}
-                    showSearch={{
-                      onSearch: jobOptions.onSearch,
-                      filterOption: (inputValue, option) =>
-                        String(option?.value ?? '')
-                          .toLowerCase()
-                          .includes(inputValue.toLowerCase()),
-                    }}
-                    onPopupScroll={(e) => {
-                      const target = e.target as HTMLDivElement;
-                      if (
-                        target.scrollTop + target.offsetHeight >=
-                        target.scrollHeight - 8
-                      ) {
-                        jobOptions.loadMore();
-                      }
-                    }}
-                    notFoundContent={
-                      jobOptions.options.length > 0
-                        ? 'No matching jobs'
-                        : 'No managed jobs yet'
-                    }
-                    placeholder="Select or type a job"
-                    disabled={Boolean(row.isRequired)}
-                    className="w-full"
-                  />
-                  {row.requiresLocation && (
-                    <Input
-                      value={row.locationName}
-                      onChange={(event) =>
-                        updateAssignmentRow(index, {
-                          locationName: event.target.value,
-                        })
-                      }
-                      placeholder="Location"
-                    />
-                  )}
-                  {row.requiresTime && (
-                    <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-                      <DatePicker
-                        value={parseAssignmentDateTime(row.startTime)}
-                        onChange={(value) =>
-                          updateAssignmentRow(index, {
-                            startTime: value ? value.toISOString() : '',
-                          })
-                        }
-                        format={ASSIGNMENT_DATETIME_FORMAT}
-                        showTime={{ format: 'HH:mm', minuteStep: 5 }}
-                        inputReadOnly
-                        className="w-full"
-                        placeholder="Start time"
-                      />
-                      <DatePicker
-                        value={parseAssignmentDateTime(row.endTime)}
-                        onChange={(value) =>
-                          updateAssignmentRow(index, {
-                            endTime: value ? value.toISOString() : '',
-                          })
-                        }
-                        format={ASSIGNMENT_DATETIME_FORMAT}
-                        showTime={{ format: 'HH:mm', minuteStep: 5 }}
-                        inputReadOnly
-                        className="w-full"
-                        placeholder="End time"
-                      />
-                    </div>
-                  )}
-                </div>
-              ))}
-            </Space>
-          </>
+          </div>
         )}
 
         <Form.Item
