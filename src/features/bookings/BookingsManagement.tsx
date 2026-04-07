@@ -8,9 +8,8 @@ import {
   ManagementLayout,
   SearchBar,
 } from '@shared/components/management';
-import { Typography } from 'antd';
-
-const { Text } = Typography;
+import { Modal } from 'antd';
+import type { Booking } from '@types';
 
 export function BookingsManagement() {
   const {
@@ -31,6 +30,8 @@ export function BookingsManagement() {
     contextHolder,
     createSelectedItems,
     editSelectedItems,
+    selectedRowKeys,
+    setSelectedRowKeys,
     setIsCreateModalOpen,
     setSearchText,
     setCurrentPage,
@@ -39,6 +40,8 @@ export function BookingsManagement() {
     handleEdit,
     handleOpenEdit,
     handleViewBooking,
+    handleDelete,
+    handleBulkDelete,
     handleCloseCreateModal,
     handleCloseEditModal,
     handleCloseDetailModal,
@@ -52,6 +55,30 @@ export function BookingsManagement() {
     handleUpdateCreateItemQuantity,
     handleUpdateEditItemQuantity,
   } = useBookingManagement();
+
+  const handleBulkDeleteWithConfirm = () => {
+    if (selectedRowKeys.length === 0) return;
+    Modal.confirm({
+      title: `Delete ${selectedRowKeys.length} booking(s)`,
+      content: `Are you sure you want to delete ${selectedRowKeys.length} booking(s)? This action cannot be undone.`,
+      okText: `Delete ${selectedRowKeys.length}`,
+      okType: 'danger',
+      onOk: () => {
+        handleBulkDelete([...selectedRowKeys]);
+      },
+    });
+  };
+
+  const rowSelection = {
+    selectedRowKeys: [...selectedRowKeys],
+    onSelectionChange: (selectedKeys: React.Key[]) => {
+      setSelectedRowKeys(selectedKeys as string[]);
+    },
+    getCheckboxProps: (record: Booking) => ({
+      disabled: record.status === 'COMPLETED' || record.status === 'CANCELLED',
+      name: `booking-${record.id}`,
+    }),
+  };
 
   return (
     <>
@@ -67,9 +94,9 @@ export function BookingsManagement() {
             onCreateClick={() => setIsCreateModalOpen(true)}
             summary={
               <div className="staff-surface rounded-3xl px-4 py-3">
-                <Text className="!text-xs !font-semibold !uppercase !tracking-[0.18em] !text-slate-500 dark:!text-slate-400">
+                <span className="!text-xs !font-semibold !uppercase !tracking-[0.18em] !text-slate-500 dark:!text-slate-400">
                   Live records
-                </Text>
+                </span>
                 <div className="text-lg font-semibold text-slate-900 dark:text-slate-50">
                   {total} bookings
                 </div>
@@ -97,8 +124,12 @@ export function BookingsManagement() {
               pageSize={pageSize}
               total={total}
               onView={handleViewBooking}
+              onDelete={handleDelete}
               onPageChange={setCurrentPage}
               onPageSizeChange={setPageSize}
+              rowSelection={rowSelection}
+              selectedCount={selectedRowKeys.length}
+              onBulkDelete={handleBulkDeleteWithConfirm}
             />
           </div>
         }

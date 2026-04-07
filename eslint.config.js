@@ -25,6 +25,7 @@ export default tseslint.config([
     },
     rules: {
       '@typescript-eslint/no-deprecated': 'warn',
+      '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
       '@typescript-eslint/no-explicit-any': 'error',
       '@typescript-eslint/no-unsafe-argument': 'error',
     },

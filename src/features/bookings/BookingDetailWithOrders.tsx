@@ -26,6 +26,7 @@ import {
   DeleteOutlined,
   ShoppingCartOutlined,
   CheckCircleOutlined,
+  PrinterOutlined,
 } from '@ant-design/icons';
 import { bookingApi } from '@services/BookingService';
 import { ordersService } from '@services/OrdersService';
@@ -34,6 +35,7 @@ import { OrderDetail } from '@features/orders/OrderDetail';
 import { formatMoneyVND } from '@utils/money';
 import { BookingSessionsPanel } from '@features/bookings/BookingSessionsPanel';
 import { formatAssignmentDateTime } from '@utils/assignmentDateTime';
+import { printInvoice } from '@utils/printInvoice';
 
 interface BookingDetailWithOrdersProps {
   open: boolean;
@@ -307,6 +309,13 @@ export const BookingDetailWithOrders: React.FC<
         markCompletedMutation.mutate(currentBooking.id);
       },
     });
+  };
+
+  const handlePrintInvoice = () => {
+    if (!currentBooking) {
+      return;
+    }
+    printInvoice(currentBooking);
   };
 
   if (!currentBooking) {
@@ -759,6 +768,12 @@ export const BookingDetailWithOrders: React.FC<
                   {/* Action Buttons */}
                   <Divider />
                   <Space>
+                    <Button
+                      icon={<PrinterOutlined />}
+                      onClick={handlePrintInvoice}
+                    >
+                      Print Invoice
+                    </Button>
                     {canEditBooking && (
                       <Button icon={<EditOutlined />} onClick={handleEdit}>
                         Edit

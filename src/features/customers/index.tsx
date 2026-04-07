@@ -6,6 +6,7 @@ import {
 } from '@shared/components/management';
 import type { ColumnsType } from 'antd/es/table';
 import type { Customer } from '@types';
+import { Modal } from 'antd';
 import { CustomerFormModal } from './CustomerFormModal';
 import { useCustomerManagement } from './useCustomerManagement';
 
@@ -24,6 +25,8 @@ export function CustomerManagement() {
     contextHolder,
     createMutation,
     updateMutation,
+    selectedRowKeys,
+    setSelectedRowKeys,
     setIsCreateModalOpen,
     setSearchText,
     setCurrentPage,
@@ -31,6 +34,7 @@ export function CustomerManagement() {
     handleCreate,
     handleEdit,
     handleDelete,
+    handleBulkDelete,
     handleOpenEdit,
     handleCloseCreateModal,
     handleCloseEditModal,
@@ -53,6 +57,26 @@ export function CustomerManagement() {
       render: (value) => value || '-',
     },
   ];
+
+  const handleBulkDeleteWithConfirm = () => {
+    if (selectedRowKeys.length === 0) return;
+    Modal.confirm({
+      title: `Delete ${selectedRowKeys.length} customer(s)`,
+      content: `Are you sure you want to delete ${selectedRowKeys.length} customer account(s)? This action cannot be undone.`,
+      okText: `Delete ${selectedRowKeys.length}`,
+      okType: 'danger',
+      onOk: () => {
+        handleBulkDelete([...selectedRowKeys]);
+      },
+    });
+  };
+
+  const rowSelection = {
+    selectedRowKeys: [...selectedRowKeys],
+    onChange: (selectedKeys: React.Key[]) => {
+      setSelectedRowKeys(selectedKeys as string[]);
+    },
+  };
 
   return (
     <>
@@ -89,6 +113,9 @@ export function CustomerManagement() {
               setCurrentPage(page);
               setPageSize(size);
             }}
+            rowSelection={rowSelection}
+            selectedCount={selectedRowKeys.length}
+            onBulkDelete={handleBulkDeleteWithConfirm}
           />
         }
         createModal={

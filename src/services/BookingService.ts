@@ -97,4 +97,12 @@ export const bookingApi = {
     );
     return response.data;
   },
+
+  // Bulk delete bookings (soft delete)
+  bulkDelete: async (ids: string[]): Promise<MessageResponse> => {
+    const response = await api.post<MessageResponse>('/bookings/bulk-delete', {
+      ids,
+    });
+    return response.data;
+  },
 };

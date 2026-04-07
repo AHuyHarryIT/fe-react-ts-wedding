@@ -1,4 +1,4 @@
-import { Table, Space } from 'antd';
+import { Table, Space, Button, Popconfirm } from 'antd';
 import {
   ActionButton,
   StaffTableScroll,
@@ -7,6 +7,7 @@ import {
 import type { ColumnsType } from 'antd/es/table';
 import type { Booking, BookingStatus } from '@types';
 import { formatMoneyVND } from '@utils/money';
+import { DeleteOutlined } from '@ant-design/icons';
 
 interface BookingTableProps {
   bookings: Booking[];
@@ -15,8 +16,15 @@ interface BookingTableProps {
   pageSize: number;
   total: number;
   onView: (booking: Booking) => void;
+  onDelete: (id: string) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
+  rowSelection?: {
+    selectedRowKeys: readonly string[];
+    onSelectionChange: (selectedKeys: React.Key[]) => void;
+  };
+  selectedCount?: number;
+  onBulkDelete?: () => void;
 }
 
 const statusToneMap: Record<
@@ -41,8 +49,12 @@ export function BookingTable({
   pageSize,
   total,
   onView,
+  onDelete,
   onPageChange,
   onPageSizeChange,
+  rowSelection,
+  selectedCount,
+  onBulkDelete,
 }: BookingTableProps) {
   const columns: ColumnsType<Booking> = [
     {
@@ -99,31 +111,86 @@ export function BookingTable({
               size="small"
               onClick={() => onView(record)}
             />
+            <Popconfirm
+              title="Delete Booking"
+              description="Are you sure you want to delete this booking?"
+              okText="Delete"
+              cancelText="Cancel"
+              okButtonProps={{ danger: true }}
+              onConfirm={() => onDelete(record.id)}
+            >
+              <ActionButton action="delete" size="small" />
+            </Popconfirm>
           </Space>
         );
       },
     },
   ];
 
+  const tableRowSelection = rowSelection
+    ? {
+        selectedRowKeys: rowSelection.selectedRowKeys,
+        onChange: rowSelection.onSelectionChange,
+        getCheckboxProps: (record: Booking) => ({
+          disabled:
+            record.status === 'COMPLETED' || record.status === 'CANCELLED',
+          name: `booking-${record.id}`,
+        }),
+      }
+    : undefined;
+
   return (
-    <StaffTableScroll minWidth={760}>
-      <Table
-        className="staff-table"
-        columns={columns}
-        dataSource={bookings}
-        rowKey="id"
-        loading={loading}
-        pagination={{
-          current: currentPage,
-          pageSize,
-          total,
-          onChange: onPageChange,
-          onShowSizeChange: (_, size) => onPageSizeChange(size),
-          showSizeChanger: true,
-          showTotal: (total) => `Total ${total} bookings`,
-          size: 'small',
-        }}
-      />
-    </StaffTableScroll>
+    <>
+      {selectedCount && selectedCount > 0 && onBulkDelete && (
+        <div
+          style={{
+            marginBottom: 12,
+            padding: '8px 16px',
+            background: '#fff2f0',
+            border: '1px solid #ffccc7',
+            borderRadius: 8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <span style={{ color: '#cf1322', fontWeight: 500 }}>
+            {selectedCount} booking(s) selected
+          </span>
+          <Popconfirm
+            title={`Delete ${selectedCount} booking(s)`}
+            description={`Are you sure you want to permanently delete ${selectedCount} booking(s)? This action cannot be undone.`}
+            okText={`Delete ${selectedCount}`}
+            cancelText="Cancel"
+            okButtonProps={{ danger: true }}
+            onConfirm={onBulkDelete}
+          >
+            <Button danger icon={<DeleteOutlined />}>
+              Delete Selected
+            </Button>
+          </Popconfirm>
+        </div>
+      )}
+      <StaffTableScroll minWidth={760}>
+        <Table
+          className="staff-table"
+          columns={columns}
+          dataSource={bookings}
+          rowKey="id"
+          loading={loading}
+          rowSelection={tableRowSelection}
+          pagination={{
+            current: currentPage,
+            pageSize,
+            total,
+            onChange: onPageChange,
+            onShowSizeChange: (_, size) => onPageSizeChange(size),
+            showSizeChanger: true,
+            showTotal: (total) => `Total ${total} bookings`,
+            size: 'small',
+          }}
+        />
+      </StaffTableScroll>
+    </>
   );
 }

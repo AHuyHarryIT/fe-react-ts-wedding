@@ -4,7 +4,7 @@ import {
   StaffTableScroll,
   StatusChip,
 } from '@shared/components/ui';
-import { Empty, Space, Table } from 'antd';
+import { Button, Empty, Space, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
 
 type AccountRecord = {
@@ -30,6 +30,12 @@ interface AccountTableProps<T extends AccountRecord> {
   onDelete: (id: string) => void;
   onManageRoles?: (record: T) => void;
   onPageChange: (page: number, pageSize: number) => void;
+  rowSelection?: {
+    selectedRowKeys: readonly string[];
+    onChange: (selectedKeys: React.Key[]) => void;
+  };
+  selectedCount?: number;
+  onBulkDelete?: () => void;
 }
 
 export function AccountTable<T extends AccountRecord>({
@@ -45,6 +51,9 @@ export function AccountTable<T extends AccountRecord>({
   onDelete,
   onManageRoles,
   onPageChange,
+  rowSelection,
+  selectedCount,
+  onBulkDelete,
 }: AccountTableProps<T>) {
   const columns: ColumnsType<T> = [
     {
@@ -123,14 +132,43 @@ export function AccountTable<T extends AccountRecord>({
     },
   ];
 
+  const tableRowSelection = rowSelection
+    ? {
+        selectedRowKeys: rowSelection.selectedRowKeys,
+        onChange: rowSelection.onChange,
+      }
+    : undefined;
+
   return (
     <StaffTableScroll minWidth={onManageRoles ? 1160 : 1220}>
+      {selectedCount && selectedCount > 0 && onBulkDelete && (
+        <div
+          style={{
+            marginBottom: 12,
+            padding: '8px 16px',
+            background: '#fff2f0',
+            border: '1px solid #ffccc7',
+            borderRadius: 8,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+          }}
+        >
+          <span style={{ color: '#cf1322', fontWeight: 500 }}>
+            {selectedCount} {entityLabel}(s) selected
+          </span>
+          <Button danger onClick={onBulkDelete}>
+            Delete Selected
+          </Button>
+        </div>
+      )}
       <Table
         className="staff-table"
         columns={columns}
         dataSource={data}
         loading={loading}
         rowKey="id"
+        rowSelection={tableRowSelection}
         pagination={{
           current: currentPage,
           pageSize,

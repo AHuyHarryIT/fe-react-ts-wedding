@@ -27,6 +27,9 @@ export function useBookingManagement() {
   const [detailBooking, setDetailBooking] = useState<Booking | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
 
+  // Bulk selection state
+  const [selectedRowKeys, setSelectedRowKeys] = useState<readonly string[]>([]);
+
   // Selected items state for create and edit
   const [createSelectedItems, setCreateSelectedItems] = useState<
     BookingSelectedItem[]
@@ -74,6 +77,30 @@ export function useBookingManagement() {
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || 'Failed to delete booking';
+      messageApi.error(errorMessage);
+    },
+  });
+
+  // Bulk delete mutation
+  const bulkDeleteMutation = useMutation({
+    mutationFn: async (ids: string[]) => {
+      // Delete sequentially to handle errors gracefully
+      const results = [];
+      for (const id of ids) {
+        const result = await bookingApi.delete(id);
+        results.push(result);
+      }
+      return results;
+    },
+    onSuccess: (_data, ids) => {
+      messageApi.success(`Successfully deleted ${ids.length} booking(s)`);
+      setSelectedRowKeys([]);
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+    },
+    onError: (error: unknown) => {
+      const errorMessage =
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message || 'Failed to delete bookings';
       messageApi.error(errorMessage);
     },
   });
@@ -280,6 +307,10 @@ export function useBookingManagement() {
     deleteMutation.mutate(id);
   };
 
+  const handleBulkDelete = (ids: string[]) => {
+    bulkDeleteMutation.mutate(ids);
+  };
+
   const handleOpenEdit = (booking: Booking) => {
     // Trigger the detail query by setting selected booking
     setSelectedBooking(booking);
@@ -375,6 +406,11 @@ export function useBookingManagement() {
     createSelectedItems,
     editSelectedItems,
     isDetailModalOpen,
+    // Bulk selection
+    selectedRowKeys,
+    setSelectedRowKeys,
+    bulkDeleteMutation,
+    // Actions
     setIsCreateModalOpen,
     setIsEditModalOpen,
     setSearchText,
@@ -383,6 +419,7 @@ export function useBookingManagement() {
     handleCreate,
     handleEdit,
     handleDelete,
+    handleBulkDelete,
     handleOpenEdit,
     handleViewBooking,
     handleCloseCreateModal,

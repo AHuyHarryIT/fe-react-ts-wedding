@@ -84,7 +84,7 @@ function NotificationBellInline({ darkMode }: { darkMode: boolean }) {
       menu={{ items: dropdownItems }}
       onOpenChange={setOpen}
       trigger={['click']}
-      dropdownRender={(menu) => (
+      popupRender={(menu) => (
         <div style={{ maxWidth: 360 }}>
           <div
             style={{

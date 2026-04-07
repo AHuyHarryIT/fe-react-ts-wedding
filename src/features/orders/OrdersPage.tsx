@@ -20,6 +20,7 @@ import {
   CheckCircleOutlined,
   ClockCircleOutlined,
   ShoppingCartOutlined,
+  PrinterOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '@hooks';
 import type { Booking, Order } from '@types';
@@ -30,6 +31,7 @@ import { BookingDetailWithOrders } from '@features/bookings/BookingDetailWithOrd
 import { StatCard } from '@shared/components/ui/StatCard';
 import { StaffTableScroll } from '@shared/components/ui';
 import { formatMoneyVND } from '@utils/money';
+import { printInvoice } from '@utils/printInvoice';
 
 const { Text } = Typography;
 
@@ -76,6 +78,24 @@ export const OrdersPage: React.FC = () => {
   const handleOpenCheckout = (booking: Booking) => {
     setSelectedBooking(booking);
     setBookingModalVisible(true);
+  };
+
+  const handlePrintOrderInvoice = async (order: Order) => {
+    try {
+      let bookingData: Booking | undefined = ('booking' in order &&
+        order.booking) as Booking | undefined;
+      if (!bookingData && order.bookingId) {
+        const resp = await bookingApi.getOne(order.bookingId);
+        bookingData = resp.data as Booking;
+      }
+      if (bookingData) {
+        printInvoice(bookingData);
+      } else {
+        message.warning('Unable to fetch booking details. Please try again.');
+      }
+    } catch {
+      message.warning('Failed to load booking data for printing.');
+    }
   };
 
   const getStatusColor = (status: string) => {
@@ -166,6 +186,14 @@ export const OrdersPage: React.FC = () => {
       key: 'actions',
       render: (_: unknown, record: Order) => (
         <Space>
+          <Button
+            type="primary"
+            size="small"
+            icon={<PrinterOutlined />}
+            onClick={() => handlePrintOrderInvoice(record)}
+          >
+            Invoice
+          </Button>
           <Button
             type="primary"
             size="small"
