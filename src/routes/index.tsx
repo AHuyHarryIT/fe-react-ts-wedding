@@ -13,7 +13,6 @@ import { StatCard } from '@shared/components/ui/StatCard';
 import { useTheme } from '@hooks';
 import { useAuthStore } from '@stores/authStore';
 import { requireStaffAuth } from '@utils/authGuard';
-import { motion } from 'motion/react';
 import { Avatar, Button, Card, Col, Row, Space, Typography } from 'antd';
 
 const { Text, Title } = Typography;
@@ -70,7 +69,7 @@ function Dashboard() {
   return (
     <AdminLayout selectedKey="dashboard">
       <div className="staff-page">
-        <motion.div
+        <div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45 }}
@@ -96,9 +95,9 @@ function Dashboard() {
               schedule.
             </Text>
           </div>
-        </motion.div>
+        </div>
 
-        <motion.div
+        <div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.1 }}
@@ -116,11 +115,11 @@ function Dashboard() {
               </Col>
             ))}
           </Row>
-        </motion.div>
+        </div>
 
         <Row gutter={[16, 16]} className="mt-6">
           <Col xs={24} xl={14}>
-            <motion.div
+            <div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.45, delay: 0.2 }}
@@ -173,11 +172,11 @@ function Dashboard() {
                   </Button>
                 </div>
               </Card>
-            </motion.div>
+            </div>
           </Col>
 
           <Col xs={24} xl={10}>
-            <motion.div
+            <div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.45, delay: 0.3 }}
@@ -237,11 +236,11 @@ function Dashboard() {
                   ))}
                 </div>
               </Card>
-            </motion.div>
+            </div>
           </Col>
         </Row>
 
-        <motion.div
+        <div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.45, delay: 0.4 }}
@@ -317,7 +316,7 @@ function Dashboard() {
               </Row>
             )}
           </Card>
-        </motion.div>
+        </div>
       </div>
     </AdminLayout>
   );

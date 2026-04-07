@@ -27,7 +27,7 @@ export const useCheckout = (bookingId: string): UseCheckoutReturn => {
     queryFn: () => ordersService.getOrder(bookingId),
     enabled: false,
     retry: false,
-    staleTime: 0,
+    staleTime: 15 * 1000, // 15 sec
   });
 
   // Mutation: checkout / create order

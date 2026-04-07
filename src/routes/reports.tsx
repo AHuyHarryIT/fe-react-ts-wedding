@@ -1,6 +1,9 @@
+import React, { lazy, Suspense } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { AdminLayout } from '@shared/components/AdminLayout';
-import { ReportsView } from '@features/reports/ReportsView';
+import { Spin } from 'antd';
+
+const ReportsView = lazy(() => import('@features/reports/ReportsView'));
 
 export const Route = createFileRoute('/reports')({
   component: ReportsPage,
@@ -10,7 +13,15 @@ export const Route = createFileRoute('/reports')({
 function ReportsPage() {
   return (
     <AdminLayout selectedKey="reports">
-      <ReportsView />
+      <Suspense
+        fallback={
+          <div style={{ padding: 48, textAlign: 'center' }}>
+            <Spin size="large" />
+          </div>
+        }
+      >
+        <ReportsView />
+      </Suspense>
     </AdminLayout>
   );
 }

@@ -7,7 +7,8 @@ import {
   SunOutlined,
   PhoneOutlined,
 } from '@ant-design/icons';
-import { motion, useScroll, useMotionValueEvent } from 'motion/react';
+// motion removed for performance
+import React from 'react';
 import { useTheme } from '@hooks';
 
 const { Text } = Typography;

@@ -37,7 +37,8 @@ export function AdminLayout({
     queryFn: () => authApi.getCurrentUser(),
     enabled: !isAuthenticated && !user?.id,
     retry: false,
-    staleTime: 0,
+    staleTime: 5 * 60 * 1000, // 5 min
+    gcTime: 10 * 60 * 1000, // 10 min
   });
 
   useEffect(() => {

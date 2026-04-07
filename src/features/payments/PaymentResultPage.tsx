@@ -95,7 +95,7 @@ export const PaymentResultPage: React.FC = () => {
       return 2000;
     },
     retry: false,
-    staleTime: 0,
+    staleTime: 0, // keep 0 for real-time payment status
   });
 
   // Query 2: Momo gateway status polling via useQuery
@@ -105,7 +105,7 @@ export const PaymentResultPage: React.FC = () => {
     enabled: isPolling && !!momoOrderId && hasBookingId && !momoFailed,
     refetchInterval: 4000,
     retry: false,
-    staleTime: 0,
+    staleTime: 0, // keep 0 for real-time payment status
   });
 
   // Stop polling when payment is confirmed

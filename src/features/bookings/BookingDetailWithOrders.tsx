@@ -152,7 +152,8 @@ export const BookingDetailWithOrders: React.FC<
     enabled: !!booking?.id,
     retry: 1,
     refetchOnWindowFocus: false,
-    staleTime: 0,
+    staleTime: 10 * 1000, // 10 sec
+    gcTime: 60 * 1000, // 1 min
   });
 
   const currentBooking = detailedBooking ?? booking;

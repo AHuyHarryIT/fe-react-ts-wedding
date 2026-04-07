@@ -35,13 +35,13 @@ function NotificationBellInline({ darkMode }: { darkMode: boolean }) {
   const { data: unreadData } = useQuery({
     queryKey: ['notifications-unread'],
     queryFn: () => ReminderService.getUnreadCount(),
-    refetchInterval: 30000,
+    refetchInterval: 300000,
   });
 
   const { data: notificationsData } = useQuery({
     queryKey: ['notifications-recent'],
     queryFn: () => ReminderService.getNotifications({ limit: 10 }),
-    refetchInterval: 30000,
+    refetchInterval: 300000,
   });
 
   const markReadMutation = useMutation({
