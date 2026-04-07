@@ -191,8 +191,6 @@ export function InventoryManagement() {
     }
   };
 
-  // handleDeleteCat - kept for future use
-
   // ── Checkout ────────────────────────────────────────────────────
   const openCheckout = (item: InventoryItem) => {
     setCheckoutItem(item);

@@ -1,4 +1,7 @@
 import {
+  ApartmentOutlined,
+  BarChartOutlined,
+  BellOutlined,
   CalendarOutlined,
   CameraOutlined,
   CloseOutlined,
@@ -11,8 +14,8 @@ import {
   KeyOutlined,
   MessageOutlined,
   SafetyOutlined,
+  ShoppingOutlined,
   TeamOutlined,
-  ApartmentOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from '@tanstack/react-router';
 import { Drawer, Layout, Menu, Typography } from 'antd';
@@ -96,6 +99,30 @@ export function Sidebar({
       icon: <ApartmentOutlined />,
       label: 'Inventory',
       onClick: () => navigate({ to: '/inventory' }),
+    },
+    {
+      key: 'reminders',
+      icon: <BellOutlined />,
+      label: 'Reminders',
+      onClick: () => navigate({ to: '/reminders' }),
+    },
+    {
+      key: 'calendar',
+      icon: <CalendarOutlined />,
+      label: 'Calendar',
+      onClick: () => navigate({ to: '/calendar' }),
+    },
+    {
+      key: 'pos',
+      icon: <ShoppingOutlined />,
+      label: 'POS',
+      onClick: () => navigate({ to: '/pos' }),
+    },
+    {
+      key: 'reports',
+      icon: <BarChartOutlined />,
+      label: 'Reports',
+      onClick: () => navigate({ to: '/reports' }),
     },
     {
       key: 'albums',
