@@ -1,84 +1,135 @@
 import { quotationApi } from '@services/QuotationService';
+import { serviceApi } from '@services/ServiceService';
+import { packageApi } from '@services/PackageService';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   Quotation,
+  QuotationItem,
   CreateQuotationRequest,
   UpdateQuotationRequest,
   QuotationStatus,
 } from '@/types/quotation';
+import { getErrorMessage } from '@utils/error';
+import { Form, message } from 'antd';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
-export interface UseQuotationManagementReturn {
-  quotations: Quotation[];
-  total: number;
-  page: number;
-  limit: number;
-  setFilter: (filter: string) => void;
-  setSelectedQuotation: (quot: Quotation | null) => void;
-  setEditingQuotation: (id: string | null) => void;
-  selectedQuotation: Quotation | null;
-  loading: boolean;
-  deleteMutation: {
-    mutate: (id: string) => void;
-    isPending: boolean;
-  };
-  createMutation: {
-    mutate: (data: CreateQuotationRequest) => void;
-    isPending: boolean;
-  };
-  updateMutation: {
-    mutate: (args: { id: string; data: UpdateQuotationRequest }) => void;
-    isPending: boolean;
-  };
-  sendMutation: {
-    mutate: (id: string) => void;
-    isPending: boolean;
-  };
-  acceptMutation: {
-    mutate: (id: string) => void;
-    isPending: boolean;
-  };
-  rejectMutation: {
-    mutate: (id: string) => void;
-    isPending: boolean;
-  };
-  convertMutation: {
-    mutate: (id: string) => void;
-    isPending: boolean;
-  };
-}
+type CreateQuotationItem = {
+  id: string;
+  type: 'service' | 'package';
+  name: string;
+  unitPrice: number;
+  quantity: number;
+  discountPercent: number;
+  description?: string;
+};
 
-export function useQuotationManagement(
-  params: {
-    status?: QuotationStatus;
-    search?: string;
-    page?: number;
-    limit?: number;
-  } = {}
-): UseQuotationManagementReturn {
-  const { page = 1, limit = 20, status, search } = params;
+export function useQuotationManagement() {
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [selectedQuotation, setSelectedQuotation] = useState<Quotation | null>(
+    null
+  );
+  const [detailQuotation, setDetailQuotation] = useState<Quotation | null>(
+    null
+  );
+  const [isDetailDrawerOpen, setIsDetailDrawerOpen] = useState(false);
+  const [searchText, setSearchText] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [activeStatusFilter, setActiveStatusFilter] = useState<
+    QuotationStatus | 'ALL'
+  >('ALL');
+  const [createForm] = Form.useForm();
+  const [editForm] = Form.useForm();
+  const [messageApi, contextHolder] = message.useMessage();
+
+  const [createSelectedItems, setCreateSelectedItems] = useState<
+    CreateQuotationItem[]
+  >([]);
+  const [editSelectedItems, setEditSelectedItems] = useState<
+    CreateQuotationItem[]
+  >([]);
+
+  const { data: servicesData } = useQuery({
+    queryKey: ['services', 'all'],
+    queryFn: () => serviceApi.getAll({ limit: 500 }),
+  });
+
+  const { data: packagesData } = useQuery({
+    queryKey: ['packages', 'all'],
+    queryFn: () => packageApi.getAll({ limit: 500 }),
+  });
+
+  const serviceList = useMemo(
+    () =>
+      (servicesData?.data ?? [])?.map(
+        (s: { id: string; name: string; price: number }) => ({
+          id: s.id,
+          type: 'service' as const,
+          name: s.name,
+          unitPrice: s.price,
+        })
+      ) ?? [],
+    [servicesData]
+  );
+
+  const packageList = useMemo(
+    () =>
+      (packagesData?.data ?? [])?.map(
+        (p: { id: string; name: string; price: number }) => ({
+          id: p.id,
+          type: 'package' as const,
+          name: p.name,
+          unitPrice: p.price,
+        })
+      ) ?? [],
+    [packagesData]
+  );
+
   const queryClient = useQueryClient();
 
-  // State management (simplified for hooks)
-  const queryFilters: Record<string, unknown> = { page, limit };
-  if (status) queryFilters.status = status;
-  if (search) queryFilters.search = search;
-
-  const { data, isLoading, isFetching } = useQuery({
-    queryKey: ['quotations', queryFilters],
-    queryFn: () => quotationApi.getAll(queryFilters),
+  const { data, isLoading: quotationsLoading } = useQuery({
+    queryKey: [
+      'quotations',
+      {
+        page: currentPage,
+        limit: pageSize,
+        search: searchText || undefined,
+        status: activeStatusFilter === 'ALL' ? undefined : activeStatusFilter,
+      },
+    ],
+    queryFn: () =>
+      quotationApi.getAll({
+        page: currentPage,
+        limit: pageSize,
+        search: searchText || undefined,
+        status: activeStatusFilter === 'ALL' ? undefined : activeStatusFilter,
+      }),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (data: CreateQuotationRequest) => quotationApi.create(data),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['quotations'] });
-    },
+  const { data: detailData, isLoading: loadingDetail } = useQuery({
+    queryKey: ['quotation', selectedQuotation?.id],
+    queryFn: () => quotationApi.getOne(selectedQuotation!.id),
+    enabled: !!selectedQuotation?.id,
   });
+
+  useEffect(() => {
+    if (detailData?.data) {
+      setDetailQuotation(detailData.data);
+    }
+  }, [detailData]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateQuotationRequest) => quotationApi.create(data),
     onSuccess: () => {
+      messageApi.success('Quotation created successfully');
+      createForm.resetFields();
+      setIsCreateModalOpen(false);
+      setCreateSelectedItems([]);
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+    },
+    onError: (error) => {
+      messageApi.error(getErrorMessage(error) || 'Failed to create quotation');
     },
   });
 
@@ -86,82 +137,342 @@ export function useQuotationManagement(
     mutationFn: ({ id, data }: { id: string; data: UpdateQuotationRequest }) =>
       quotationApi.update(id, data),
     onSuccess: () => {
+      messageApi.success('Quotation updated successfully');
+      editForm.resetFields();
+      setIsEditModalOpen(false);
+      setEditSelectedItems([]);
+      setSelectedQuotation(null);
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+    },
+    onError: (error) => {
+      messageApi.error(getErrorMessage(error) || 'Failed to update quotation');
+    },
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: quotationApi.delete,
+    onSuccess: () => {
+      messageApi.success('Quotation deleted successfully');
+      queryClient.invalidateQueries({ queryKey: ['quotations'] });
+    },
+    onError: () => {
+      messageApi.error('Failed to delete quotation');
     },
   });
 
   const sendMutation = useMutation({
-    mutationFn: (id: string) => quotationApi.send(id),
+    mutationFn: quotationApi.send,
     onSuccess: () => {
+      messageApi.success('Quotation sent');
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+    },
+    onError: () => {
+      messageApi.error('Failed to send quotation');
     },
   });
 
   const acceptMutation = useMutation({
-    mutationFn: (id: string) => quotationApi.accept(id),
+    mutationFn: quotationApi.accept,
     onSuccess: () => {
+      messageApi.success('Quotation accepted');
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+    },
+    onError: () => {
+      messageApi.error('Failed to accept quotation');
     },
   });
 
   const rejectMutation = useMutation({
-    mutationFn: (id: string) => quotationApi.reject(id),
+    mutationFn: quotationApi.reject,
     onSuccess: () => {
+      messageApi.success('Quotation rejected');
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+    },
+    onError: () => {
+      messageApi.error('Failed to reject quotation');
     },
   });
 
   const convertMutation = useMutation({
-    mutationFn: (id: string) => quotationApi.convertToBooking(id),
+    mutationFn: quotationApi.convertToBooking,
     onSuccess: () => {
+      messageApi.success('Quotation converted to booking');
+      setIsDetailDrawerOpen(false);
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
+    },
+    onError: () => {
+      messageApi.error('Failed to convert quotation to booking');
     },
   });
 
+  const handleCreate = useCallback(
+    (values: CreateQuotationRequest) => {
+      const items: QuotationItem[] = createSelectedItems.map(
+        ({ id, unitPrice, quantity, discountPercent }) => ({
+          id,
+          unitPrice,
+          quantity,
+          discountPercent,
+        })
+      );
+      createMutation.mutate({
+        ...values,
+        items,
+      } as unknown as CreateQuotationRequest);
+    },
+    [createMutation, createSelectedItems]
+  );
+
+  const handleEdit = useCallback(
+    (values: UpdateQuotationRequest) => {
+      const id = selectedQuotation?.id;
+      if (!id) return;
+      const items: QuotationItem[] = editSelectedItems.map(
+        ({ id: itemId, unitPrice, quantity, discountPercent }) => ({
+          id: itemId,
+          unitPrice,
+          quantity,
+          discountPercent,
+        })
+      );
+      updateMutation.mutate({
+        id,
+        data: { ...values, items } as unknown as QuotationItem[],
+      });
+    },
+    [updateMutation, editSelectedItems, selectedQuotation]
+  );
+
+  const handleDelete = useCallback(
+    (id: string) => {
+      deleteMutation.mutate(id);
+    },
+    [deleteMutation]
+  );
+
+  const handleOpenEdit = useCallback(
+    (quotation: Quotation) => {
+      setSelectedQuotation(quotation);
+      setEditSelectedItems(
+        (quotation.items ?? []).map(
+          (item: QuotationItem & { name: string }) => ({
+            id: item.id,
+            type: 'service' as const,
+            name: item.name ?? '',
+            unitPrice: item.unitPrice,
+            quantity: item.quantity,
+            discountPercent: item.discountPercent,
+          })
+        )
+      );
+      editForm.setFieldsValue({
+        title: quotation.title,
+        customerId: quotation.customer?.id,
+        notes: quotation.notes,
+      });
+      setIsEditModalOpen(true);
+    },
+    [editForm]
+  );
+
+  const handleViewQuotation = useCallback((quotation: Quotation) => {
+    setSelectedQuotation(quotation);
+    setIsDetailDrawerOpen(true);
+  }, []);
+
+  const handleCloseCreateModal = useCallback(() => {
+    setIsCreateModalOpen(false);
+    createForm.resetFields();
+    setCreateSelectedItems([]);
+  }, [createForm]);
+
+  const handleCloseEditModal = useCallback(() => {
+    setIsEditModalOpen(false);
+    editForm.resetFields();
+    setSelectedQuotation(null);
+    setEditSelectedItems([]);
+  }, [editForm]);
+
+  const handleCloseDetailDrawer = useCallback(() => {
+    setIsDetailDrawerOpen(false);
+    setDetailQuotation(null);
+  }, []);
+
+  const handleAddCreateItem = useCallback(
+    (item: {
+      id: string;
+      type: 'service' | 'package';
+      name: string;
+      unitPrice: number;
+    }) => {
+      setCreateSelectedItems((prev) => [
+        ...prev,
+        {
+          ...item,
+          quantity: 1,
+          discountPercent: 0,
+          description: '',
+        },
+      ]);
+    },
+    []
+  );
+
+  const handleRemoveCreateItem = useCallback((id: string) => {
+    setCreateSelectedItems((prev) => prev.filter((i) => i.id !== id));
+  }, []);
+
+  const handleAddEditItem = useCallback(
+    (item: {
+      id: string;
+      type: 'service' | 'package';
+      name: string;
+      unitPrice: number;
+    }) => {
+      setEditSelectedItems((prev) => [
+        ...prev,
+        {
+          ...item,
+          quantity: 1,
+          discountPercent: 0,
+          description: '',
+        },
+      ]);
+    },
+    []
+  );
+
+  const handleRemoveEditItem = useCallback((id: string) => {
+    setEditSelectedItems((prev) => prev.filter((i) => i.id !== id));
+  }, []);
+
+  const handleUpdateCreateItemQuantity = useCallback(
+    (id: string, field: 'quantity' | 'discountPercent', value: number) => {
+      setCreateSelectedItems((prev) =>
+        prev.map((i) =>
+          i.id === id ? { ...i, [field]: Math.max(0, value) } : i
+        )
+      );
+    },
+    []
+  );
+
+  const handleUpdateEditItemQuantity = useCallback(
+    (id: string, field: 'quantity' | 'discountPercent', value: number) => {
+      setEditSelectedItems((prev) =>
+        prev.map((i) =>
+          i.id === id ? { ...i, [field]: Math.max(0, value) } : i
+        )
+      );
+    },
+    []
+  );
+
+  const calculateSubtotal = useCallback(
+    (items: CreateQuotationItem[]) =>
+      items.reduce(
+        (sum, i) =>
+          sum + i.unitPrice * i.quantity * (1 - i.discountPercent / 100),
+        0
+      ),
+    []
+  );
+
+  const calculateCreateSubtotal = useMemo(
+    () => calculateSubtotal(createSelectedItems),
+    [calculateSubtotal, createSelectedItems]
+  );
+
+  const calculateEditSubtotal = useMemo(
+    () => calculateSubtotal(editSelectedItems),
+    [calculateSubtotal, editSelectedItems]
+  );
+
+  const calculateCreateTotal = useMemo(
+    () => calculateCreateSubtotal,
+    [calculateCreateSubtotal]
+  );
+  const calculateEditTotal = useMemo(
+    () => calculateEditSubtotal,
+    [calculateEditSubtotal]
+  );
+
+  const handleSend = useCallback(
+    (id: string) => {
+      sendMutation.mutate(id);
+    },
+    [sendMutation]
+  );
+
+  const handleAccept = useCallback(
+    (id: string) => {
+      acceptMutation.mutate(id);
+    },
+    [acceptMutation]
+  );
+
+  const handleReject = useCallback(
+    (id: string) => {
+      rejectMutation.mutate(id);
+    },
+    [rejectMutation]
+  );
+
+  const handleConvertToBooking = useCallback(
+    (id: string) => {
+      convertMutation.mutate(id);
+    },
+    [convertMutation]
+  );
+
   return {
-    quotations: data?.data?.data ?? [],
-    total: data?.data?.total ?? 0,
-    page,
-    limit,
-    setFilter: () => {
-      /* handled by parent */
-    },
-    setSelectedQuotation: () => {
-      /* handled by parent */
-    },
-    setEditingQuotation: () => {
-      /* handled by parent */
-    },
-    selectedQuotation: null,
-    loading: isLoading || isFetching,
-    deleteMutation: {
-      mutate: deleteMutation.mutate,
-      isPending: deleteMutation.isPending,
-    },
-    createMutation: {
-      mutate: createMutation.mutate,
-      isPending: createMutation.isPending,
-    },
-    updateMutation: {
-      mutate: updateMutation.mutate,
-      isPending: updateMutation.isPending,
-    },
-    sendMutation: {
-      mutate: sendMutation.mutate,
-      isPending: sendMutation.isPending,
-    },
-    acceptMutation: {
-      mutate: acceptMutation.mutate,
-      isPending: acceptMutation.isPending,
-    },
-    rejectMutation: {
-      mutate: rejectMutation.mutate,
-      isPending: rejectMutation.isPending,
-    },
-    convertMutation: {
-      mutate: convertMutation.mutate,
-      isPending: convertMutation.isPending,
-    },
+    quotations: (data?.data ?? []) as Quotation[],
+    loading: quotationsLoading,
+    loadingDetail,
+    total: data?.pagination?.total ?? 0,
+    createForm,
+    editForm,
+    isCreateModalOpen,
+    isEditModalOpen,
+    detailQuotation,
+    selectedQuotation,
+    searchText,
+    currentPage,
+    pageSize,
+    contextHolder,
+    createSelectedItems,
+    editSelectedItems,
+    isDetailDrawerOpen,
+    activeStatusFilter,
+    setActiveStatusFilter,
+    setIsCreateModalOpen,
+    setSearchText,
+    setCurrentPage,
+    setPageSize,
+    serviceList,
+    packageList,
+    handleCreate,
+    handleEdit,
+    handleDelete,
+    handleOpenEdit,
+    handleViewQuotation,
+    handleCloseCreateModal,
+    handleCloseEditModal,
+    handleCloseDetailDrawer,
+    handleAddCreateItem,
+    handleRemoveCreateItem,
+    handleAddEditItem,
+    handleRemoveEditItem,
+    calculateCreateSubtotal,
+    calculateEditSubtotal,
+    calculateCreateTotal,
+    calculateEditTotal,
+    handleUpdateCreateItemQuantity,
+    handleUpdateEditItemQuantity,
+    handleSend,
+    handleAccept,
+    handleReject,
+    handleConvertToBooking,
   };
 }
 
