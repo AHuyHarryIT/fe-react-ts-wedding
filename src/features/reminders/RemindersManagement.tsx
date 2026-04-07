@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import dayjs from 'dayjs';
+import { useState } from 'react';
 import {
   Table,
   Button,
@@ -10,9 +11,14 @@ import {
   Input,
   DatePicker,
   message,
+  Typography,
 } from 'antd';
-import { PlusOutlined, DeleteOutlined, EyeOutlined } from '@ant-design/icons';
-import dayjs from 'dayjs';
+import {
+  BellOutlined,
+  EyeOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import {
   useRemindersQuery,
   useCreateReminder,
@@ -161,9 +167,9 @@ export function RemindersManagement() {
   return (
     <div>
       <div className="flex items-center justify-between mb-6">
-        <Title level={2} className="!mb-0">
+        <Typography.Title level={2} className="!mb-0">
           Reminders
-        </Title>
+        </Typography.Title>
         <Space>
           <Button onClick={() => markAllReadMutation.mutate()}>
             Mark All Read
@@ -180,14 +186,14 @@ export function RemindersManagement() {
 
       <Table
         columns={columns}
-        dataSource={data?.data ?? []}
+        dataSource={data?.data || []}
         rowKey="id"
         loading={isLoading}
         onChange={handleTableChange}
         pagination={{
           current: query.page,
           pageSize: query.limit,
-          total: data?.pagination?.total ?? 0,
+          total: data?.pagination?.total ?? data?.meta?.total ?? 0,
           showSizeChanger: true,
         }}
       />

@@ -56,7 +56,7 @@ export function CalendarView() {
       }),
   });
 
-  const bookings: BookingCalendarItem[] = (data?.data?.data ?? [])
+  const bookings: BookingCalendarItem[] = (data?.data ?? [])
     .filter((b: BookingCalendarItem) => {
       const d = dayjs(b.eventDate);
       return d.isSameOrAfter(start, 'day') && d.isSameOrBefore(end, 'day');

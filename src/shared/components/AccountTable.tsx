@@ -140,7 +140,7 @@ export function AccountTable<T extends AccountRecord>({
     : undefined;
 
   return (
-    <StaffTableScroll minWidth={onManageRoles ? 1160 : 1220}>
+    <StaffTableScroll>
       {selectedCount && selectedCount > 0 && onBulkDelete && (
         <div
           style={{
@@ -169,6 +169,7 @@ export function AccountTable<T extends AccountRecord>({
         loading={loading}
         rowKey="id"
         rowSelection={tableRowSelection}
+        scroll={{ x: 'max-content' }}
         pagination={{
           current: currentPage,
           pageSize,

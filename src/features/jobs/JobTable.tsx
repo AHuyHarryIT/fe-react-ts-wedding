@@ -1,9 +1,4 @@
-import {
-  ActionButton,
-  StaffButton,
-  StaffTableScroll,
-  StatusChip,
-} from '@shared/components/ui';
+import { ActionButton, StaffButton, StatusChip } from '@shared/components/ui';
 import type { Job } from '@types';
 import { Empty, Space, Table } from 'antd';
 import type { ColumnsType } from 'antd/es/table';
@@ -105,13 +100,14 @@ export function JobTable({
   ];
 
   return (
-    <StaffTableScroll minWidth={1080}>
+    <div className="staff-table-scroll">
       <Table
         className="staff-table"
         columns={columns}
         dataSource={jobs}
         rowKey="id"
         loading={loading}
+        scroll={{ x: 1150 }}
         pagination={{
           current: currentPage,
           pageSize,
@@ -125,6 +121,6 @@ export function JobTable({
           emptyText: <Empty description="No jobs found" />,
         }}
       />
-    </StaffTableScroll>
+    </div>
   );
 }
