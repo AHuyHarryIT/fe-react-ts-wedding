@@ -1,4 +1,5 @@
 import { api } from '@/api/client';
+import { useAuthStore } from '@stores/authStore';
 import type {
   LoginRequest,
   User,
@@ -14,6 +15,12 @@ type ApiEnvelope<T> = {
   data?: T;
 };
 
+type RequestConfigWithAuthHandling = {
+  skipAuthRedirect?: boolean;
+};
+
+let initializeAuthPromise: Promise<User | null> | null = null;
+
 const unwrapApiData = <T>(payload: T | ApiEnvelope<T>): T => {
   if (payload && typeof payload === 'object' && 'data' in (payload as object)) {
     const wrapped = payload as ApiEnvelope<T>;
@@ -25,6 +32,13 @@ const unwrapApiData = <T>(payload: T | ApiEnvelope<T>): T => {
   return payload as T;
 };
 
+const normalizeUser = (incoming: User): User => ({
+  ...incoming,
+  firstName: incoming.firstName ?? undefined,
+  lastName: incoming.lastName ?? undefined,
+  email: incoming.email ?? undefined,
+});
+
 export const authApi = {
   // Login with phone number and password
   login: async (data: LoginRequest): Promise<AuthResponse> => {
@@ -32,29 +46,37 @@ export const authApi = {
       '/auth/login',
       data
     );
-    return unwrapApiData<AuthResponse>(response.data);
+    const authData = unwrapApiData<AuthResponse>(response.data);
+
+    return {
+      ...authData,
+      user: normalizeUser(authData.user),
+    };
   },
+
   // Logout (clears cookies)
   logout: async (): Promise<MessageResponse> => {
     try {
       const response = await api.post<MessageResponse>('/auth/logout');
       return response.data;
     } finally {
-      // Always clear cookies on client side after logout
-      await clearAuthCookies();
+      // Always clear client auth state after logout
+      clearAuthCookies();
     }
   },
 
   // Get current user (alternative endpoint to /auth/profile)
   getCurrentUser: async (): Promise<User> => {
-    const response = await api.get<User | ApiEnvelope<User>>('/auth/me');
-    return unwrapApiData<User>(response.data);
+    const response = await api.get<User | ApiEnvelope<User>>('/auth/me', {
+      skipAuthRedirect: true,
+    } as RequestConfigWithAuthHandling);
+    return normalizeUser(unwrapApiData<User>(response.data));
   },
 
   // Get user profile
   getProfile: async (): Promise<User> => {
     const response = await api.get<User | ApiEnvelope<User>>('/auth/profile');
-    return unwrapApiData<User>(response.data);
+    return normalizeUser(unwrapApiData<User>(response.data));
   },
 
   // Update user profile
@@ -63,7 +85,7 @@ export const authApi = {
       '/auth/profile',
       data
     );
-    return unwrapApiData<User>(response.data);
+    return normalizeUser(unwrapApiData<User>(response.data));
   },
 
   // Change password
@@ -78,15 +100,42 @@ export const authApi = {
   },
 };
 
+export async function initializeAuth(force = false): Promise<User | null> {
+  const authStore = useAuthStore.getState();
+
+  if (!force && authStore.isInitialized) {
+    return authStore.user;
+  }
+
+  if (!force && initializeAuthPromise) {
+    return initializeAuthPromise;
+  }
+
+  initializeAuthPromise = (async () => {
+    authStore.setLoading(true);
+    authStore.setError(null);
+
+    try {
+      const user = await authApi.getCurrentUser();
+      authStore.setAuth(user);
+      return user;
+    } catch {
+      authStore.clearAuth();
+      return null;
+    } finally {
+      authStore.setInitialized(true);
+      authStore.setLoading(false);
+      initializeAuthPromise = null;
+    }
+  })();
+
+  return initializeAuthPromise;
+}
+
 /**
  * Clear auth cookies from the client
  * Note: HttpOnly cookies are cleared by the server on logout
  */
-export const clearAuthCookies = async (): Promise<void> => {
-  // Clear auth state
-  const { useAuthStore } = await import('@stores/authStore');
+export const clearAuthCookies = (): void => {
   useAuthStore.getState().clearAuth();
-
-  // Remove any auth-related data from sessionStorage
-  sessionStorage.clear();
 };
