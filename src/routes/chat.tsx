@@ -5,9 +5,7 @@ import { useAuthStore } from '@stores/authStore';
 import { requireStaffAuth } from '@utils/authGuard';
 
 export const Route = createFileRoute('/chat')({
-  beforeLoad: async () => {
-    await requireStaffAuth();
-  },
+  beforeLoad: ({ location }) => requireStaffAuth({ location }),
   component: ChatPageRoute,
 });
 

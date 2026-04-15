@@ -4,9 +4,7 @@ import { CustomerManagement } from '@features/customers';
 import { requireStaffAuth } from '@utils/authGuard';
 
 export const Route = createFileRoute('/customers')({
-  beforeLoad: async () => {
-    await requireStaffAuth();
-  },
+  beforeLoad: ({ location }) => requireStaffAuth({ location }),
   component: CustomerManagementPage,
 });
 
