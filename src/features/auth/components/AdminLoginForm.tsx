@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo, useRef } from 'react';
 import { Card, Form, Input, Button, Typography, message } from 'antd';
 import {
   LockOutlined,
@@ -7,30 +7,52 @@ import {
   PhoneOutlined,
 } from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
-import { useNavigate } from '@tanstack/react-router';
 import { motion } from 'motion/react';
 import { useAuthStore } from '@stores/authStore';
 import { useTheme } from '@hooks';
 import { AntdProvider } from '@shared/providers/AntdProvider';
 import type { LoginRequest } from '@/types';
 import { authApi } from '@services/AuthService';
+import {
+  consumeRedirectPath,
+  type AuthFeedbackReason,
+} from '@/auth/sessionPolicy';
 import { VIETNAM_PHONE_REGEX } from '@utils/phone';
 
 const { Title, Text, Paragraph } = Typography;
 
-const AdminLogin: React.FC = () => {
+type AdminLoginProps = {
+  feedbackReason?: AuthFeedbackReason | null;
+};
+
+const AdminLogin: React.FC<AdminLoginProps> = ({ feedbackReason = null }) => {
   const { darkMode, setDarkMode } = useTheme();
   const navigate = useNavigate();
-  const { isAuthenticated, setAuth } = useAuthStore();
+  const { setAuth } = useAuthStore();
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
+  const hasShownFeedbackRef = useRef(false);
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate({ to: '/' });
+  const feedbackMessage = useMemo(() => {
+    if (feedbackReason === 'session-expired') {
+      return 'Your session expired. Please sign in again to continue.';
     }
-  }, [isAuthenticated, navigate]);
+
+    if (feedbackReason === 'login-required') {
+      return 'Please sign in to continue to that page.';
+    }
+
+    return null;
+  }, [feedbackReason]);
+
+  useEffect(() => {
+    if (!feedbackMessage || hasShownFeedbackRef.current) {
+      return;
+    }
+
+    messageApi.warning(feedbackMessage);
+    hasShownFeedbackRef.current = true;
+  }, [feedbackMessage, messageApi]);
 
   const loginMutation = useMutation({
     mutationFn: (data: LoginRequest) => authApi.login(data),
@@ -38,8 +60,8 @@ const AdminLogin: React.FC = () => {
       setAuth(data.user);
       messageApi.success('Login successful! Redirecting...');
       setTimeout(() => {
-        navigate({ to: '/' });
-      }, 1000);
+        window.location.assign(consumeRedirectPath());
+      }, 300);
     },
     onError: () => {
       messageApi.error('Invalid phone number or password');
