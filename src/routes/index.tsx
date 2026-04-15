@@ -323,8 +323,6 @@ function Dashboard() {
 }
 
 export const Route = createFileRoute('/')({
-  beforeLoad: async () => {
-    await requireStaffAuth();
-  },
+  beforeLoad: ({ location }) => requireStaffAuth({ location }),
   component: Dashboard,
 });

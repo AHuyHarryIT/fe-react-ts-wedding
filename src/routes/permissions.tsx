@@ -4,9 +4,7 @@ import { PermissionManagement } from '@features/permissions';
 import { requireStaffAuth } from '@utils/authGuard';
 
 export const Route = createFileRoute('/permissions')({
-  beforeLoad: async () => {
-    await requireStaffAuth();
-  },
+  beforeLoad: ({ location }) => requireStaffAuth({ location }),
   component: PermissionManagementPage,
 });
 
