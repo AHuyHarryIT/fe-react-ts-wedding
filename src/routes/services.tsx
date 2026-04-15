@@ -4,9 +4,7 @@ import { ServicesManagement } from '@features/services';
 import { requireStaffAuth } from '@utils/authGuard';
 
 export const Route = createFileRoute('/services')({
-  beforeLoad: async () => {
-    await requireStaffAuth();
-  },
+  beforeLoad: ({ location }) => requireStaffAuth({ location }),
   component: ServicesManagementPage,
 });
 
