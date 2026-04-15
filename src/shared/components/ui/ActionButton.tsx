@@ -6,7 +6,7 @@ import {
   SaveOutlined,
   StopOutlined,
 } from '@ant-design/icons';
-import { Popconfirm } from 'antd';
+import { Popconfirm, Tooltip } from 'antd';
 import type { ComponentProps, ReactNode } from 'react';
 import { StaffButton } from './StaffButton';
 
@@ -28,6 +28,7 @@ interface ActionButtonProps extends Omit<AntdButtonProps, 'type'> {
   popconfirmTitle?: string;
   popconfirmDescription?: string;
   showIcon?: boolean;
+  tooltip?: ReactNode;
 }
 
 const ACTION_DEFAULTS: Record<
@@ -80,26 +81,40 @@ export function ActionButton({
   popconfirmTitle,
   popconfirmDescription,
   showIcon = true,
+  tooltip,
   ...buttonProps
 }: ActionButtonProps) {
   const actionDefaults =
     action === 'custom' ? undefined : ACTION_DEFAULTS[action];
   const displayIcon = showIcon ? (icon ?? actionDefaults?.icon) : undefined;
 
+  const renderWithTooltip = (node: ReactNode) => {
+    if (!tooltip) {
+      return node;
+    }
+
+    return <Tooltip title={tooltip}>{node}</Tooltip>;
+  };
+
   if (action === 'delete') {
-    const { onClick, ...restButtonProps } = buttonProps;
+    const { onClick, disabled, ...restButtonProps } = buttonProps;
 
     const deleteButton = (
       <StaffButton
         variant={variant ?? actionDefaults?.variant}
         icon={displayIcon}
+        disabled={disabled}
         {...restButtonProps}
       >
         {children ?? label ?? actionDefaults?.label}
       </StaffButton>
     );
 
-    return (
+    if (disabled) {
+      return renderWithTooltip(deleteButton);
+    }
+
+    return renderWithTooltip(
       <Popconfirm
         title={popconfirmTitle ?? 'Delete'}
         description={
@@ -118,7 +133,7 @@ export function ActionButton({
     );
   }
 
-  return (
+  const button = (
     <StaffButton
       variant={variant ?? actionDefaults?.variant}
       icon={displayIcon}
@@ -127,4 +142,6 @@ export function ActionButton({
       {children ?? label ?? actionDefaults?.label}
     </StaffButton>
   );
+
+  return renderWithTooltip(button);
 }

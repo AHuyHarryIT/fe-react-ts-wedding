@@ -7,12 +7,22 @@ import type { ColumnsType } from 'antd/es/table';
 
 const { Text } = Typography;
 
+interface RoleActionState {
+  canUpdate: boolean;
+  canDelete: boolean;
+  canManagePermissions: boolean;
+  updateReason: string | null;
+  deleteReason: string | null;
+  managePermissionsReason: string | null;
+}
+
 interface RoleTableProps {
   data: Role[];
   loading: boolean;
   currentPage: number;
   pageSize: number;
   total: number;
+  actionState: RoleActionState;
   onEdit: (role: Role) => void;
   onDelete: (id: string) => void;
   onManagePermissions: (role: Role) => void;
@@ -25,6 +35,7 @@ export function RoleTable({
   currentPage,
   pageSize,
   total,
+  actionState,
   onEdit,
   onDelete,
   onManagePermissions,
@@ -90,18 +101,27 @@ export function RoleTable({
             variant="link"
             label="Permissions"
             showIcon={true}
+            disabled={!actionState.canManagePermissions}
+            tooltip={actionState.managePermissionsReason ?? undefined}
+            title={actionState.managePermissionsReason ?? undefined}
             onClick={() => onManagePermissions(record)}
           />
           <ActionButton
             action="edit"
             variant="link"
             showIcon={true}
+            disabled={!actionState.canUpdate}
+            tooltip={actionState.updateReason ?? undefined}
+            title={actionState.updateReason ?? undefined}
             onClick={() => onEdit(record)}
           />
           <ActionButton
             action="delete"
             variant="link"
             showIcon={true}
+            disabled={!actionState.canDelete}
+            tooltip={actionState.deleteReason ?? undefined}
+            title={actionState.deleteReason ?? undefined}
             popconfirmTitle="Delete Role"
             popconfirmDescription="Are you sure you want to delete this role?"
             onClick={() => onDelete(record.id)}

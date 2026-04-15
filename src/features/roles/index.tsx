@@ -22,6 +22,7 @@ export function RoleManagement() {
     rolePermissionsData,
     createForm,
     editForm,
+    roleActionState,
     contextHolder,
     createMutation,
     updateMutation,
@@ -72,6 +73,7 @@ export function RoleManagement() {
             currentPage={currentPage}
             pageSize={pageSize}
             total={rolesData?.pagination?.total || 0}
+            actionState={roleActionState}
             onEdit={handleOpenEdit}
             onDelete={handleDelete}
             onManagePermissions={handleOpenPermissions}
