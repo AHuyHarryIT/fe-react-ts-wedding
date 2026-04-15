@@ -31,6 +31,9 @@ export function BookingsManagement() {
     createSelectedItems,
     editSelectedItems,
     selectedRowKeys,
+    canCreateBooking,
+    canDeleteBooking,
+    bookingActionState,
     setSelectedRowKeys,
     setIsCreateModalOpen,
     setSearchText,
@@ -92,6 +95,14 @@ export function BookingsManagement() {
             createButtonText="New Booking"
             icon={<PlusOutlined />}
             onCreateClick={() => setIsCreateModalOpen(true)}
+            showCreateButton={canCreateBooking}
+            extra={
+              bookingActionState.createReason ? (
+                <span className="text-sm text-amber-600 dark:text-amber-400">
+                  {bookingActionState.createReason}
+                </span>
+              ) : undefined
+            }
             summary={
               <div className="staff-surface rounded-3xl px-4 py-3">
                 <span className="!text-xs !font-semibold !uppercase !tracking-[0.18em] !text-slate-500 dark:!text-slate-400">
@@ -123,6 +134,8 @@ export function BookingsManagement() {
               currentPage={currentPage}
               pageSize={pageSize}
               total={total}
+              canDelete={canDeleteBooking}
+              deleteReason={bookingActionState.deleteReason}
               onView={handleViewBooking}
               onDelete={handleDelete}
               onPageChange={setCurrentPage}

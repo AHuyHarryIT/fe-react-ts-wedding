@@ -1,4 +1,4 @@
-import { StaffTableScroll } from '@shared/components/ui';
+import { ActionButton, StaffTableScroll } from '@shared/components/ui';
 import { Table, Tag, Typography } from 'antd';
 import { useTheme } from '@hooks';
 import type { Permission } from '@/types';
@@ -12,6 +12,8 @@ interface PermissionTableProps {
   currentPage: number;
   pageSize: number;
   total: number;
+  canReadPermissions: boolean;
+  readReason: string | null;
   onPageChange: (page: number, pageSize: number) => void;
 }
 
@@ -21,6 +23,8 @@ export function PermissionTable({
   currentPage,
   pageSize,
   total,
+  canReadPermissions,
+  readReason,
   onPageChange,
 }: PermissionTableProps) {
   const { darkMode } = useTheme();
@@ -62,6 +66,24 @@ export function PermissionTable({
         </Text>
       ),
     },
+    {
+      title: 'Actions',
+      key: 'actions',
+      width: 140,
+      render: () => (
+        <ActionButton
+          action="view"
+          variant="link"
+          showIcon={true}
+          disabled={!canReadPermissions}
+          tooltip={readReason ?? undefined}
+          title={readReason ?? undefined}
+          onClick={() => {
+            // Reserved for detail affordance; keep visible for disabled-reason UX.
+          }}
+        />
+      ),
+    },
   ];
 
   return (
@@ -78,6 +100,7 @@ export function PermissionTable({
           total: total,
           onChange: onPageChange,
           showSizeChanger: true,
+          disabled: !canReadPermissions,
           showTotal: (total) => `Total ${total} permissions`,
         }}
         style={{

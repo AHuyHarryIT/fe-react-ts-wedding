@@ -1,4 +1,9 @@
 import { bookingApi } from '@services/BookingService';
+import {
+  buildForbiddenReason,
+  extractPermissionContext,
+  isPermissionDeniedError,
+} from '@/auth/permissionPolicy';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   Booking,
@@ -26,6 +31,45 @@ export function useBookingManagement() {
   const [isLoadingBooking, setIsLoadingBooking] = useState(false);
   const [detailBooking, setDetailBooking] = useState<Booking | null>(null);
   const [isDetailModalOpen, setIsDetailModalOpen] = useState(false);
+
+  const [bookingActionState, setBookingActionState] = useState<{
+    createReason: string | null;
+    updateReason: string | null;
+    deleteReason: string | null;
+    cancelReason: string | null;
+    completeReason: string | null;
+  }>({
+    createReason: null,
+    updateReason: null,
+    deleteReason: null,
+    cancelReason: null,
+    completeReason: null,
+  });
+
+  const applyForbiddenReason = (
+    error: unknown,
+    key:
+      | 'createReason'
+      | 'updateReason'
+      | 'deleteReason'
+      | 'cancelReason'
+      | 'completeReason'
+  ) => {
+    if (!isPermissionDeniedError(error)) {
+      return false;
+    }
+
+    const context = extractPermissionContext(error);
+    const reason = buildForbiddenReason(error);
+
+    setBookingActionState((prev) => ({
+      ...prev,
+      [key]: reason,
+    }));
+
+    messageApi.warning(reason);
+    return context !== null || reason.length > 0;
+  };
 
   // Bulk selection state
   const [selectedRowKeys, setSelectedRowKeys] = useState<readonly string[]>([]);
@@ -71,9 +115,13 @@ export function useBookingManagement() {
     mutationFn: (id: string) => bookingApi.delete(id),
     onSuccess: () => {
       messageApi.success('Booking deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: (error: unknown) => {
+      if (applyForbiddenReason(error, 'deleteReason')) {
+        return;
+      }
+
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || 'Failed to delete booking';
@@ -95,9 +143,13 @@ export function useBookingManagement() {
     onSuccess: (_data, ids) => {
       messageApi.success(`Successfully deleted ${ids.length} booking(s)`);
       setSelectedRowKeys([]);
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: (error: unknown) => {
+      if (applyForbiddenReason(error, 'deleteReason')) {
+        return;
+      }
+
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || 'Failed to delete bookings';
@@ -112,10 +164,14 @@ export function useBookingManagement() {
       setIsCreateModalOpen(false);
       createForm.resetFields();
       setCreateSelectedItems([]);
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
       return data;
     },
     onError: (error: unknown) => {
+      if (applyForbiddenReason(error, 'createReason')) {
+        return;
+      }
+
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || 'Failed to create booking';
@@ -132,9 +188,13 @@ export function useBookingManagement() {
       setSelectedBooking(null);
       editForm.resetFields();
       setEditSelectedItems([]);
-      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: (error: unknown) => {
+      if (applyForbiddenReason(error, 'updateReason')) {
+        return;
+      }
+
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || 'Failed to update booking';
@@ -240,6 +300,11 @@ export function useBookingManagement() {
     values: BookingFormData,
     staffAssignments?: BookingStaffAssignmentInput[]
   ) => {
+    if (bookingActionState.createReason) {
+      messageApi.warning(bookingActionState.createReason);
+      return;
+    }
+
     if (createSelectedItems.length === 0) {
       messageApi.error('Please select at least 1 package or service');
       return;
@@ -273,6 +338,11 @@ export function useBookingManagement() {
   ) => {
     if (!selectedBooking) return;
 
+    if (bookingActionState.updateReason) {
+      messageApi.warning(bookingActionState.updateReason);
+      return;
+    }
+
     if (editSelectedItems.length === 0) {
       messageApi.error('Please select at least 1 service');
       return;
@@ -304,10 +374,20 @@ export function useBookingManagement() {
   };
 
   const handleDelete = (id: string) => {
+    if (bookingActionState.deleteReason) {
+      messageApi.warning(bookingActionState.deleteReason);
+      return;
+    }
+
     deleteMutation.mutate(id);
   };
 
   const handleBulkDelete = (ids: string[]) => {
+    if (bookingActionState.deleteReason) {
+      messageApi.warning(bookingActionState.deleteReason);
+      return;
+    }
+
     bulkDeleteMutation.mutate(ids);
   };
 
@@ -406,6 +486,12 @@ export function useBookingManagement() {
     createSelectedItems,
     editSelectedItems,
     isDetailModalOpen,
+    bookingActionState,
+    canCreateBooking: bookingActionState.createReason === null,
+    canUpdateBooking: bookingActionState.updateReason === null,
+    canDeleteBooking: bookingActionState.deleteReason === null,
+    canCancelBooking: bookingActionState.cancelReason === null,
+    canCompleteBooking: bookingActionState.completeReason === null,
     // Bulk selection
     selectedRowKeys,
     setSelectedRowKeys,

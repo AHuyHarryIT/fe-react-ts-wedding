@@ -15,6 +15,8 @@ interface BookingTableProps {
   currentPage: number;
   pageSize: number;
   total: number;
+  canDelete: boolean;
+  deleteReason: string | null;
   onView: (booking: Booking) => void;
   onDelete: (id: string) => void;
   onPageChange: (page: number) => void;
@@ -48,6 +50,8 @@ export function BookingTable({
   currentPage,
   pageSize,
   total,
+  canDelete,
+  deleteReason,
   onView,
   onDelete,
   onPageChange,
@@ -111,16 +115,16 @@ export function BookingTable({
               size="small"
               onClick={() => onView(record)}
             />
-            <Popconfirm
-              title="Delete Booking"
-              description="Are you sure you want to delete this booking?"
-              okText="Delete"
-              cancelText="Cancel"
-              okButtonProps={{ danger: true }}
-              onConfirm={() => onDelete(record.id)}
-            >
-              <ActionButton action="delete" size="small" />
-            </Popconfirm>
+            <ActionButton
+              action="delete"
+              size="small"
+              disabled={!canDelete}
+              tooltip={deleteReason ?? undefined}
+              title={deleteReason ?? undefined}
+              popconfirmTitle="Delete Booking"
+              popconfirmDescription="Are you sure you want to delete this booking?"
+              onClick={() => onDelete(record.id)}
+            />
           </Space>
         );
       },
@@ -164,8 +168,14 @@ export function BookingTable({
             cancelText="Cancel"
             okButtonProps={{ danger: true }}
             onConfirm={onBulkDelete}
+            disabled={!canDelete}
           >
-            <Button danger icon={<DeleteOutlined />}>
+            <Button
+              danger
+              icon={<DeleteOutlined />}
+              disabled={!canDelete}
+              title={deleteReason ?? undefined}
+            >
               Delete Selected
             </Button>
           </Popconfirm>

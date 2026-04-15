@@ -19,6 +19,7 @@ import {
   Tabs,
   Space,
   Empty,
+  Tooltip,
 } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
@@ -30,6 +31,10 @@ import {
 } from '@ant-design/icons';
 import { bookingApi } from '@services/BookingService';
 import { ordersService } from '@services/OrdersService';
+import {
+  buildForbiddenReason,
+  isPermissionDeniedError,
+} from '@/auth/permissionPolicy';
 import { CheckoutForm } from '@features/orders/CheckoutForm';
 import { OrderDetail } from '@features/orders/OrderDetail';
 import { formatMoneyVND } from '@utils/money';
@@ -171,16 +176,25 @@ export const BookingDetailWithOrders: React.FC<
   const deleteMutation = useMutation({
     mutationFn: (id: string) => bookingApi.delete(id),
     onSuccess: (_data, id) => {
+      setActionReasonState((prev) => ({ ...prev, deleteReason: null }));
       message.success('Booking deleted successfully');
       onClose();
       void queryClient.invalidateQueries({ queryKey: ['bookings'] });
       void queryClient.invalidateQueries({ queryKey: ['booking-detail', id] });
+    },
+    onError: (error: unknown) => {
+      if (applyForbiddenReason(error, 'deleteReason')) {
+        return;
+      }
+
+      message.error('Failed to delete booking');
     },
   });
 
   const cancelMutation = useMutation({
     mutationFn: (id: string) => bookingApi.cancel(id),
     onSuccess: (data) => {
+      setActionReasonState((prev) => ({ ...prev, cancelReason: null }));
       message.success('Booking cancelled successfully');
       onBookingUpdated?.(data.data);
       void queryClient.invalidateQueries({ queryKey: ['bookings'] });
@@ -188,17 +202,32 @@ export const BookingDetailWithOrders: React.FC<
         queryKey: ['booking-detail', data.data.id],
       });
     },
+    onError: (error: unknown) => {
+      if (applyForbiddenReason(error, 'cancelReason')) {
+        return;
+      }
+
+      message.error('Failed to cancel booking');
+    },
   });
 
   const markCompletedMutation = useMutation({
     mutationFn: (id: string) => bookingApi.update(id, { status: 'COMPLETED' }),
     onSuccess: (data) => {
+      setActionReasonState((prev) => ({ ...prev, completeReason: null }));
       message.success('Booking marked as completed');
       onBookingUpdated?.(data.data);
       void queryClient.invalidateQueries({ queryKey: ['bookings'] });
       void queryClient.invalidateQueries({
         queryKey: ['booking-detail', data.data.id],
       });
+    },
+    onError: (error: unknown) => {
+      if (applyForbiddenReason(error, 'completeReason')) {
+        return;
+      }
+
+      message.error('Failed to update booking status');
     },
   });
 
@@ -236,6 +265,40 @@ export const BookingDetailWithOrders: React.FC<
     currentBooking?.status !== 'CANCELLED';
   const canMarkCompleted =
     currentBooking?.status === 'CONFIRMED' && order?.status === 'PAID';
+
+  const [actionReasonState, setActionReasonState] = useState<{
+    editReason: string | null;
+    deleteReason: string | null;
+    cancelReason: string | null;
+    completeReason: string | null;
+  }>({
+    editReason: null,
+    deleteReason: null,
+    cancelReason: null,
+    completeReason: null,
+  });
+
+  const applyForbiddenReason = (
+    error: unknown,
+    key: 'editReason' | 'deleteReason' | 'cancelReason' | 'completeReason'
+  ) => {
+    if (!isPermissionDeniedError(error)) {
+      return false;
+    }
+
+    const reason = buildForbiddenReason(error);
+    setActionReasonState((prev) => ({
+      ...prev,
+      [key]: reason,
+    }));
+    message.warning(reason);
+    return true;
+  };
+
+  const editReason = actionReasonState.editReason;
+  const deleteReason = actionReasonState.deleteReason;
+  const cancelReason = actionReasonState.cancelReason;
+  const completeReason = actionReasonState.completeReason;
 
   const handleEdit = async () => {
     if (!currentBooking) {
@@ -775,34 +838,44 @@ export const BookingDetailWithOrders: React.FC<
                     >
                       Print Invoice
                     </Button>
-                    {canEditBooking && (
-                      <Button icon={<EditOutlined />} onClick={handleEdit}>
+                    <Tooltip title={editReason ?? undefined}>
+                      <Button
+                        icon={<EditOutlined />}
+                        onClick={handleEdit}
+                        disabled={!canEditBooking || Boolean(editReason)}
+                      >
                         Edit
                       </Button>
-                    )}
-                    {canCancelBooking && (
-                      <Button danger onClick={handleCancelBooking}>
+                    </Tooltip>
+                    <Tooltip title={cancelReason ?? undefined}>
+                      <Button
+                        danger
+                        onClick={handleCancelBooking}
+                        disabled={!canCancelBooking || Boolean(cancelReason)}
+                      >
                         Cancel Booking
                       </Button>
-                    )}
-                    {canDeleteBooking && (
+                    </Tooltip>
+                    <Tooltip title={deleteReason ?? undefined}>
                       <Button
                         danger
                         icon={<DeleteOutlined />}
                         onClick={handleDelete}
+                        disabled={!canDeleteBooking || Boolean(deleteReason)}
                       >
                         Delete
                       </Button>
-                    )}
-                    {canMarkCompleted && (
+                    </Tooltip>
+                    <Tooltip title={completeReason ?? undefined}>
                       <Button
                         type="primary"
                         icon={<CheckCircleOutlined />}
                         onClick={handleMarkCompleted}
+                        disabled={!canMarkCompleted || Boolean(completeReason)}
                       >
                         Mark Completed
                       </Button>
-                    )}
+                    </Tooltip>
                   </Space>
                 </div>
               ),
@@ -816,7 +889,9 @@ export const BookingDetailWithOrders: React.FC<
                   sessions={currentBooking.sessions}
                   canManage={Boolean(canManageSessions)}
                   onChanged={async () => {
-                    await loadBookingDetails();
+                    await queryClient.invalidateQueries({
+                      queryKey: ['booking-detail', currentBooking.id],
+                    });
                     await queryClient.invalidateQueries({
                       queryKey: ['bookings'],
                     });
