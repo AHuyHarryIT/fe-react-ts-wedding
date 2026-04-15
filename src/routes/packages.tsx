@@ -4,9 +4,7 @@ import { AdminLayout } from '@shared/components/AdminLayout';
 import { requireStaffAuth } from '@utils/authGuard';
 
 export const Route = createFileRoute('/packages')({
-  beforeLoad: async () => {
-    await requireStaffAuth();
-  },
+  beforeLoad: ({ location }) => requireStaffAuth({ location }),
   component: PackagesManagementPage,
 });
 
