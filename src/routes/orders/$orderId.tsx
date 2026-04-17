@@ -4,6 +4,7 @@ import { AdminLayout } from '@shared/components/AdminLayout';
 import { requireStaffAuth } from '@utils/authGuard';
 
 export const Route = createFileRoute('/orders/$orderId')({
+  // Keep guard parity with sibling protected routes for redirect-intent restore.
   beforeLoad: ({ location }) => requireStaffAuth({ location }),
   component: OrderDetailPageRoute,
 });
