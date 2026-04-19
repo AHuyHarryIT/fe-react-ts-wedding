@@ -86,6 +86,36 @@ export function BookingTable({
       render: (price: number) => `${formatMoneyVND(price)}`,
     },
     {
+      title: 'Packages',
+      key: 'packages',
+      width: 200,
+      render: (_, record) => {
+        if (!record.packages?.length) {
+          return '-';
+        }
+
+        return record.packages
+          .map((pkg) => pkg.package?.name ?? pkg.packageId)
+          .filter(Boolean)
+          .join(', ');
+      },
+    },
+    {
+      title: 'Services',
+      key: 'services',
+      width: 220,
+      render: (_, record) => {
+        if (!record.services?.length) {
+          return '-';
+        }
+
+        return record.services
+          .map((svc) => svc.service?.name ?? svc.serviceId)
+          .filter(Boolean)
+          .join(', ');
+      },
+    },
+    {
       title: 'Status',
       dataIndex: 'status',
       key: 'status',

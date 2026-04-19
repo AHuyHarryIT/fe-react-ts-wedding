@@ -476,7 +476,9 @@ export function useBookingManagement() {
 
     const bookingData: CreateBookingRequest = {
       customerId: values.customerId,
-      packageIds: [],
+      packageIds: createSelectedItems
+        .filter((item) => item.type === 'package')
+        .map((item) => item.id),
       serviceIds: createSelectedItems
         .filter((item) => item.type === 'service')
         .map((item) => item.id),
@@ -516,13 +518,15 @@ export function useBookingManagement() {
     }
 
     if (editSelectedItems.length === 0) {
-      messageApi.error('Please select at least 1 service');
+      messageApi.error('Please select at least 1 package or service');
       return;
     }
 
     const updateData: UpdateBookingRequest = {
       customerId: values.customerId,
-      packageIds: [],
+      packageIds: editSelectedItems
+        .filter((item) => item.type === 'package')
+        .map((item) => item.id),
       serviceIds: editSelectedItems
         .filter((item) => item.type === 'service')
         .map((item) => item.id),
@@ -682,6 +686,20 @@ export function useBookingManagement() {
     const freshBooking = bookingDetail.data;
     const items: BookingSelectedItem[] = [];
 
+    if (freshBooking.packages && freshBooking.packages.length > 0) {
+      freshBooking.packages.forEach((bp) => {
+        if (bp.package) {
+          items.push({
+            id: bp.package.id,
+            type: 'package',
+            name: bp.package.name,
+            price: bp.price || bp.package.price || 0,
+            quantity: bp.quantity || 1,
+          });
+        }
+      });
+    }
+
     if (freshBooking.services && freshBooking.services.length > 0) {
       freshBooking.services.forEach((bs) => {
         if (bs.service) {
@@ -689,7 +707,7 @@ export function useBookingManagement() {
             id: bs.service.id,
             type: 'service',
             name: bs.service.name,
-            price: bs.service.price || 0,
+            price: bs.price || bs.service.price || 0,
             quantity: bs.quantity || 1,
           });
         }

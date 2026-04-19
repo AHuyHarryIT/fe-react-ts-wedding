@@ -211,6 +211,26 @@ export const BookingDetailWithOrders: React.FC<
     },
   });
 
+  const confirmMutation = useMutation({
+    mutationFn: (id: string) => bookingApi.confirm(id),
+    onSuccess: (data) => {
+      setActionReasonState((prev) => ({ ...prev, confirmReason: null }));
+      message.success('Booking confirmed successfully');
+      onBookingUpdated?.(data.data);
+      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      void queryClient.invalidateQueries({
+        queryKey: ['booking-detail', data.data.id],
+      });
+    },
+    onError: (error: unknown) => {
+      if (applyForbiddenReason(error, 'confirmReason')) {
+        return;
+      }
+
+      message.error('Failed to confirm booking');
+    },
+  });
+
   const markCompletedMutation = useMutation({
     mutationFn: (id: string) => bookingApi.update(id, { status: 'COMPLETED' }),
     onSuccess: (data) => {
@@ -260,6 +280,10 @@ export const BookingDetailWithOrders: React.FC<
   const canCancelBooking =
     currentBooking?.status !== 'COMPLETED' &&
     currentBooking?.status !== 'CANCELLED';
+  const canConfirmBooking =
+    currentBooking?.status === 'PENDING' ||
+    currentBooking?.status === 'DEPOSIT_PAID' ||
+    currentBooking?.status === 'RESCHEDULED';
   const canManageSessions =
     currentBooking?.status !== 'COMPLETED' &&
     currentBooking?.status !== 'CANCELLED';
@@ -270,17 +294,24 @@ export const BookingDetailWithOrders: React.FC<
     editReason: string | null;
     deleteReason: string | null;
     cancelReason: string | null;
+    confirmReason: string | null;
     completeReason: string | null;
   }>({
     editReason: null,
     deleteReason: null,
     cancelReason: null,
+    confirmReason: null,
     completeReason: null,
   });
 
   const applyForbiddenReason = (
     error: unknown,
-    key: 'editReason' | 'deleteReason' | 'cancelReason' | 'completeReason'
+    key:
+      | 'editReason'
+      | 'deleteReason'
+      | 'cancelReason'
+      | 'confirmReason'
+      | 'completeReason'
   ) => {
     if (!isPermissionDeniedError(error)) {
       return false;
@@ -298,6 +329,7 @@ export const BookingDetailWithOrders: React.FC<
   const editReason = actionReasonState.editReason;
   const deleteReason = actionReasonState.deleteReason;
   const cancelReason = actionReasonState.cancelReason;
+  const confirmReason = actionReasonState.confirmReason;
   const completeReason = actionReasonState.completeReason;
 
   const handleEdit = async () => {
@@ -348,6 +380,29 @@ export const BookingDetailWithOrders: React.FC<
       okButtonProps: { danger: true },
       onOk: () => {
         cancelMutation.mutate(currentBooking.id);
+      },
+    });
+  };
+
+  const handleConfirmBooking = () => {
+    if (!currentBooking) {
+      return;
+    }
+
+    if (!canConfirmBooking) {
+      message.error(
+        'Only pending/deposit-paid/rescheduled bookings can be confirmed'
+      );
+      return;
+    }
+
+    modal.confirm({
+      title: 'Confirm Booking',
+      content:
+        'Mark this booking as confirmed and allow completion once payment is settled?',
+      okText: 'Confirm Booking',
+      onOk: () => {
+        confirmMutation.mutate(currentBooking.id);
       },
     });
   };
@@ -854,6 +909,14 @@ export const BookingDetailWithOrders: React.FC<
                         disabled={!canCancelBooking || Boolean(cancelReason)}
                       >
                         Cancel Booking
+                      </Button>
+                    </Tooltip>
+                    <Tooltip title={confirmReason ?? undefined}>
+                      <Button
+                        onClick={handleConfirmBooking}
+                        disabled={!canConfirmBooking || Boolean(confirmReason)}
+                      >
+                        Confirm Booking
                       </Button>
                     </Tooltip>
                     <Tooltip title={deleteReason ?? undefined}>

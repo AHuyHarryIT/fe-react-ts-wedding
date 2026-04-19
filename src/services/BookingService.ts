@@ -147,6 +147,15 @@ export const bookingApi = {
       );
       return response.data;
     }, 'Missing permission: bookings:update'),
+  // Confirm a booking
+  confirm: async (id: string): Promise<StandardResponse<Booking>> =>
+    withForbiddenContext(async () => {
+      const response = await api.patch<StandardResponse<Booking>>(
+        `/bookings/${id}/confirm`,
+        {}
+      );
+      return response.data;
+    }, 'Missing permission: bookings:update'),
   // Hard delete a booking
   hardDelete: async (id: string): Promise<StandardResponse<void>> =>
     withForbiddenContext(async () => {

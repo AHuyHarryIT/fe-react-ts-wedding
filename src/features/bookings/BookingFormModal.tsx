@@ -488,7 +488,61 @@ export function BookingFormModal({
         </Form.Item>
 
         <Form.Item
-          label="Select Services (at least 1)"
+          label="Select Packages (optional)"
+          style={{ marginBottom: 12 }}
+        >
+          <Select
+            placeholder="Click to add packages..."
+            allowClear
+            showSearch={{
+              filterOption: false,
+              onSearch: packageOptions.onSearch,
+            }}
+            loading={packageOptions.loading}
+            options={packageOptions.options.map((pkg) => ({
+              label: `${pkg.name} - ${formatMoneyVND(pkg.price)}`,
+              value: pkg.id,
+            }))}
+            onPopupScroll={(e) => {
+              const target = e.target as HTMLDivElement;
+              if (
+                target.scrollTop + target.offsetHeight >=
+                target.scrollHeight - 8
+              ) {
+                packageOptions.loadMore();
+              }
+            }}
+            onChange={(pkgId: string) => {
+              if (!pkgId) return;
+
+              const existingItem = selectedItems.find(
+                (item) => item.id === pkgId && item.type === 'package'
+              );
+
+              if (existingItem) {
+                onItemQuantityChange(
+                  pkgId,
+                  'package',
+                  existingItem.quantity + 1
+                );
+              } else {
+                const pkg = packageOptions.options.find((p) => p.id === pkgId);
+                if (pkg) {
+                  onItemAdd({
+                    id: pkg.id,
+                    type: 'package',
+                    name: pkg.name,
+                    price: pkg.price,
+                    quantity: 1,
+                  });
+                }
+              }
+            }}
+          />
+        </Form.Item>
+
+        <Form.Item
+          label="Select Services (at least 1 package or service)"
           required
           rules={[
             {
@@ -497,7 +551,7 @@ export function BookingFormModal({
                   return;
                 }
 
-                throw new Error('Please select at least 1 service');
+                throw new Error('Please select at least 1 package or service');
               },
             },
           ]}
@@ -559,6 +613,57 @@ export function BookingFormModal({
             <Divider style={{ margin: '8px 0 16px' }} />
             <div className="flex flex-col gap-4">
               {selectedItems.map((item) => {
+                if (item.type === 'package') {
+                  return (
+                    <div
+                      key={`package-${item.id}`}
+                      className="rounded-xl border border-blue-200 bg-blue-50/40 p-4 dark:border-blue-800 dark:bg-blue-950/20"
+                    >
+                      <div className="mb-3 flex items-center justify-between gap-4">
+                        <div className="flex items-center gap-3">
+                          <Tag color="blue">Package</Tag>
+                          <div>
+                            <div className="font-medium text-blue-700 dark:text-blue-300">
+                              {item.name}
+                            </div>
+                            <div className="flex items-center gap-2 text-sm text-gray-500">
+                              <span>{formatMoneyVND(item.price)}</span>
+                              {item.quantity > 1 && (
+                                <>
+                                  <span>×</span>
+                                  <InputNumber
+                                    min={1}
+                                    size="small"
+                                    value={item.quantity}
+                                    onChange={(value) =>
+                                      onItemQuantityChange(
+                                        item.id,
+                                        'package',
+                                        value || 1
+                                      )
+                                    }
+                                    style={{ width: 60 }}
+                                  />
+                                </>
+                              )}
+                              <span className="font-semibold text-gray-700 dark:text-gray-300">
+                                = {formatMoneyVND(item.price * item.quantity)}
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <Button
+                          type="text"
+                          danger
+                          size="small"
+                          icon={<DeleteOutlined />}
+                          onClick={() => onItemRemove(item.id, 'package')}
+                        />
+                      </div>
+                    </div>
+                  );
+                }
+
                 const rowIndex = assignedStaffRows.findIndex(
                   (r) =>
                     r.sourceKey === `service:${item.id}` ||
@@ -572,10 +677,9 @@ export function BookingFormModal({
                     key={`service-${item.id}`}
                     className="rounded-xl border border-green-200 bg-green-50/40 p-4 dark:border-green-800 dark:bg-green-950/20"
                   >
-                    {/* Service info header */}
                     <div className="mb-3 flex items-center justify-between gap-4">
                       <div className="flex items-center gap-3">
-                        <Tag color="green">🎯</Tag>
+                        <Tag color="green">Service</Tag>
                         <div>
                           <div className="font-medium text-green-700 dark:text-green-300">
                             {item.name}
@@ -615,7 +719,6 @@ export function BookingFormModal({
                       />
                     </div>
 
-                    {/* Staff assignment inline */}
                     {assignmentRow && (
                       <div className="rounded-lg border border-gray-200 bg-white p-3 dark:border-gray-700 dark:bg-gray-900">
                         <div className="mb-2 flex items-center gap-2 text-xs">
