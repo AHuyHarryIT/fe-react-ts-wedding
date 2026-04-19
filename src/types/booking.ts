@@ -63,6 +63,37 @@ export interface BookingStaffAssignmentInput {
   endTime?: string | null;
 }
 
+export interface BookingAssignmentConflictDetail {
+  staffId: string;
+  source: 'booking' | 'session';
+  sourceId: string;
+  sourceTitle: string | null;
+  overlapStart: string;
+  overlapEnd: string;
+  assignmentStart: string;
+  assignmentEnd: string;
+}
+
+export interface BookingAssignmentConflict {
+  staffId: string;
+  sourceKey: string;
+  requestedStartTime: string;
+  requestedEndTime: string;
+  conflicts: BookingAssignmentConflictDetail[];
+}
+
+export interface BookingStaffConflictDetails {
+  conflicts: BookingAssignmentConflict[];
+  requiresOverride?: boolean;
+  requiredPermission?: string;
+}
+
+export interface AssignBookingStaffRequest {
+  staffAssignments: BookingStaffAssignmentInput[];
+  allowConflictOverride?: boolean;
+  overrideReason?: string;
+}
+
 export interface BookingFormData {
   customerId: User['id'];
   packageIds?: Package['id'][];

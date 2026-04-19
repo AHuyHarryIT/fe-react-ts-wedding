@@ -16,7 +16,6 @@ export function BookingsManagement() {
     bookings,
     detailBooking,
     loading,
-    loadingBooking,
     total,
     createForm,
     editForm,
@@ -34,6 +33,10 @@ export function BookingsManagement() {
     canCreateBooking,
     canDeleteBooking,
     bookingActionState,
+    createModalLoading,
+    editModalLoading,
+    createAssignmentConflictState,
+    editAssignmentConflictState,
     setSelectedRowKeys,
     setIsCreateModalOpen,
     setSearchText,
@@ -150,10 +153,11 @@ export function BookingsManagement() {
           <BookingFormModal
             type="create"
             open={isCreateModalOpen}
-            loading={false}
+            loading={createModalLoading}
             selectedBooking={null}
             form={createForm}
             selectedItems={createSelectedItems}
+            assignmentConflictState={createAssignmentConflictState}
             onCancel={handleCloseCreateModal}
             onSubmit={handleCreate}
             onItemAdd={handleAddCreateItem}
@@ -166,10 +170,11 @@ export function BookingsManagement() {
           <BookingFormModal
             type="edit"
             open={isEditModalOpen}
-            loading={loadingBooking}
+            loading={editModalLoading}
             selectedBooking={detailBooking || selectedBooking}
             form={editForm}
             selectedItems={editSelectedItems}
+            assignmentConflictState={editAssignmentConflictState}
             onCancel={handleCloseEditModal}
             onSubmit={handleEdit}
             onItemAdd={handleAddEditItem}

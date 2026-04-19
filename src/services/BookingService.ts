@@ -8,7 +8,7 @@ import type {
   ApiErrorData,
   Booking,
   CreateBookingRequest,
-  BookingStaffAssignmentInput,
+  AssignBookingStaffRequest,
   UpdateBookingRequest,
   QueryBookingParams,
   StandardResponse,
@@ -114,14 +114,12 @@ export const bookingApi = {
   // Assign staff members to a booking
   assignStaff: async (
     id: string,
-    staffAssignments: BookingStaffAssignmentInput[]
+    payload: AssignBookingStaffRequest
   ): Promise<StandardResponse<Booking>> =>
     withForbiddenContext(async () => {
       const response = await api.patch<StandardResponse<Booking>>(
         `/bookings/${id}/staff`,
-        {
-          staffAssignments,
-        }
+        payload
       );
       return response.data;
     }, 'Missing permission: bookings:update'),

@@ -5,12 +5,14 @@ import type {
   BookingFormData,
   BookingSelectedItem,
   BookingStaffAssignmentInput,
+  BookingStaffConflictDetails,
   RequiredServiceAssignment,
   StaffAssignmentRow,
   User,
 } from '@types';
 import { formatMoneyVND } from '@utils/money';
 import {
+  Alert,
   AutoComplete,
   Button,
   Card,
@@ -21,6 +23,7 @@ import {
   InputNumber,
   Modal,
   Select,
+  Switch,
   Tag,
   type FormInstance,
 } from 'antd';
@@ -33,6 +36,26 @@ import { useEffect, useMemo, useState } from 'react';
 
 const { TextArea } = Input;
 
+type BookingAssignmentConflictUiState = {
+  hasConflict: boolean;
+  message: string;
+  details: BookingStaffConflictDetails;
+  requiresOverride: boolean;
+  requiredPermission: string | null;
+  allowConflictOverride: boolean;
+  canToggleOverride: boolean;
+  overrideReason: string;
+  overrideReasonLength: number;
+  canRetryWithOverride: boolean;
+  retryBlockedReason: string | null;
+  isRetryPending: boolean;
+  hasPendingAssignment: boolean;
+  onToggleOverride: (enabled: boolean) => void;
+  onReasonChange: (value: string) => void;
+  onRetryWithOverride: () => Promise<void>;
+  onClear: () => void;
+};
+
 interface BookingFormModalProps {
   type: 'create' | 'edit';
   open: boolean;
@@ -40,6 +63,7 @@ interface BookingFormModalProps {
   selectedBooking: Booking | null;
   form: FormInstance<BookingFormData>;
   selectedItems: BookingSelectedItem[];
+  assignmentConflictState?: BookingAssignmentConflictUiState | null;
   onCancel: () => void;
   onSubmit: (
     values: BookingFormData,
@@ -122,6 +146,24 @@ const getRequiredServiceAssignments = (
     }
   }
 
+  for (const pkg of availablePackages) {
+    for (const pkgSvc of pkg.services ?? []) {
+      if (!pkgSvc.service || serviceMap.has(pkgSvc.service.id)) {
+        continue;
+      }
+
+      serviceMap.set(pkgSvc.service.id, {
+        id: pkgSvc.service.id,
+        name: pkgSvc.service.name,
+        price: 0,
+        isLocation: pkgSvc.service.isLocation,
+        isTime: pkgSvc.service.isTime,
+        jobId: pkgSvc.service.jobId,
+        job: pkgSvc.service.job,
+      });
+    }
+  }
+
   for (const item of selectedItems) {
     if (item.type === 'service') {
       const service = serviceMap.get(item.id);
@@ -164,6 +206,7 @@ export function BookingFormModal({
   selectedBooking,
   form,
   selectedItems,
+  assignmentConflictState,
   onCancel,
   onSubmit,
   onItemAdd,
@@ -350,7 +393,10 @@ export function BookingFormModal({
           type="primary"
           loading={loading}
           onClick={() => form.submit()}
-          disabled={selectedItems.length === 0}
+          disabled={
+            selectedItems.length === 0 ||
+            Boolean(assignmentConflictState?.hasConflict)
+          }
         >
           {isEditMode ? 'Update' : 'Create'}
         </Button>,
@@ -704,6 +750,108 @@ export function BookingFormModal({
               </div>
             </Card>
           </div>
+        )}
+
+        {assignmentConflictState?.hasConflict && (
+          <Alert
+            type="warning"
+            showIcon
+            title="Staff assignment conflict detected"
+            description={
+              <div className="mt-2 space-y-3">
+                <p className="mb-0">{assignmentConflictState.message}</p>
+                {assignmentConflictState.requiredPermission && (
+                  <p className="mb-0 text-sm">
+                    Required permission:{' '}
+                    {assignmentConflictState.requiredPermission}
+                  </p>
+                )}
+
+                <div className="space-y-2">
+                  {assignmentConflictState.details.conflicts.map((conflict) => (
+                    <div
+                      key={`${conflict.sourceKey}-${conflict.staffId}`}
+                      className="rounded border border-amber-300 bg-amber-50 p-2 text-sm"
+                    >
+                      <div className="font-medium">
+                        Staff {conflict.staffId} has overlapping assignment
+                      </div>
+                      <ul className="mb-0 mt-1 list-disc pl-5">
+                        {conflict.conflicts.map((detail) => (
+                          <li
+                            key={`${detail.source}-${detail.sourceId}-${detail.overlapStart}-${detail.overlapEnd}`}
+                          >
+                            {detail.source.toUpperCase()}{' '}
+                            {detail.sourceTitle || detail.sourceId}:{' '}
+                            {dayjs(detail.overlapStart).format(
+                              'YYYY-MM-DD HH:mm'
+                            )}{' '}
+                            -{' '}
+                            {dayjs(detail.overlapEnd).format(
+                              'YYYY-MM-DD HH:mm'
+                            )}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  ))}
+                </div>
+
+                <div className="rounded border border-amber-300 bg-white p-3">
+                  <div className="mb-2 flex items-center justify-between gap-3">
+                    <span className="font-medium">Override conflict</span>
+                    <Switch
+                      checked={assignmentConflictState.allowConflictOverride}
+                      onChange={assignmentConflictState.onToggleOverride}
+                      disabled={!assignmentConflictState.canToggleOverride}
+                    />
+                  </div>
+
+                  {!assignmentConflictState.canToggleOverride &&
+                    assignmentConflictState.retryBlockedReason && (
+                      <p className="mb-2 text-sm text-amber-700">
+                        {assignmentConflictState.retryBlockedReason}
+                      </p>
+                    )}
+
+                  <Input.TextArea
+                    value={assignmentConflictState.overrideReason}
+                    onChange={(event) =>
+                      assignmentConflictState.onReasonChange(event.target.value)
+                    }
+                    placeholder="Enter override reason (required)"
+                    rows={3}
+                    disabled={!assignmentConflictState.allowConflictOverride}
+                  />
+
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <span className="text-xs text-gray-500">
+                      Reason length:{' '}
+                      {assignmentConflictState.overrideReasonLength}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <Button onClick={assignmentConflictState.onClear}>
+                        Continue editing
+                      </Button>
+                      <Button
+                        type="primary"
+                        onClick={() => {
+                          void assignmentConflictState.onRetryWithOverride();
+                        }}
+                        loading={assignmentConflictState.isRetryPending}
+                        disabled={
+                          !assignmentConflictState.canRetryWithOverride ||
+                          Boolean(assignmentConflictState.retryBlockedReason)
+                        }
+                      >
+                        Retry with override
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            }
+          />
         )}
 
         <Form.Item

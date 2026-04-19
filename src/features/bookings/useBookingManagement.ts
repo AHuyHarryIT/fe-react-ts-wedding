@@ -10,11 +10,93 @@ import type {
   BookingFormData,
   BookingSelectedItem,
   BookingStaffAssignmentInput,
+  BookingStaffConflictDetails,
   CreateBookingRequest,
   UpdateBookingRequest,
 } from '@types';
 import { Form, message } from 'antd';
 import { useEffect, useState } from 'react';
+
+type StaffAssignmentSubmitOptions = {
+  allowConflictOverride?: boolean;
+  overrideReason?: string;
+};
+
+type PendingStaffAssignmentContext = {
+  mode: 'create' | 'edit';
+  bookingId: string;
+  staffAssignments: BookingStaffAssignmentInput[];
+};
+
+type AssignmentConflictUiState = {
+  activeMode: 'create' | 'edit';
+  hasConflict: true;
+  message: string;
+  details: BookingStaffConflictDetails;
+  requiresOverride: boolean;
+  requiredPermission: string | null;
+  allowConflictOverride: boolean;
+  canToggleOverride: boolean;
+  overrideReason: string;
+  overrideReasonLength: number;
+  canRetryWithOverride: boolean;
+  retryBlockedReason: string | null;
+  isRetryPending: boolean;
+  hasPendingAssignment: boolean;
+  onToggleOverride: (enabled: boolean) => void;
+  onReasonChange: (value: string) => void;
+  onRetryWithOverride: () => Promise<void>;
+  onClear: () => void;
+};
+
+const extractStaffConflictDetails = (
+  error: unknown
+): BookingStaffConflictDetails | null => {
+  const payload = (
+    error as {
+      response?: {
+        data?: {
+          code?: string;
+          details?: unknown;
+          error?: {
+            code?: string;
+            details?: unknown;
+          };
+        };
+      };
+    }
+  )?.response?.data;
+
+  const code = payload?.code ?? payload?.error?.code;
+  if (code !== 'BOOKING_STAFF_CONFLICT') {
+    return null;
+  }
+
+  const details = payload?.details ?? payload?.error?.details;
+  if (!details || typeof details !== 'object' || Array.isArray(details)) {
+    return null;
+  }
+
+  const detailObject = details as {
+    conflicts?: unknown;
+    requiresOverride?: unknown;
+    requiredPermission?: unknown;
+  };
+
+  return {
+    conflicts: Array.isArray(detailObject.conflicts)
+      ? (detailObject.conflicts as BookingStaffConflictDetails['conflicts'])
+      : [],
+    requiresOverride:
+      typeof detailObject.requiresOverride === 'boolean'
+        ? detailObject.requiresOverride
+        : undefined,
+    requiredPermission:
+      typeof detailObject.requiredPermission === 'string'
+        ? detailObject.requiredPermission
+        : undefined,
+  };
+};
 
 export function useBookingManagement() {
   const queryClient = useQueryClient();
@@ -22,8 +104,8 @@ export function useBookingManagement() {
   const [createForm] = Form.useForm<BookingFormData>();
   const [editForm] = Form.useForm<BookingFormData>();
 
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isCreateModalOpen, setIsCreateModalOpenRaw] = useState(false);
+  const [isEditModalOpen, setIsEditModalOpenRaw] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
@@ -45,6 +127,16 @@ export function useBookingManagement() {
     cancelReason: null,
     completeReason: null,
   });
+
+  const [assignmentConflictDetails, setAssignmentConflictDetails] =
+    useState<BookingStaffConflictDetails | null>(null);
+  const [allowConflictOverride, setAllowConflictOverride] = useState(false);
+  const [overrideReason, setOverrideReason] = useState('');
+  const [overrideBlockedReason, setOverrideBlockedReason] = useState<
+    string | null
+  >(null);
+  const [pendingStaffAssignment, setPendingStaffAssignment] =
+    useState<PendingStaffAssignmentContext | null>(null);
 
   const applyForbiddenReason = (
     error: unknown,
@@ -69,6 +161,14 @@ export function useBookingManagement() {
 
     messageApi.warning(reason);
     return context !== null || reason.length > 0;
+  };
+
+  const resetAssignmentConflictState = () => {
+    setAssignmentConflictDetails(null);
+    setAllowConflictOverride(false);
+    setOverrideReason('');
+    setOverrideBlockedReason(null);
+    setPendingStaffAssignment(null);
   };
 
   // Bulk selection state
@@ -132,7 +232,6 @@ export function useBookingManagement() {
   // Bulk delete mutation
   const bulkDeleteMutation = useMutation({
     mutationFn: async (ids: string[]) => {
-      // Delete sequentially to handle errors gracefully
       const results = [];
       for (const id of ids) {
         const result = await bookingApi.delete(id);
@@ -159,13 +258,8 @@ export function useBookingManagement() {
 
   const createMutation = useMutation({
     mutationFn: (data: CreateBookingRequest) => bookingApi.create(data),
-    onSuccess: (data) => {
-      messageApi.success('Booking created successfully');
-      setIsCreateModalOpen(false);
-      createForm.resetFields();
-      setCreateSelectedItems([]);
+    onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      return data;
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'createReason')) {
@@ -183,11 +277,6 @@ export function useBookingManagement() {
     mutationFn: ({ id, data }: { id: string; data: UpdateBookingRequest }) =>
       bookingApi.update(id, data),
     onSuccess: () => {
-      messageApi.success('Booking updated successfully');
-      setIsEditModalOpen(false);
-      setSelectedBooking(null);
-      editForm.resetFields();
-      setEditSelectedItems([]);
       void queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: (error: unknown) => {
@@ -206,12 +295,88 @@ export function useBookingManagement() {
     mutationFn: ({
       id,
       staffAssignments,
+      options,
     }: {
       id: string;
       staffAssignments: BookingStaffAssignmentInput[];
-    }) => bookingApi.assignStaff(id, staffAssignments),
+      options?: StaffAssignmentSubmitOptions;
+    }) =>
+      bookingApi.assignStaff(id, {
+        staffAssignments,
+        allowConflictOverride:
+          options?.allowConflictOverride === true ? true : undefined,
+        overrideReason:
+          options?.allowConflictOverride === true
+            ? options?.overrideReason
+            : undefined,
+      }),
     retry: false,
   });
+
+  const submitStaffAssignments = async (
+    context: PendingStaffAssignmentContext,
+    options?: StaffAssignmentSubmitOptions
+  ): Promise<boolean> => {
+    try {
+      await assignStaffMutation.mutateAsync({
+        id: context.bookingId,
+        staffAssignments: context.staffAssignments,
+        options,
+      });
+
+      resetAssignmentConflictState();
+      return true;
+    } catch (error) {
+      const conflictDetails = extractStaffConflictDetails(error);
+      if (conflictDetails) {
+        setAssignmentConflictDetails(conflictDetails);
+        setPendingStaffAssignment(context);
+        if (!options?.allowConflictOverride) {
+          setAllowConflictOverride(false);
+          setOverrideReason('');
+          setOverrideBlockedReason(null);
+        }
+
+        return false;
+      }
+
+      if (isPermissionDeniedError(error)) {
+        const reason = buildForbiddenReason(error);
+        if (options?.allowConflictOverride) {
+          setOverrideBlockedReason(reason);
+          setAllowConflictOverride(false);
+          messageApi.warning(reason);
+          return false;
+        }
+
+        applyForbiddenReason(error, 'updateReason');
+        return false;
+      }
+
+      const errorMessage =
+        (error as { response?: { data?: { message?: string } } })?.response
+          ?.data?.message || 'Failed to assign staff for booking';
+      messageApi.error(errorMessage);
+      return false;
+    }
+  };
+
+  const completeCreateFlow = () => {
+    messageApi.success('Booking created successfully');
+    setIsCreateModalOpenRaw(false);
+    createForm.resetFields();
+    setCreateSelectedItems([]);
+    resetAssignmentConflictState();
+  };
+
+  const completeEditFlow = () => {
+    messageApi.success('Booking updated successfully');
+    setIsEditModalOpenRaw(false);
+    setSelectedBooking(null);
+    editForm.resetFields();
+    setEditSelectedItems([]);
+    resetAssignmentConflictState();
+  };
 
   // Calculate total price for create
   const calculateCreateTotalPrice = (): number => {
@@ -295,7 +460,6 @@ export function useBookingManagement() {
     );
   };
 
-  // Handlers
   const handleCreate = async (
     values: BookingFormData,
     staffAssignments?: BookingStaffAssignmentInput[]
@@ -324,11 +488,19 @@ export function useBookingManagement() {
 
     const createResponse = await createMutation.mutateAsync(bookingData);
 
-    if (staffAssignments?.length) {
-      await assignStaffMutation.mutateAsync({
-        id: createResponse.data.id,
-        staffAssignments,
-      });
+    if (!staffAssignments?.length) {
+      completeCreateFlow();
+      return;
+    }
+
+    const assigned = await submitStaffAssignments({
+      mode: 'create',
+      bookingId: createResponse.data.id,
+      staffAssignments,
+    });
+
+    if (assigned) {
+      completeCreateFlow();
     }
   };
 
@@ -365,13 +537,114 @@ export function useBookingManagement() {
       data: updateData,
     });
 
-    if (staffAssignments?.length) {
-      await assignStaffMutation.mutateAsync({
-        id: selectedBooking.id,
-        staffAssignments,
-      });
+    if (!staffAssignments?.length) {
+      completeEditFlow();
+      return;
+    }
+
+    const assigned = await submitStaffAssignments({
+      mode: 'edit',
+      bookingId: selectedBooking.id,
+      staffAssignments,
+    });
+
+    if (assigned) {
+      completeEditFlow();
     }
   };
+
+  const handleToggleConflictOverride = (enabled: boolean) => {
+    setAllowConflictOverride(enabled);
+    if (!enabled) {
+      setOverrideReason('');
+      setOverrideBlockedReason(null);
+    }
+  };
+
+  const handleOverrideReasonChange = (value: string) => {
+    setOverrideReason(value);
+    if (overrideBlockedReason) {
+      setOverrideBlockedReason(null);
+    }
+  };
+
+  const handleRetryAssignmentWithOverride = async () => {
+    if (!pendingStaffAssignment) {
+      return;
+    }
+
+    if (!allowConflictOverride) {
+      messageApi.warning('Enable conflict override before retrying save.');
+      return;
+    }
+
+    const reason = overrideReason.trim();
+    if (!reason) {
+      messageApi.warning('Override reason is required to continue.');
+      return;
+    }
+
+    const mode = pendingStaffAssignment.mode;
+    const assigned = await submitStaffAssignments(pendingStaffAssignment, {
+      allowConflictOverride: true,
+      overrideReason: reason,
+    });
+
+    if (!assigned) {
+      return;
+    }
+
+    if (mode === 'create') {
+      completeCreateFlow();
+      return;
+    }
+
+    completeEditFlow();
+  };
+
+  const isCreateAssigning =
+    createMutation.isPending ||
+    (assignStaffMutation.isPending &&
+      pendingStaffAssignment?.mode === 'create');
+  const isEditAssigning =
+    updateMutation.isPending ||
+    (assignStaffMutation.isPending && pendingStaffAssignment?.mode === 'edit');
+
+  const buildConflictUiState = (
+    mode: 'create' | 'edit'
+  ): AssignmentConflictUiState | null => {
+    if (!assignmentConflictDetails || pendingStaffAssignment?.mode !== mode) {
+      return null;
+    }
+
+    const canRetryWithOverride =
+      allowConflictOverride && overrideReason.trim().length > 0;
+
+    return {
+      activeMode: mode,
+      hasConflict: true,
+      message:
+        'Overlapping assignments detected. Review conflicts and provide override reason to continue.',
+      details: assignmentConflictDetails,
+      requiresOverride: assignmentConflictDetails.requiresOverride === true,
+      requiredPermission: assignmentConflictDetails.requiredPermission ?? null,
+      allowConflictOverride,
+      canToggleOverride: overrideBlockedReason === null,
+      overrideReason,
+      overrideReasonLength: overrideReason.trim().length,
+      canRetryWithOverride,
+      retryBlockedReason: overrideBlockedReason,
+      isRetryPending: assignStaffMutation.isPending,
+      hasPendingAssignment: pendingStaffAssignment !== null,
+      onToggleOverride: handleToggleConflictOverride,
+      onReasonChange: handleOverrideReasonChange,
+      onRetryWithOverride: handleRetryAssignmentWithOverride,
+      onClear: resetAssignmentConflictState,
+    };
+  };
+
+  const createAssignmentConflictState = buildConflictUiState('create');
+  const editAssignmentConflictState = buildConflictUiState('edit');
 
   const handleDelete = (id: string) => {
     if (bookingActionState.deleteReason) {
@@ -392,9 +665,14 @@ export function useBookingManagement() {
   };
 
   const handleOpenEdit = (booking: Booking) => {
-    // Trigger the detail query by setting selected booking
+    resetAssignmentConflictState();
     setSelectedBooking(booking);
     setIsLoadingBooking(true);
+  };
+
+  const handleOpenCreateModal = () => {
+    resetAssignmentConflictState();
+    setIsCreateModalOpenRaw(true);
   };
 
   // React to booking detail query result to populate edit form
@@ -404,7 +682,6 @@ export function useBookingManagement() {
     const freshBooking = bookingDetail.data;
     const items: BookingSelectedItem[] = [];
 
-    // Add all booking services
     if (freshBooking.services && freshBooking.services.length > 0) {
       freshBooking.services.forEach((bs) => {
         if (bs.service) {
@@ -428,7 +705,7 @@ export function useBookingManagement() {
       totalPrice: freshBooking.totalPrice,
       status: freshBooking.status,
     });
-    setIsEditModalOpen(true);
+    setIsEditModalOpenRaw(true);
     setIsLoadingBooking(false);
   }, [bookingDetail, isLoadingDetail, isDetailError, editForm]);
 
@@ -456,16 +733,36 @@ export function useBookingManagement() {
   };
 
   const handleCloseCreateModal = () => {
-    setIsCreateModalOpen(false);
+    setIsCreateModalOpenRaw(false);
     createForm.resetFields();
     setCreateSelectedItems([]);
+    resetAssignmentConflictState();
   };
 
   const handleCloseEditModal = () => {
-    setIsEditModalOpen(false);
+    setIsEditModalOpenRaw(false);
     setSelectedBooking(null);
     editForm.resetFields();
     setEditSelectedItems([]);
+    resetAssignmentConflictState();
+  };
+
+  const setIsCreateModalOpen = (open: boolean) => {
+    if (open) {
+      handleOpenCreateModal();
+      return;
+    }
+
+    handleCloseCreateModal();
+  };
+
+  const setIsEditModalOpen = (open: boolean) => {
+    if (open) {
+      setIsEditModalOpenRaw(true);
+      return;
+    }
+
+    handleCloseEditModal();
   };
 
   return {
@@ -492,6 +789,10 @@ export function useBookingManagement() {
     canDeleteBooking: bookingActionState.deleteReason === null,
     canCancelBooking: bookingActionState.cancelReason === null,
     canCompleteBooking: bookingActionState.completeReason === null,
+    createModalLoading: isCreateAssigning,
+    editModalLoading: isEditAssigning,
+    createAssignmentConflictState,
+    editAssignmentConflictState,
     // Bulk selection
     selectedRowKeys,
     setSelectedRowKeys,
