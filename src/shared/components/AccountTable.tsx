@@ -17,6 +17,15 @@ type AccountRecord = {
   createdAt: string;
 };
 
+interface AccountActionState {
+  canUpdate: boolean;
+  canDelete: boolean;
+  updateReason: string | null;
+  deleteReason: string | null;
+  canManageRoles?: boolean;
+  manageRolesReason?: string | null;
+}
+
 interface AccountTableProps<T extends AccountRecord> {
   data: T[];
   loading: boolean;
@@ -26,6 +35,7 @@ interface AccountTableProps<T extends AccountRecord> {
   entityLabel: string;
   emptyDescription: string;
   extraColumns?: ColumnsType<T>;
+  actionState?: AccountActionState;
   onEdit: (record: T) => void;
   onDelete: (id: string) => void;
   onManageRoles?: (record: T) => void;
@@ -47,6 +57,7 @@ export function AccountTable<T extends AccountRecord>({
   entityLabel,
   emptyDescription,
   extraColumns = [],
+  actionState,
   onEdit,
   onDelete,
   onManageRoles,
@@ -55,6 +66,16 @@ export function AccountTable<T extends AccountRecord>({
   selectedCount,
   onBulkDelete,
 }: AccountTableProps<T>) {
+  const resolvedActionState: Required<AccountActionState> = {
+    canUpdate: true,
+    canDelete: true,
+    updateReason: null,
+    deleteReason: null,
+    canManageRoles: true,
+    manageRolesReason: null,
+    ...(actionState ?? {}),
+  };
+
   const columns: ColumnsType<T> = [
     {
       title: 'Phone Number',
@@ -108,6 +129,9 @@ export function AccountTable<T extends AccountRecord>({
           <ActionButton
             action="edit"
             size="small"
+            disabled={!resolvedActionState.canUpdate}
+            tooltip={resolvedActionState.updateReason ?? undefined}
+            title={resolvedActionState.updateReason ?? undefined}
             onClick={() => onEdit(record)}
           />
           {onManageRoles ? (
@@ -117,12 +141,18 @@ export function AccountTable<T extends AccountRecord>({
               size="small"
               label="Role"
               showIcon={true}
+              disabled={!resolvedActionState.canManageRoles}
+              tooltip={resolvedActionState.manageRolesReason ?? undefined}
+              title={resolvedActionState.manageRolesReason ?? undefined}
               onClick={() => onManageRoles(record)}
             />
           ) : null}
           <ActionButton
             action="delete"
             size="small"
+            disabled={!resolvedActionState.canDelete}
+            tooltip={resolvedActionState.deleteReason ?? undefined}
+            title={resolvedActionState.deleteReason ?? undefined}
             popconfirmTitle={`Delete ${entityLabel}`}
             popconfirmDescription={`Are you sure you want to delete this ${entityLabel}?`}
             onClick={() => onDelete(record.id)}

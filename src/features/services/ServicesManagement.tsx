@@ -4,6 +4,7 @@ import {
   ManagementLayout,
   SearchBar,
 } from '@shared/components/management';
+import { ActionButton } from '@shared/components/ui';
 import { ServiceFormModal } from '@features/services/ServiceFormModal';
 import { ServiceTable } from '@features/services/ServiceTable';
 import { useServiceManagement } from './useServiceManagement';
@@ -17,6 +18,7 @@ export function ServicesManagement() {
     createLoading,
     updateLoading,
     total,
+    serviceActionState,
     contextHolder,
     createForm,
     editForm,
@@ -47,9 +49,19 @@ export function ServicesManagement() {
             kicker="Service catalog"
             title="Services"
             subtitle="Keep standalone services, imagery, and pricing polished for the whole staff workflow."
-            createButtonText="Add Service"
-            icon={<PlusOutlined />}
-            onCreateClick={() => setIsCreateModalOpen(true)}
+            showCreateButton={false}
+            extra={
+              <ActionButton
+                action="create"
+                size="large"
+                label="Add Service"
+                icon={<PlusOutlined />}
+                disabled={!serviceActionState.canCreate}
+                tooltip={serviceActionState.createReason ?? undefined}
+                title={serviceActionState.createReason ?? undefined}
+                onClick={() => setIsCreateModalOpen(true)}
+              />
+            }
             summary={
               <div className="staff-surface rounded-3xl px-4 py-3">
                 <div className="text-xs font-semibold uppercase tracking-[0.18em] text-slate-500 dark:text-slate-400">
@@ -80,6 +92,12 @@ export function ServicesManagement() {
             currentPage={currentPage}
             pageSize={pageSize}
             total={total}
+            actionState={{
+              canUpdate: serviceActionState.canUpdate,
+              canDelete: serviceActionState.canDelete,
+              updateReason: serviceActionState.updateReason,
+              deleteReason: serviceActionState.deleteReason,
+            }}
             onEdit={handleOpenEdit}
             onDelete={handleDelete}
             onPageChange={setCurrentPage}

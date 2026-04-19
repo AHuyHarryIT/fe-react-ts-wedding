@@ -10,6 +10,12 @@ interface UserTableProps {
   currentPage: number;
   pageSize: number;
   total: number;
+  actionState: {
+    canUpdate: boolean;
+    canDelete: boolean;
+    updateReason: string | null;
+    deleteReason: string | null;
+  };
   onEdit: (user: User) => void;
   onDelete: (id: string) => void;
   onPageChange: (page: number, pageSize: number) => void;
@@ -21,6 +27,7 @@ export function UserTable({
   currentPage,
   pageSize,
   total,
+  actionState,
   onEdit,
   onDelete,
   onPageChange,
@@ -88,6 +95,7 @@ export function UserTable({
       entityLabel="staff account"
       emptyDescription="No staff accounts found"
       extraColumns={extraColumns}
+      actionState={actionState}
       onEdit={onEdit}
       onDelete={onDelete}
       onPageChange={onPageChange}

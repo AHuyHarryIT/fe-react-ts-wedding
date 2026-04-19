@@ -15,19 +15,25 @@ interface PackageTableProps {
   currentPage: number;
   pageSize: number;
   total: number;
+  actionState: {
+    canUpdate: boolean;
+    canDelete: boolean;
+    updateReason: string | null;
+    deleteReason: string | null;
+  };
   onView: (pkg: Package) => void;
   onEdit: (pkg: Package) => void;
   onDelete: (id: string) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
 }
-
 export function PackageTable({
   packages,
   loading,
   currentPage,
   pageSize,
   total,
+  actionState,
   onView,
   onEdit,
   onDelete,
@@ -99,11 +105,17 @@ export function PackageTable({
           <ActionButton
             action="edit"
             size="small"
+            disabled={!actionState.canUpdate}
+            tooltip={actionState.updateReason ?? undefined}
+            title={actionState.updateReason ?? undefined}
             onClick={() => onEdit(record)}
           />
           <ActionButton
             action="delete"
             size="small"
+            disabled={!actionState.canDelete}
+            tooltip={actionState.deleteReason ?? undefined}
+            title={actionState.deleteReason ?? undefined}
             popconfirmTitle="Delete Package"
             popconfirmDescription="Are you sure you want to delete this package?"
             onClick={() => onDelete(record.id)}

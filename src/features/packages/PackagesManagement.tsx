@@ -4,6 +4,7 @@ import {
   ManagementLayout,
   SearchBar,
 } from '@shared/components/management';
+import { ActionButton } from '@shared/components/ui';
 import { PackageDetailModal } from '@features/packages/PackageDetailModal';
 import { PackageFormModal } from '@features/packages/PackageFormModal';
 import { PackageTable } from '@features/packages/PackageTable';
@@ -22,6 +23,7 @@ export function PackagesManagement() {
     updateLoading,
     total,
     services,
+    packageActionState,
     createForm,
     editForm,
     isCreateModalOpen,
@@ -59,9 +61,19 @@ export function PackagesManagement() {
           kicker="Catalog operations"
           title="Packages"
           subtitle="Maintain package bundles, pricing, and the details staff needs before checkout."
-          createButtonText="Add Package"
-          icon={<PlusOutlined />}
-          onCreateClick={() => setIsCreateModalOpen(true)}
+          showCreateButton={false}
+          extra={
+            <ActionButton
+              action="create"
+              size="large"
+              label="Add Package"
+              icon={<PlusOutlined />}
+              disabled={!packageActionState.canCreate}
+              tooltip={packageActionState.createReason ?? undefined}
+              title={packageActionState.createReason ?? undefined}
+              onClick={() => setIsCreateModalOpen(true)}
+            />
+          }
         />
       }
       searchBar={
@@ -82,6 +94,12 @@ export function PackagesManagement() {
           currentPage={currentPage}
           pageSize={pageSize}
           total={total}
+          actionState={{
+            canUpdate: packageActionState.canUpdate,
+            canDelete: packageActionState.canDelete,
+            updateReason: packageActionState.updateReason,
+            deleteReason: packageActionState.deleteReason,
+          }}
           onView={handleViewPackage}
           onEdit={handleOpenEdit}
           onDelete={handleDelete}
