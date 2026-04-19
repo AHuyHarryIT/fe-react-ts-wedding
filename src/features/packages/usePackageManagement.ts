@@ -1,13 +1,17 @@
-import { useState } from 'react';
-import { Form, message } from 'antd';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import type {
-  Package,
-  CreatePackageRequest,
-  UpdatePackageRequest,
-} from '@types';
+import {
+  buildForbiddenReason,
+  isPermissionDeniedError,
+} from '@/auth/permissionPolicy';
 import { packageApi } from '@services/PackageService';
 import { serviceApi } from '@services/ServiceService';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import type {
+  CreatePackageRequest,
+  Package,
+  UpdatePackageRequest,
+} from '@types';
+import { Form, message } from 'antd';
+import { useState } from 'react';
 
 interface PackageFormData {
   name: string;
@@ -19,6 +23,27 @@ interface PackageFormData {
   galleryImages?: File[];
   galleryOrder?: string[];
 }
+
+interface PackageActionState {
+  createReason: string | null;
+  updateReason: string | null;
+  deleteReason: string | null;
+}
+
+interface PackageActionPermissions {
+  canCreate: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+  createReason: string | null;
+  updateReason: string | null;
+  deleteReason: string | null;
+}
+
+const INITIAL_PACKAGE_ACTION_STATE: PackageActionState = {
+  createReason: null,
+  updateReason: null,
+  deleteReason: null,
+};
 
 export function usePackageManagement() {
   const queryClient = useQueryClient();
@@ -32,6 +57,36 @@ export function usePackageManagement() {
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [actionState, setActionState] = useState<PackageActionState>(
+    INITIAL_PACKAGE_ACTION_STATE
+  );
+
+  const applyForbiddenReason = (
+    error: unknown,
+    key: keyof PackageActionState
+  ): boolean => {
+    if (!isPermissionDeniedError(error)) {
+      return false;
+    }
+
+    const reason = buildForbiddenReason(error);
+    setActionState((prev) => ({
+      ...prev,
+      [key]: reason,
+    }));
+    messageApi.warning(reason);
+
+    return true;
+  };
+
+  const packageActionState: PackageActionPermissions = {
+    canCreate: actionState.createReason === null,
+    canUpdate: actionState.updateReason === null,
+    canDelete: actionState.deleteReason === null,
+    createReason: actionState.createReason,
+    updateReason: actionState.updateReason,
+    deleteReason: actionState.deleteReason,
+  };
 
   // Queries
   const { data: packagesData, isLoading: packagesLoading } = useQuery({
@@ -54,12 +109,17 @@ export function usePackageManagement() {
   const createMutation = useMutation({
     mutationFn: (data: CreatePackageRequest) => packageApi.create(data),
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, createReason: null }));
       messageApi.success('Package created successfully');
       setIsCreateModalOpen(false);
       createForm.resetFields();
-      queryClient.invalidateQueries({ queryKey: ['packages'] });
+      void queryClient.invalidateQueries({ queryKey: ['packages'] });
     },
     onError: (error: unknown) => {
+      if (applyForbiddenReason(error, 'createReason')) {
+        return;
+      }
+
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || 'Failed to create package';
@@ -71,13 +131,18 @@ export function usePackageManagement() {
     mutationFn: ({ id, data }: { id: string; data: UpdatePackageRequest }) =>
       packageApi.update(id, data),
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, updateReason: null }));
       messageApi.success('Package updated successfully');
       setIsEditModalOpen(false);
       setSelectedPackage(null);
       editForm.resetFields();
-      queryClient.invalidateQueries({ queryKey: ['packages'] });
+      void queryClient.invalidateQueries({ queryKey: ['packages'] });
     },
     onError: (error: unknown) => {
+      if (applyForbiddenReason(error, 'updateReason')) {
+        return;
+      }
+
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || 'Failed to update package';
@@ -88,10 +153,15 @@ export function usePackageManagement() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => packageApi.delete(id),
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, deleteReason: null }));
       messageApi.success('Package deleted successfully');
-      queryClient.invalidateQueries({ queryKey: ['packages'] });
+      void queryClient.invalidateQueries({ queryKey: ['packages'] });
     },
     onError: (error: unknown) => {
+      if (applyForbiddenReason(error, 'deleteReason')) {
+        return;
+      }
+
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || 'Failed to delete package';
@@ -101,20 +171,40 @@ export function usePackageManagement() {
 
   // Handlers
   const handleCreate = (values: PackageFormData) => {
+    if (!packageActionState.canCreate) {
+      messageApi.warning(actionState.createReason || 'Action is not allowed');
+      return;
+    }
+
     createMutation.mutate(values);
   };
 
   const handleEdit = (values: PackageFormData) => {
+    if (!packageActionState.canUpdate) {
+      messageApi.warning(actionState.updateReason || 'Action is not allowed');
+      return;
+    }
+
     if (selectedPackage) {
       updateMutation.mutate({ id: selectedPackage.id, data: values });
     }
   };
 
   const handleDelete = (id: string) => {
+    if (!packageActionState.canDelete) {
+      messageApi.warning(actionState.deleteReason || 'Action is not allowed');
+      return;
+    }
+
     deleteMutation.mutate(id);
   };
 
   const handleOpenEdit = (pkg: Package) => {
+    if (!packageActionState.canUpdate) {
+      messageApi.warning(actionState.updateReason || 'Action is not allowed');
+      return;
+    }
+
     setSelectedPackage(pkg);
     editForm.setFieldsValue({
       name: pkg.name,
@@ -148,6 +238,7 @@ export function usePackageManagement() {
     updateLoading: updateMutation.isPending,
     total: packagesData?.pagination?.total || 0,
     services: servicesData?.data || [],
+    packageActionState,
     createForm,
     editForm,
     isCreateModalOpen,

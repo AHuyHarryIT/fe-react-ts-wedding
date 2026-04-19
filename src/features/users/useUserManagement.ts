@@ -1,7 +1,11 @@
+import {
+  buildForbiddenReason,
+  isPermissionDeniedError,
+} from '@/auth/permissionPolicy';
 import { jobApi } from '@services/JobService';
 import { roleApi } from '@services/RoleService';
 import { userApi } from '@services/UserService';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateUserRequest,
   Role,
@@ -13,7 +17,29 @@ import { getErrorMessage } from '@utils/error';
 import { Form, message } from 'antd';
 import { useCallback, useState } from 'react';
 
+interface UserActionState {
+  createReason: string | null;
+  updateReason: string | null;
+  deleteReason: string | null;
+}
+
+interface UserActionPermissions {
+  canCreate: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+  createReason: string | null;
+  updateReason: string | null;
+  deleteReason: string | null;
+}
+
+const INITIAL_USER_ACTION_STATE: UserActionState = {
+  createReason: null,
+  updateReason: null,
+  deleteReason: null,
+};
+
 export function useUserManagement() {
+  const queryClient = useQueryClient();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
@@ -22,16 +48,42 @@ export function useUserManagement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [messageApi, contextHolder] = message.useMessage();
+  const [actionState, setActionState] = useState<UserActionState>(
+    INITIAL_USER_ACTION_STATE
+  );
 
   const [createForm] = Form.useForm();
   const [editForm] = Form.useForm();
 
+  const applyForbiddenReason = (
+    error: unknown,
+    key: keyof UserActionState
+  ): boolean => {
+    if (!isPermissionDeniedError(error)) {
+      return false;
+    }
+
+    const reason = buildForbiddenReason(error);
+    setActionState((prev) => ({
+      ...prev,
+      [key]: reason,
+    }));
+    messageApi.warning(reason);
+
+    return true;
+  };
+
+  const userActionState: UserActionPermissions = {
+    canCreate: actionState.createReason === null,
+    canUpdate: actionState.updateReason === null,
+    canDelete: actionState.deleteReason === null,
+    createReason: actionState.createReason,
+    updateReason: actionState.updateReason,
+    deleteReason: actionState.deleteReason,
+  };
+
   // Fetch users
-  const {
-    data: usersData,
-    isLoading: usersLoading,
-    refetch: refetchUsers,
-  } = useQuery({
+  const { data: usersData, isLoading: usersLoading } = useQuery({
     queryKey: [
       'users',
       { page: currentPage, limit: pageSize, search: searchText },
@@ -99,12 +151,17 @@ export function useUserManagement() {
   const createMutation = useMutation({
     mutationFn: userApi.create,
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, createReason: null }));
       messageApi.success('Staff account created successfully');
       createForm.resetFields();
       setIsCreateModalOpen(false);
-      refetchUsers();
+      void queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error) => {
+      if (applyForbiddenReason(error, 'createReason')) {
+        return;
+      }
+
       messageApi.error(
         getErrorMessage(error) || 'Failed to create staff account'
       );
@@ -116,13 +173,18 @@ export function useUserManagement() {
     mutationFn: ({ id, data }: { id: string; data: UpdateUserRequest }) =>
       userApi.update(id, data),
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, updateReason: null }));
       messageApi.success('Staff account updated successfully');
       editForm.resetFields();
       setIsEditModalOpen(false);
-      refetchUsers();
+      void queryClient.invalidateQueries({ queryKey: ['users'] });
       setSelectedUserId(null);
     },
     onError: (error) => {
+      if (applyForbiddenReason(error, 'updateReason')) {
+        return;
+      }
+
       messageApi.error(
         getErrorMessage(error) || 'Failed to update staff account'
       );
@@ -133,10 +195,15 @@ export function useUserManagement() {
   const deleteMutation = useMutation({
     mutationFn: userApi.delete,
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, deleteReason: null }));
       messageApi.success('Staff account deleted successfully');
-      refetchUsers();
+      void queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error) => {
+      if (applyForbiddenReason(error, 'deleteReason')) {
+        return;
+      }
+
       messageApi.error(
         getErrorMessage(error) || 'Failed to delete staff account'
       );
@@ -145,6 +212,11 @@ export function useUserManagement() {
 
   const handleCreate = useCallback(
     (values: CreateUserRequest) => {
+      if (!userActionState.canCreate) {
+        messageApi.warning(actionState.createReason || 'Action is not allowed');
+        return;
+      }
+
       createMutation.mutate({
         ...values,
         email: values.email?.trim() ? values.email.trim() : undefined,
@@ -153,11 +225,16 @@ export function useUserManagement() {
         roleIds: values.roleIds ?? [],
       });
     },
-    [createMutation]
+    [actionState.createReason, createMutation, messageApi, userActionState.canCreate]
   );
 
   const handleEdit = useCallback(
     (values: UpdateUserRequest) => {
+      if (!userActionState.canUpdate) {
+        messageApi.warning(actionState.updateReason || 'Action is not allowed');
+        return;
+      }
+
       if (!selectedUserId) return;
 
       updateMutation.mutate({
@@ -171,18 +248,39 @@ export function useUserManagement() {
         },
       });
     },
-    [selectedUserId, updateMutation]
+    [
+      actionState.updateReason,
+      messageApi,
+      selectedUserId,
+      updateMutation,
+      userActionState.canUpdate,
+    ]
   );
 
   const handleDelete = useCallback(
     (id: string) => {
+      if (!userActionState.canDelete) {
+        messageApi.warning(actionState.deleteReason || 'Action is not allowed');
+        return;
+      }
+
       deleteMutation.mutate(id);
     },
-    [deleteMutation]
+    [
+      actionState.deleteReason,
+      deleteMutation,
+      messageApi,
+      userActionState.canDelete,
+    ]
   );
 
   const handleOpenEdit = useCallback(
     (user: User) => {
+      if (!userActionState.canUpdate) {
+        messageApi.warning(actionState.updateReason || 'Action is not allowed');
+        return;
+      }
+
       setSelectedUserId(user.id);
       setSelectedUser(user as UserWithRoles);
       editForm.setFieldsValue({
@@ -200,7 +298,12 @@ export function useUserManagement() {
       });
       setIsEditModalOpen(true);
     },
-    [editForm]
+    [
+      actionState.updateReason,
+      editForm,
+      messageApi,
+      userActionState.canUpdate,
+    ]
   );
 
   const handleCloseCreateModal = useCallback(() => {
@@ -230,6 +333,7 @@ export function useUserManagement() {
     usersLoading,
     rolesData,
     jobsData,
+    userActionState,
     createForm,
     editForm,
     contextHolder,

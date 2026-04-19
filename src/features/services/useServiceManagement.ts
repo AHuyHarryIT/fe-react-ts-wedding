@@ -1,14 +1,39 @@
-import { useState } from 'react';
-import { Form, notification } from 'antd';
+import {
+  buildForbiddenReason,
+  isPermissionDeniedError,
+} from '@/auth/permissionPolicy';
+import { jobApi } from '@services/JobService';
+import { serviceApi } from '@services/ServiceService';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
-  Service,
   CreateServiceRequest,
-  UpdateServiceRequest,
+  Service,
   ServiceFormData,
+  UpdateServiceRequest,
 } from '@types';
-import { serviceApi } from '@services/ServiceService';
-import { jobApi } from '@services/JobService';
+import { Form, notification } from 'antd';
+import { useState } from 'react';
+
+interface ServiceActionState {
+  createReason: string | null;
+  updateReason: string | null;
+  deleteReason: string | null;
+}
+
+interface ServiceActionPermissions {
+  canCreate: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+  createReason: string | null;
+  updateReason: string | null;
+  deleteReason: string | null;
+}
+
+const INITIAL_SERVICE_ACTION_STATE: ServiceActionState = {
+  createReason: null,
+  updateReason: null,
+  deleteReason: null,
+};
 
 export function useServiceManagement() {
   const queryClient = useQueryClient();
@@ -22,6 +47,39 @@ export function useServiceManagement() {
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [actionState, setActionState] = useState<ServiceActionState>(
+    INITIAL_SERVICE_ACTION_STATE
+  );
+
+  const applyForbiddenReason = (
+    error: unknown,
+    key: keyof ServiceActionState
+  ): boolean => {
+    if (!isPermissionDeniedError(error)) {
+      return false;
+    }
+
+    const reason = buildForbiddenReason(error);
+    setActionState((prev) => ({
+      ...prev,
+      [key]: reason,
+    }));
+    notificationApi.warning({
+      message: 'Permission denied',
+      description: reason,
+    });
+
+    return true;
+  };
+
+  const serviceActionState: ServiceActionPermissions = {
+    canCreate: actionState.createReason === null,
+    canUpdate: actionState.updateReason === null,
+    canDelete: actionState.deleteReason === null,
+    createReason: actionState.createReason,
+    updateReason: actionState.updateReason,
+    deleteReason: actionState.deleteReason,
+  };
 
   // Queries
   const { data: servicesData, isLoading: servicesLoading } = useQuery({
@@ -48,15 +106,20 @@ export function useServiceManagement() {
   const createMutation = useMutation({
     mutationFn: (data: CreateServiceRequest) => serviceApi.create(data),
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, createReason: null }));
       notificationApi.success({
         message: 'Success',
         description: 'Service created successfully',
       });
       setIsCreateModalOpen(false);
       createForm.resetFields();
-      queryClient.invalidateQueries({ queryKey: ['services'] });
+      void queryClient.invalidateQueries({ queryKey: ['services'] });
     },
     onError: (error: unknown) => {
+      if (applyForbiddenReason(error, 'createReason')) {
+        return;
+      }
+
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || 'Failed to create service';
@@ -71,6 +134,7 @@ export function useServiceManagement() {
     mutationFn: ({ id, data }: { id: string; data: UpdateServiceRequest }) =>
       serviceApi.update(id, data),
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, updateReason: null }));
       notificationApi.success({
         message: 'Success',
         description: 'Service updated successfully',
@@ -78,9 +142,13 @@ export function useServiceManagement() {
       setIsEditModalOpen(false);
       setSelectedService(null);
       editForm.resetFields();
-      queryClient.invalidateQueries({ queryKey: ['services'] });
+      void queryClient.invalidateQueries({ queryKey: ['services'] });
     },
     onError: (error: unknown) => {
+      if (applyForbiddenReason(error, 'updateReason')) {
+        return;
+      }
+
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || 'Failed to update service';
@@ -94,13 +162,18 @@ export function useServiceManagement() {
   const deleteMutation = useMutation({
     mutationFn: (id: string) => serviceApi.delete(id),
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, deleteReason: null }));
       notificationApi.success({
         message: 'Success',
         description: 'Service deleted successfully',
       });
-      queryClient.invalidateQueries({ queryKey: ['services'] });
+      void queryClient.invalidateQueries({ queryKey: ['services'] });
     },
     onError: (error: unknown) => {
+      if (applyForbiddenReason(error, 'deleteReason')) {
+        return;
+      }
+
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
           ?.data?.message || 'Failed to delete service';
@@ -113,20 +186,48 @@ export function useServiceManagement() {
 
   // Handlers
   const handleCreate = (values: ServiceFormData) => {
+    if (!serviceActionState.canCreate) {
+      notificationApi.warning({
+        message: serviceActionState.createReason ?? 'Action is not allowed',
+      });
+      return;
+    }
+
     createMutation.mutate(values);
   };
 
   const handleEdit = (values: ServiceFormData) => {
+    if (!serviceActionState.canUpdate) {
+      notificationApi.warning({
+        message: serviceActionState.updateReason ?? 'Action is not allowed',
+      });
+      return;
+    }
+
     if (selectedService) {
       updateMutation.mutate({ id: selectedService.id, data: values });
     }
   };
 
   const handleDelete = (id: string) => {
+    if (!serviceActionState.canDelete) {
+      notificationApi.warning({
+        message: serviceActionState.deleteReason ?? 'Action is not allowed',
+      });
+      return;
+    }
+
     deleteMutation.mutate(id);
   };
 
   const handleOpenEdit = (service: Service) => {
+    if (!serviceActionState.canUpdate) {
+      notificationApi.warning({
+        message: serviceActionState.updateReason ?? 'Action is not allowed',
+      });
+      return;
+    }
+
     setSelectedService(service);
     editForm.setFieldsValue({
       name: service.name,
@@ -159,6 +260,7 @@ export function useServiceManagement() {
     createLoading: createMutation.isPending,
     updateLoading: updateMutation.isPending,
     total: servicesData?.pagination?.total || 0,
+    serviceActionState,
     createForm,
     editForm,
     isCreateModalOpen,
