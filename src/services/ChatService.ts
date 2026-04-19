@@ -7,6 +7,7 @@ export interface Chat {
   bookingId?: string;
   chatType: 'DIRECT' | 'GROUP';
   lastMessageAt?: Date;
+  unreadCount?: number;
   isArchived: boolean;
   createdAt: Date;
   updatedAt: Date;

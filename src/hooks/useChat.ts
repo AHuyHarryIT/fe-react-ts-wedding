@@ -1,7 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { io, Socket } from 'socket.io-client';
+import {
+  buildForbiddenReason,
+  isPermissionDeniedError,
+} from '@/auth/permissionPolicy';
 import ChatService from '../services/ChatService';
 import type { Chat, Message } from '../services/ChatService';
+
+type ReconnectStatus = 'live' | 'reconnecting' | 'offline' | 'recovering';
 
 interface UseChatReturn {
   chats: Chat[];
@@ -9,6 +15,10 @@ interface UseChatReturn {
   messages: Message[];
   loading: boolean;
   error: string | null;
+  reconnectStatus: ReconnectStatus;
+  canRead: boolean;
+  canReply: boolean;
+  replyForbiddenReason: string | null;
   isTyping: boolean;
   otherUserTyping: boolean;
   createChat: (
@@ -18,6 +28,8 @@ interface UseChatReturn {
   ) => Promise<void>;
   selectChat: (chatId: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
+  refreshChats: () => Promise<void>;
+  retryCurrentThread: () => Promise<void>;
   markAsRead: () => Promise<void>;
   archiveChat: (chatId: string) => Promise<void>;
   deleteChat: (chatId: string) => Promise<void>;
@@ -31,8 +43,52 @@ export const useChat = (userId: string): UseChatReturn => {
   const [error, setError] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
+  const [reconnectStatus, setReconnectStatus] =
+    useState<ReconnectStatus>('live');
+  const [readForbiddenReason, setReadForbiddenReason] = useState<string | null>(
+    null
+  );
+  const [replyForbiddenReason, setReplyForbiddenReason] = useState<
+    string | null
+  >(null);
+
   const currentChatIdRef = useRef<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
+  const hasConnectedOnceRef = useRef(false);
+
+  const setReadForbiddenFromError = useCallback(
+    (err: unknown, fallback: string): boolean => {
+      if (!isPermissionDeniedError(err)) {
+        return false;
+      }
+
+      setReadForbiddenReason(buildForbiddenReason(err, fallback));
+      setError(null);
+      return true;
+    },
+    []
+  );
+
+  const setReplyForbiddenFromError = useCallback(
+    (err: unknown, fallback: string): boolean => {
+      if (!isPermissionDeniedError(err)) {
+        return false;
+      }
+
+      setReplyForbiddenReason(buildForbiddenReason(err, fallback));
+      setError(null);
+      return true;
+    },
+    []
+  );
+
+  const clearUnreadForChat = useCallback((chatId: string) => {
+    setChats((prevChats) =>
+      prevChats.map((chat) =>
+        chat.id === chatId ? { ...chat, unreadCount: 0 } : chat
+      )
+    );
+  }, []);
 
   const promoteChat = useCallback(
     (
@@ -65,10 +121,39 @@ export const useChat = (userId: string): UseChatReturn => {
     []
   );
 
-  const refreshChats = useCallback(async () => {
+  const refreshChatsInternal = useCallback(async (): Promise<Chat[]> => {
     const data = await ChatService.getChatsByStaff();
     setChats(data);
+    setReadForbiddenReason(null);
+    return data;
   }, []);
+
+  const retryCurrentThread = useCallback(async () => {
+    const activeChatId = currentChatIdRef.current;
+
+    if (!activeChatId) {
+      return;
+    }
+
+    const latestMessages = await ChatService.getMessages(activeChatId);
+    setMessages(latestMessages);
+    clearUnreadForChat(activeChatId);
+    await ChatService.markMessagesAsRead(activeChatId);
+
+    if (socketRef.current) {
+      socketRef.current.emit('join_chat', { chatId: activeChatId });
+    }
+  }, [clearUnreadForChat]);
+
+  const refreshChats = useCallback(async () => {
+    try {
+      await refreshChatsInternal();
+    } catch (err) {
+      if (!setReadForbiddenFromError(err, 'Required permission: chat.read')) {
+        throw err;
+      }
+    }
+  }, [refreshChatsInternal, setReadForbiddenFromError]);
 
   const updateChatsWithMessage = useCallback(
     (incomingMessage: Message) => {
@@ -84,7 +169,6 @@ export const useChat = (userId: string): UseChatReturn => {
     currentChatIdRef.current = currentChat?.id || null;
   }, [currentChat?.id]);
 
-  // Initialize WebSocket connection
   useEffect(() => {
     if (!userId) {
       return;
@@ -94,9 +178,10 @@ export const useChat = (userId: string): UseChatReturn => {
       typeof window !== 'undefined' && window.location.hostname === '127.0.0.1'
         ? 'http://127.0.0.1:3000'
         : import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
+
     const newSocket = io(`${apiUrl}/chat`, {
       auth: {
-        userId: userId,
+        userId,
       },
       reconnection: true,
       reconnectionDelay: 1000,
@@ -106,11 +191,51 @@ export const useChat = (userId: string): UseChatReturn => {
 
     socketRef.current = newSocket;
 
-    // Listen for incoming messages with deduplication
+    const healAfterReconnect = async () => {
+      setReconnectStatus('recovering');
+
+      try {
+        await refreshChatsInternal();
+        await retryCurrentThread();
+        setError(null);
+      } catch (err) {
+        if (!setReadForbiddenFromError(err, 'Required permission: chat.read')) {
+          setError(
+            err instanceof Error
+              ? err.message
+              : 'Failed to recover conversation state'
+          );
+        }
+      } finally {
+        setReconnectStatus('live');
+      }
+    };
+
+    const handleConnect = () => {
+      const activeChatId = currentChatIdRef.current;
+      if (activeChatId) {
+        newSocket.emit('join_chat', { chatId: activeChatId });
+      }
+
+      if (hasConnectedOnceRef.current) {
+        void healAfterReconnect();
+      } else {
+        hasConnectedOnceRef.current = true;
+        setReconnectStatus('live');
+      }
+    };
+
+    const handleDisconnect = () => {
+      setReconnectStatus('offline');
+    };
+
+    const handleReconnectAttempt = () => {
+      setReconnectStatus('reconnecting');
+    };
+
     const handleMessageReceived = (data: Message) => {
       updateChatsWithMessage(data);
 
-      // Only append message in the currently opened chat thread.
       if (data.chatId !== currentChatIdRef.current) {
         return;
       }
@@ -124,9 +249,12 @@ export const useChat = (userId: string): UseChatReturn => {
       });
     };
 
+    newSocket.on('connect', handleConnect);
+    newSocket.on('disconnect', handleDisconnect);
+    newSocket.io.on('reconnect_attempt', handleReconnectAttempt);
+
     newSocket.on('message_received', handleMessageReceived);
 
-    // Listen for typing indicators
     newSocket.on(
       'user_typing',
       (data: { userId: string; isTyping: boolean }) => {
@@ -136,8 +264,8 @@ export const useChat = (userId: string): UseChatReturn => {
       }
     );
 
-    // Listen for messages marked as read
-    newSocket.on('messages_marked_read', (data) => {
+    newSocket.on('messages_marked_read', (data: { chatId: string }) => {
+      clearUnreadForChat(data.chatId);
       setMessages((prev) =>
         prev.map((msg) =>
           msg.chatId === data.chatId && msg.senderId === userId
@@ -147,13 +275,9 @@ export const useChat = (userId: string): UseChatReturn => {
       );
     });
 
-    // Listen for notifications
     newSocket.on(
       'new_message_notification',
       async (data: { chatId: string }) => {
-        console.log('New message notification:', data);
-
-        // Optimistically refresh sidebar row instantly before API roundtrip.
         if (data?.chatId) {
           promoteChat(data.chatId, {
             lastMessageAt: new Date().toISOString(),
@@ -162,37 +286,59 @@ export const useChat = (userId: string): UseChatReturn => {
         }
 
         try {
-          await refreshChats();
+          await refreshChatsInternal();
         } catch (refreshError) {
-          console.error(
-            'Failed to refresh chats after notification:',
-            refreshError
-          );
+          if (
+            !setReadForbiddenFromError(
+              refreshError,
+              'Required permission: chat.read'
+            )
+          ) {
+            setError(
+              refreshError instanceof Error
+                ? refreshError.message
+                : 'Failed to refresh chats'
+            );
+          }
         }
       }
     );
 
-    // Listen for errors (but only connection errors, not message send errors)
-    newSocket.on('error', (error: { message: string }) => {
-      // Only show connection/authentication errors, not send_message errors
-      // because REST API is primary, WebSocket is secondary
-      if (error.message !== 'User not authenticated') {
-        setError(error.message);
+    newSocket.on('error', (socketError: { message: string }) => {
+      if (socketError.message !== 'User not authenticated') {
+        setError(socketError.message);
       }
     });
 
+    newSocket.on('connect_error', () => {
+      setReconnectStatus('offline');
+    });
+
     return () => {
+      newSocket.off('connect', handleConnect);
+      newSocket.off('disconnect', handleDisconnect);
+      newSocket.io.off('reconnect_attempt', handleReconnectAttempt);
       newSocket.off('message_received', handleMessageReceived);
       newSocket.off('user_typing');
       newSocket.off('messages_marked_read');
       newSocket.off('new_message_notification');
       newSocket.off('error');
+      newSocket.off('connect_error');
       newSocket.close();
+
       if (socketRef.current === newSocket) {
         socketRef.current = null;
       }
     };
-  }, [userId, updateChatsWithMessage, promoteChat, refreshChats]);
+  }, [
+    clearUnreadForChat,
+    promoteChat,
+    refreshChatsInternal,
+    retryCurrentThread,
+    setReadForbiddenFromError,
+    updateChatsWithMessage,
+    userId,
+  ]);
 
   const createChat = async (
     customerId: string,
@@ -212,41 +358,46 @@ export const useChat = (userId: string): UseChatReturn => {
         socketRef.current.emit('join_chat', { chatId: newChat.id });
       }
       setError(null);
+      setReadForbiddenReason(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to create chat');
+      if (!setReadForbiddenFromError(err, 'Required permission: chat.read')) {
+        setError(err instanceof Error ? err.message : 'Failed to create chat');
+      }
     } finally {
       setLoading(false);
     }
   };
 
-  const selectChat = useCallback(async (chatId: string) => {
-    try {
-      setLoading(true);
-      const chat = await ChatService.getChat(chatId);
+  const selectChat = useCallback(
+    async (chatId: string) => {
+      try {
+        setLoading(true);
+        const chat = await ChatService.getChat(chatId);
 
-      // First, load messages from REST API before joining the chat room
-      // This prevents messages from being added twice when we join
-      const chatMessages = await ChatService.getMessages(chatId);
-      setCurrentChat(chat);
-      setMessages(chatMessages);
+        const chatMessages = await ChatService.getMessages(chatId);
+        setCurrentChat(chat);
+        setMessages(chatMessages);
 
-      // Now join the chat room to listen for NEW messages only
-      // The REST API already provided us with historical messages
-      if (socketRef.current) {
-        socketRef.current.emit('join_chat', { chatId });
+        if (socketRef.current) {
+          socketRef.current.emit('join_chat', { chatId });
+        }
+
+        clearUnreadForChat(chatId);
+        await ChatService.markMessagesAsRead(chatId);
+
+        setReadForbiddenReason(null);
+        setError(null);
+      } catch (err) {
+        if (!setReadForbiddenFromError(err, 'Required permission: chat.read')) {
+          setError(err instanceof Error ? err.message : 'Failed to load chat');
+        }
+      } finally {
+        setLoading(false);
       }
+    },
+    [clearUnreadForChat, setReadForbiddenFromError]
+  );
 
-      // Mark messages as read
-      await ChatService.markMessagesAsRead(chatId);
-      setError(null);
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to load chat');
-    } finally {
-      setLoading(false);
-    }
-  }, []);
-
-  // Load chats on mount
   useEffect(() => {
     if (!userId) {
       return;
@@ -255,35 +406,36 @@ export const useChat = (userId: string): UseChatReturn => {
     const loadChats = async () => {
       try {
         setLoading(true);
-        const data = await ChatService.getChatsByStaff();
-        setChats(data);
-        // Auto-select the first chat
+        const data = await refreshChatsInternal();
         if (data.length > 0) {
           await selectChat(data[0].id);
         }
         setError(null);
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load chats');
+        if (!setReadForbiddenFromError(err, 'Required permission: chat.read')) {
+          setError(err instanceof Error ? err.message : 'Failed to load chats');
+        }
       } finally {
         setLoading(false);
       }
     };
 
-    loadChats();
-  }, [userId, selectChat]);
+    void loadChats();
+  }, [refreshChatsInternal, selectChat, setReadForbiddenFromError, userId]);
 
   const sendMessage = async (content: string) => {
-    if (!currentChat) return;
+    if (!currentChat) {
+      return;
+    }
 
     try {
-      // Send via REST API - the backend will emit Socket.IO event to all clients
       const sentMessage = await ChatService.sendMessage(
         currentChat.id,
         content
       );
+      setReplyForbiddenReason(null);
       setIsTyping(false);
 
-      // Fallback in case socket event is delayed or dropped.
       setMessages((prev) => {
         const messageExists = prev.some((msg) => msg.id === sentMessage.id);
         if (messageExists) {
@@ -292,18 +444,27 @@ export const useChat = (userId: string): UseChatReturn => {
         return [...prev, sentMessage];
       });
       updateChatsWithMessage(sentMessage);
+      setError(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to send message');
+      if (!setReplyForbiddenFromError(err, 'Required permission: chat.reply')) {
+        setError(err instanceof Error ? err.message : 'Failed to send message');
+      }
     }
   };
 
   const markAsRead = async () => {
-    if (!currentChat || !socketRef.current) return;
+    if (!currentChat) {
+      return;
+    }
 
     try {
-      socketRef.current.emit('mark_as_read', { chatId: currentChat.id });
+      await ChatService.markMessagesAsRead(currentChat.id);
+      clearUnreadForChat(currentChat.id);
+      setReadForbiddenReason(null);
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to mark as read');
+      if (!setReadForbiddenFromError(err, 'Required permission: chat.read')) {
+        setError(err instanceof Error ? err.message : 'Failed to mark as read');
+      }
     }
   };
 
@@ -339,11 +500,17 @@ export const useChat = (userId: string): UseChatReturn => {
     messages,
     loading,
     error,
+    reconnectStatus,
+    canRead: !readForbiddenReason,
+    canReply: !replyForbiddenReason,
+    replyForbiddenReason: readForbiddenReason ?? replyForbiddenReason,
     isTyping,
     otherUserTyping,
     createChat,
     selectChat,
     sendMessage,
+    refreshChats,
+    retryCurrentThread,
     markAsRead,
     archiveChat,
     deleteChat,
