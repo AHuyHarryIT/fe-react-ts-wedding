@@ -220,6 +220,9 @@ export function BookingFormModal({
   const [assignedStaffRows, setAssignedStaffRows] = useState<
     StaffAssignmentRow[]
   >([]);
+  const [includeInactiveCatalog, setIncludeInactiveCatalog] = useState(false);
+
+  const includeInactiveSelection = isEditMode && includeInactiveCatalog;
 
   const customerOptions = useGenericSelect<CustomerExtra>({
     entity: 'customers',
@@ -227,10 +230,16 @@ export function BookingFormModal({
 
   const serviceOptions = useGenericSelect<ServiceExtra>({
     entity: 'services',
+    extraParams: includeInactiveSelection
+      ? { includeInactive: true }
+      : undefined,
   });
 
   const packageOptions = useGenericSelect<PackageExtra>({
     entity: 'packages',
+    extraParams: includeInactiveSelection
+      ? { includeInactive: true }
+      : undefined,
   });
   const staffOptions = useGenericSelect<User>({
     entity: 'users',
@@ -262,7 +271,12 @@ export function BookingFormModal({
   useEffect(() => {
     if (!open) {
       setAssignedStaffRows([]);
+      setIncludeInactiveCatalog(false);
       return;
+    }
+
+    if (!isEditMode) {
+      setIncludeInactiveCatalog(false);
     }
 
     setAssignedStaffRows((prevRows) => {
@@ -486,6 +500,21 @@ export function BookingFormModal({
             }}
           />
         </Form.Item>
+
+        {isEditMode && (
+          <Form.Item
+            label="Legacy correction"
+            style={{ marginBottom: 12 }}
+            extra="Enable this only when you need to re-link deactivated services or packages for historical booking corrections."
+          >
+            <Switch
+              checked={includeInactiveCatalog}
+              onChange={setIncludeInactiveCatalog}
+              checkedChildren="Include inactive"
+              unCheckedChildren="Active only"
+            />
+          </Form.Item>
+        )}
 
         <Form.Item
           label="Select Packages (optional)"

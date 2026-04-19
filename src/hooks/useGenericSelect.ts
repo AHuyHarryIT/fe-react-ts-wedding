@@ -16,8 +16,23 @@ export function useGenericSelect<TExtra = unknown>({
 }: UseGenericSelectParams) {
   const [search, setSearch] = useState('');
 
+  const normalizedExtraParams = useMemo(() => {
+    if (!extraParams) {
+      return undefined;
+    }
+
+    return Object.entries(extraParams).reduce<
+      Record<string, string | number | boolean>
+    >((acc, [key, value]) => {
+      if (value !== undefined) {
+        acc[key] = value;
+      }
+      return acc;
+    }, {});
+  }, [extraParams]);
+
   const query = useInfiniteQuery<PaginatedResponse<TExtra>>({
-    queryKey: ['selection', entity, search, extraParams],
+    queryKey: ['selection', entity, search, normalizedExtraParams],
     initialPageParam: 1,
     queryFn: async ({ pageParam }) => {
       const data = await selectionApi.getAll<TExtra>({
@@ -25,7 +40,7 @@ export function useGenericSelect<TExtra = unknown>({
         search,
         page: pageParam,
         limit,
-        ...extraParams,
+        ...normalizedExtraParams,
       });
       return data;
     },
@@ -45,7 +60,7 @@ export function useGenericSelect<TExtra = unknown>({
     onSearch: (value: string) => setSearch(value),
     loadMore: () => {
       if (query.hasNextPage && !query.isFetchingNextPage) {
-        query.fetchNextPage();
+        void query.fetchNextPage();
       }
     },
     refetch: query.refetch,

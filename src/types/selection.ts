@@ -4,4 +4,5 @@ export interface SelectionParams {
   page?: number | unknown;
   limit?: number;
   bookingId?: string;
+  includeInactive?: boolean;
 }
