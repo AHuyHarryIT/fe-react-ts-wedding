@@ -21,7 +21,7 @@ interface ServiceTableProps {
     deleteReason: string | null;
   };
   onEdit: (service: Service) => void;
-  onDelete: (id: string) => void;
+  onDeactivate: (id: string) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
 }
@@ -34,7 +34,7 @@ export function ServiceTable({
   total,
   actionState,
   onEdit,
-  onDelete,
+  onDeactivate,
   onPageChange,
   onPageSizeChange,
 }: ServiceTableProps) {
@@ -130,9 +130,10 @@ export function ServiceTable({
             disabled={!actionState.canDelete}
             tooltip={actionState.deleteReason ?? undefined}
             title={actionState.deleteReason ?? undefined}
-            popconfirmTitle="Delete Service"
-            popconfirmDescription="Are you sure you want to delete this service?"
-            onClick={() => onDelete(record.id)}
+            label="Deactivate"
+            popconfirmTitle="Deactivate Service"
+            popconfirmDescription="Deactivate this service? It will be hidden from new sales but kept for historical records."
+            onClick={() => onDeactivate(record.id)}
           />
         </Space>
       ),

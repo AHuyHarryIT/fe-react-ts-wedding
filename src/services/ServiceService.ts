@@ -127,7 +127,8 @@ export const serviceApi = {
       const formData = new FormData();
       if (data.name) formData.append('name', data.name);
       if (data.description) formData.append('description', data.description);
-      if (data.price !== undefined) formData.append('price', String(data.price));
+      if (data.price !== undefined)
+        formData.append('price', String(data.price));
       if (data.isActive !== undefined)
         formData.append('isActive', String(data.isActive));
       if (data.isLocation !== undefined)
@@ -153,7 +154,17 @@ export const serviceApi = {
       return response.data;
     }, 'Missing permission: services:update'),
 
-  // Delete a service
+  // Deactivate a service
+  deactivate: async (id: string): Promise<StandardResponse<Service>> =>
+    withForbiddenContext(async () => {
+      const response = await api.patch<StandardResponse<Service>>(
+        `/services/${id}/deactivate`,
+        {}
+      );
+      return response.data;
+    }, 'Missing permission: services:update'),
+
+  // Delete a service (soft delete)
   delete: async (id: string): Promise<MessageResponse> =>
     withForbiddenContext(async () => {
       const response = await api.delete<MessageResponse>(`/services/${id}`);

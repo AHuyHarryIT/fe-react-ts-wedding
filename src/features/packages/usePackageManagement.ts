@@ -150,11 +150,11 @@ export function usePackageManagement() {
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => packageApi.delete(id),
+  const deactivateMutation = useMutation({
+    mutationFn: (id: string) => packageApi.deactivate(id),
     onSuccess: () => {
       setActionState((prev) => ({ ...prev, deleteReason: null }));
-      messageApi.success('Package deleted successfully');
+      messageApi.success('Package deactivated successfully');
       void queryClient.invalidateQueries({ queryKey: ['packages'] });
     },
     onError: (error: unknown) => {
@@ -164,7 +164,7 @@ export function usePackageManagement() {
 
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message || 'Failed to delete package';
+          ?.data?.message || 'Failed to deactivate package';
       messageApi.error(errorMessage);
     },
   });
@@ -190,13 +190,13 @@ export function usePackageManagement() {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDeactivate = (id: string) => {
     if (!packageActionState.canDelete) {
       messageApi.warning(actionState.deleteReason || 'Action is not allowed');
       return;
     }
 
-    deleteMutation.mutate(id);
+    deactivateMutation.mutate(id);
   };
 
   const handleOpenEdit = (pkg: Package) => {
@@ -255,7 +255,7 @@ export function usePackageManagement() {
     setPageSize,
     handleCreate,
     handleEdit,
-    handleDelete,
+    handleDeactivate,
     handleOpenEdit,
     handleCloseCreateModal,
     handleCloseEditModal,

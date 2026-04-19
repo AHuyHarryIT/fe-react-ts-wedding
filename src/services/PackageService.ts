@@ -95,7 +95,8 @@ export const packageApi = {
       const formData = new FormData();
       formData.append('name', data.name);
       if (data.description) formData.append('description', data.description);
-      if (data.price !== undefined) formData.append('price', String(data.price));
+      if (data.price !== undefined)
+        formData.append('price', String(data.price));
       if (data.isActive !== undefined)
         formData.append('isActive', String(data.isActive));
       if (data.serviceIds && data.serviceIds.length > 0) {
@@ -131,7 +132,8 @@ export const packageApi = {
       const formData = new FormData();
       if (data.name) formData.append('name', data.name);
       if (data.description) formData.append('description', data.description);
-      if (data.price !== undefined) formData.append('price', String(data.price));
+      if (data.price !== undefined)
+        formData.append('price', String(data.price));
       if (data.isActive !== undefined)
         formData.append('isActive', String(data.isActive));
       if (data.serviceIds && data.serviceIds.length > 0) {
@@ -157,6 +159,16 @@ export const packageApi = {
             'Content-Type': 'multipart/form-data',
           },
         }
+      );
+      return response.data;
+    }, 'Missing permission: packages:update'),
+
+  // Deactivate a package
+  deactivate: async (id: string): Promise<StandardResponse<Package>> =>
+    withForbiddenContext(async () => {
+      const response = await api.patch<StandardResponse<Package>>(
+        `/packages/${id}/deactivate`,
+        {}
       );
       return response.data;
     }, 'Missing permission: packages:update'),

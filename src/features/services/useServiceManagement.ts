@@ -159,13 +159,13 @@ export function useServiceManagement() {
     },
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => serviceApi.delete(id),
+  const deactivateMutation = useMutation({
+    mutationFn: (id: string) => serviceApi.deactivate(id),
     onSuccess: () => {
       setActionState((prev) => ({ ...prev, deleteReason: null }));
       notificationApi.success({
         message: 'Success',
-        description: 'Service deleted successfully',
+        description: 'Service deactivated successfully',
       });
       void queryClient.invalidateQueries({ queryKey: ['services'] });
     },
@@ -176,7 +176,7 @@ export function useServiceManagement() {
 
       const errorMessage =
         (error as { response?: { data?: { message?: string } } })?.response
-          ?.data?.message || 'Failed to delete service';
+          ?.data?.message || 'Failed to deactivate service';
       notificationApi.error({
         message: 'Error',
         description: errorMessage,
@@ -209,7 +209,7 @@ export function useServiceManagement() {
     }
   };
 
-  const handleDelete = (id: string) => {
+  const handleDeactivate = (id: string) => {
     if (!serviceActionState.canDelete) {
       notificationApi.warning({
         message: serviceActionState.deleteReason ?? 'Action is not allowed',
@@ -217,7 +217,7 @@ export function useServiceManagement() {
       return;
     }
 
-    deleteMutation.mutate(id);
+    deactivateMutation.mutate(id);
   };
 
   const handleOpenEdit = (service: Service) => {
@@ -277,7 +277,7 @@ export function useServiceManagement() {
     setPageSize,
     handleCreate,
     handleEdit,
-    handleDelete,
+    handleDeactivate,
     handleOpenEdit,
     handleCloseCreateModal,
     handleCloseEditModal,

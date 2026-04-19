@@ -23,7 +23,7 @@ interface PackageTableProps {
   };
   onView: (pkg: Package) => void;
   onEdit: (pkg: Package) => void;
-  onDelete: (id: string) => void;
+  onDeactivate: (id: string) => void;
   onPageChange: (page: number) => void;
   onPageSizeChange: (size: number) => void;
 }
@@ -36,7 +36,7 @@ export function PackageTable({
   actionState,
   onView,
   onEdit,
-  onDelete,
+  onDeactivate,
   onPageChange,
   onPageSizeChange,
 }: PackageTableProps) {
@@ -116,9 +116,10 @@ export function PackageTable({
             disabled={!actionState.canDelete}
             tooltip={actionState.deleteReason ?? undefined}
             title={actionState.deleteReason ?? undefined}
-            popconfirmTitle="Delete Package"
-            popconfirmDescription="Are you sure you want to delete this package?"
-            onClick={() => onDelete(record.id)}
+            label="Deactivate"
+            popconfirmTitle="Deactivate Package"
+            popconfirmDescription="Deactivate this package? It will be hidden from new sales but kept for historical records."
+            onClick={() => onDeactivate(record.id)}
           />
         </Space>
       ),

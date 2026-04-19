@@ -38,7 +38,7 @@ export function PackagesManagement() {
     setPageSize,
     handleCreate,
     handleEdit,
-    handleDelete,
+    handleDeactivate,
     handleOpenEdit,
     handleCloseCreateModal,
     handleCloseEditModal,
@@ -84,7 +84,7 @@ export function PackagesManagement() {
             setCurrentPage(1);
           }}
           placeholder="Search packages..."
-          helperText="Open package details, adjust pricing, and keep bundled offers easy to scan."
+          helperText="Open package details, create and update bundles, manage service mappings, and deactivate offers as needed."
         />
       }
       table={
@@ -102,7 +102,7 @@ export function PackagesManagement() {
           }}
           onView={handleViewPackage}
           onEdit={handleOpenEdit}
-          onDelete={handleDelete}
+          onDeactivate={handleDeactivate}
           onPageChange={setCurrentPage}
           onPageSizeChange={setPageSize}
         />

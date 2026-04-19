@@ -34,7 +34,7 @@ export function ServicesManagement() {
     setPageSize,
     handleCreate,
     handleEdit,
-    handleDelete,
+    handleDeactivate,
     handleOpenEdit,
     handleCloseCreateModal,
     handleCloseEditModal,
@@ -82,7 +82,7 @@ export function ServicesManagement() {
               setCurrentPage(1);
             }}
             placeholder="Search services..."
-            helperText="Refine the service list quickly, then edit or retire offerings without leaving the table."
+            helperText="Refine the service list quickly, then create, edit, or deactivate offerings without leaving the table."
           />
         }
         table={
@@ -99,7 +99,7 @@ export function ServicesManagement() {
               deleteReason: serviceActionState.deleteReason,
             }}
             onEdit={handleOpenEdit}
-            onDelete={handleDelete}
+            onDeactivate={handleDeactivate}
             onPageChange={setCurrentPage}
             onPageSizeChange={setPageSize}
           />
