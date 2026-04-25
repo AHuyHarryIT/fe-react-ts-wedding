@@ -222,7 +222,7 @@ export function useUserManagement() {
         email: values.email?.trim() ? values.email.trim() : undefined,
         jobIds: values.jobIds?.length ? values.jobIds : undefined,
         jobId: values.jobId ?? values.jobIds?.[0] ?? undefined,
-        roleIds: values.roleIds ?? [],
+        roleIds: values.roleIds?.length ? values.roleIds : undefined,
       });
     },
     [
@@ -249,7 +249,7 @@ export function useUserManagement() {
           email: values.email?.trim() ? values.email.trim() : undefined,
           jobIds: values.jobIds?.length ? values.jobIds : undefined,
           jobId: values.jobId ?? values.jobIds?.[0] ?? undefined,
-          roleIds: values.roleIds ?? [],
+          roleIds: values.roleIds?.length ? values.roleIds : undefined,
         },
       });
     },

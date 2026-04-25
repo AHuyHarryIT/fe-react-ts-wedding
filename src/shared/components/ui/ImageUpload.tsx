@@ -60,21 +60,46 @@ export function ImageUpload<T extends object>({
       reader.onerror = (error) => reject(error);
     });
 
-  const getImageValidationError = (file?: File) => {
-    if (!file) {
+  const resolveFile = (file?: unknown): File | null => {
+    if (file instanceof File) {
+      return file;
+    }
+
+    if (
+      file &&
+      typeof file === 'object' &&
+      'originFileObj' in file &&
+      file.originFileObj instanceof File
+    ) {
+      return file.originFileObj;
+    }
+
+    return null;
+  };
+
+  const getImageValidationError = (file?: unknown) => {
+    const resolvedFile = resolveFile(file);
+    if (!resolvedFile) {
       return null;
     }
 
-    const fileName = file.name.toLowerCase();
+    const fileName =
+      typeof resolvedFile.name === 'string'
+        ? resolvedFile.name.toLowerCase()
+        : '';
+    const fileType =
+      typeof resolvedFile.type === 'string'
+        ? resolvedFile.type.toLowerCase()
+        : '';
     const hasValidType =
-      ALLOWED_IMAGE_TYPES.has(file.type) ||
+      ALLOWED_IMAGE_TYPES.has(fileType) ||
       ALLOWED_IMAGE_EXTENSIONS.some((ext) => fileName.endsWith(ext));
 
     if (!hasValidType) {
       return 'Only JPG, JPEG, PNG, GIF, and WEBP files are allowed.';
     }
 
-    if (file.size > maxImageSizeBytes) {
+    if (resolvedFile.size > maxImageSizeBytes) {
       return `Image size must be ${maxSizeMB}MB or smaller.`;
     }
 
@@ -155,6 +180,7 @@ export function ImageUpload<T extends object>({
         name={fieldName as never}
         label={label}
         rules={[{ validator: validateImage }]}
+        getValueProps={() => ({})}
       >
         <Upload
           listType="picture-card"

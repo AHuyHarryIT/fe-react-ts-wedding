@@ -265,7 +265,18 @@ export function UserFormModal({
             </Flex>
             <Row gutter={[16, 0]}>
               <Col xs={24}>
-                <Form.Item label="Roles" name="roleIds">
+                <Form.Item
+                  label="Roles"
+                  name="roleIds"
+                  rules={[
+                    {
+                      required: true,
+                      type: 'array',
+                      min: 1,
+                      message: 'Please select at least one role!',
+                    },
+                  ]}
+                >
                   <Select
                     mode="multiple"
                     placeholder="Select roles"
