@@ -17,7 +17,7 @@ interface LazyImageProps {
   style?: React.CSSProperties;
   /** false to disable preview, or a string URL for the original image to show on click */
   preview?: boolean | { src: string };
-  /** Cache key to avoid re-fetching the same image */
+  /** Cache key to are-fetching the same image */
   cacheKey?: string;
 }
 

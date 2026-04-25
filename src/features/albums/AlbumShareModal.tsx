@@ -21,7 +21,7 @@ export function AlbumShareModal({
   const { message } = App.useApp();
 
   const handleCopyLink = () => {
-    void navigator.clipboard.writeText(shareLink);
+    navigator.clipboard.writeText(shareLink);
     message.success('Share link copied to clipboard');
   };
 

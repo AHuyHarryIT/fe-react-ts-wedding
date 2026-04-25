@@ -83,7 +83,9 @@ export function RemindersManagement() {
           setCreateModalOpen(false);
           form.resetFields();
         },
-        onError: () => message.error('Failed to create reminder'),
+        onError: () => {
+          message.error('Failed to create reminder');
+        },
       }
     );
   };
@@ -94,8 +96,12 @@ export function RemindersManagement() {
       content: 'Are you sure you want to delete this reminder?',
       onOk: () => {
         deleteMutation.mutate(id, {
-          onSuccess: () => message.success('Reminder deleted'),
-          onError: () => message.error('Failed to delete reminder'),
+          onSuccess: () => {
+            message.success('Reminder deleted');
+          },
+          onError: () => {
+            message.error('Failed to delete reminder');
+          },
         });
       },
     });

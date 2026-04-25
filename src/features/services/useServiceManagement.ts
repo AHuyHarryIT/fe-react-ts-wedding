@@ -113,7 +113,7 @@ export function useServiceManagement() {
       });
       setIsCreateModalOpen(false);
       createForm.resetFields();
-      void queryClient.invalidateQueries({ queryKey: ['services'] });
+      queryClient.invalidateQueries({ queryKey: ['services'] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'createReason')) {
@@ -142,7 +142,7 @@ export function useServiceManagement() {
       setIsEditModalOpen(false);
       setSelectedService(null);
       editForm.resetFields();
-      void queryClient.invalidateQueries({ queryKey: ['services'] });
+      queryClient.invalidateQueries({ queryKey: ['services'] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'updateReason')) {
@@ -167,7 +167,7 @@ export function useServiceManagement() {
         message: 'Success',
         description: 'Service deactivated successfully',
       });
-      void queryClient.invalidateQueries({ queryKey: ['services'] });
+      queryClient.invalidateQueries({ queryKey: ['services'] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'deleteReason')) {

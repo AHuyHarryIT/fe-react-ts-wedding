@@ -218,7 +218,7 @@ export const useChat = (userId: string): UseChatReturn => {
       }
 
       if (hasConnectedOnceRef.current) {
-        void healAfterReconnect();
+        healAfterReconnect();
       } else {
         hasConnectedOnceRef.current = true;
         setReconnectStatus('live');
@@ -420,7 +420,7 @@ export const useChat = (userId: string): UseChatReturn => {
       }
     };
 
-    void loadChats();
+    loadChats();
   }, [refreshChatsInternal, selectChat, setReadForbiddenFromError, userId]);
 
   const sendMessage = async (content: string) => {

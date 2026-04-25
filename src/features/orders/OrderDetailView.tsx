@@ -73,8 +73,8 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
       bookingApi.update(id, { status: 'COMPLETED' as const }),
     onSuccess: (_data) => {
       message.success('Booking marked as completed');
-      void queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
-      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: () => {
       message.error('Failed to mark booking as completed');
@@ -85,8 +85,8 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
     mutationFn: (id: string) => bookingApi.cancel(id),
     onSuccess: () => {
       message.success('Booking cancelled');
-      void queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
-      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['booking', bookingId] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: () => {
       message.error('Failed to cancel booking');
@@ -120,7 +120,7 @@ export const OrderDetailView: React.FC<OrderDetailViewProps> = ({
   };
 
   const handleBack = () => {
-    void navigate({ to: '/orders' });
+    navigate({ to: '/orders' });
   };
 
   if (isOrderError) {

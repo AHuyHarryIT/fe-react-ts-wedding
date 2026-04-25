@@ -410,8 +410,8 @@ export const OrdersPage: React.FC = () => {
         onClose={() => {
           setBookingModalVisible(false);
           setSelectedBooking(null);
-          void queryClient.invalidateQueries({ queryKey: ['orders-list'] });
-          void queryClient.invalidateQueries({ queryKey: ['orders-bookings'] });
+          queryClient.invalidateQueries({ queryKey: ['orders-list'] });
+          queryClient.invalidateQueries({ queryKey: ['orders-bookings'] });
         }}
       />
     </div>

@@ -4,14 +4,17 @@ import type { Service } from './service';
 import type { InventoryItem } from './inventory';
 import type { Customer } from './customer';
 
-export enum QuotationStatus {
-  Draft = 'DRAFT',
-  Sent = 'SENT',
-  Accepted = 'ACCEPTED',
-  Rejected = 'REJECTED',
-  Expired = 'EXPIRED',
-  Converted = 'CONVERTED',
-}
+export const QuotationStatus = {
+  Draft: 'DRAFT',
+  Sent: 'SENT',
+  Accepted: 'ACCEPTED',
+  Rejected: 'REJECTED',
+  Expired: 'EXPIRED',
+  Converted: 'CONVERTED',
+} as const;
+
+export type QuotationStatus =
+  (typeof QuotationStatus)[keyof typeof QuotationStatus];
 
 export type QuotationItemType = 'service' | 'inventory' | 'package';
 

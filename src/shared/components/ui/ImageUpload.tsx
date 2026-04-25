@@ -116,7 +116,7 @@ export function ImageUpload<T extends object>({
         .map((item) => item.originFileObj)
         .filter((file) => file instanceof File) as File[];
       form.setFieldValue(fieldPath, files);
-      void form.validateFields(validationPaths);
+      form.validateFields(validationPaths);
       return;
     }
 
@@ -129,12 +129,12 @@ export function ImageUpload<T extends object>({
         };
         reader.readAsDataURL(file);
         form.setFieldValue(fieldPath, file);
-        void form.validateFields(validationPaths);
+        form.validateFields(validationPaths);
       }
     } else {
       setPreviewImage(undefined);
       form.setFieldValue(fieldPath, undefined);
-      void form.validateFields(validationPaths);
+      form.validateFields(validationPaths);
     }
   };
 

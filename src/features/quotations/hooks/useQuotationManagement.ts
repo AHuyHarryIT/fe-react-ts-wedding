@@ -9,6 +9,7 @@ import type {
   UpdateQuotationRequest,
   QuotationStatus,
 } from '@/types/quotation';
+import type { Service } from '@/types/service';
 import { getErrorMessage } from '@utils/error';
 import { Form, message } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
@@ -52,37 +53,33 @@ export function useQuotationManagement() {
 
   const { data: servicesData } = useQuery({
     queryKey: ['services', 'all'],
-    queryFn: () => serviceApi.getAll({ limit: 500 }),
+    queryFn: async () => await serviceApi.getAll({ limit: 500 }),
   });
 
   const { data: packagesData } = useQuery({
     queryKey: ['packages', 'all'],
-    queryFn: () => packageApi.getAll({ limit: 500 }),
+    queryFn: async () => await packageApi.getAll({ limit: 500 }),
   });
 
   const serviceList = useMemo(
     () =>
-      (servicesData?.data ?? [])?.map(
-        (s: { id: string; name: string; price: number }) => ({
-          id: s.id,
-          type: 'service' as const,
-          name: s.name,
-          unitPrice: s.price,
-        })
-      ) ?? [],
+      (servicesData?.data ?? [])?.map((s: Service) => ({
+        id: s.id,
+        type: 'service' as const,
+        name: s.name,
+        unitPrice: s.price ?? 0,
+      })) ?? [],
     [servicesData]
   );
 
   const packageList = useMemo(
     () =>
-      (packagesData?.data ?? [])?.map(
-        (p: { id: string; name: string; price: number }) => ({
-          id: p.id,
-          type: 'package' as const,
-          name: p.name,
-          unitPrice: p.price,
-        })
-      ) ?? [],
+      (packagesData?.data ?? [])?.map((p) => ({
+        id: p.id,
+        type: 'package' as const,
+        name: p.name,
+        unitPrice: p.price ?? 0,
+      })) ?? [],
     [packagesData]
   );
 
@@ -254,16 +251,45 @@ export function useQuotationManagement() {
     (quotation: Quotation) => {
       setSelectedQuotation(quotation);
       setEditSelectedItems(
-        (quotation.items ?? []).map(
-          (item: QuotationItem & { name: string }) => ({
-            id: item.id,
-            type: 'service' as const,
-            name: item.name ?? '',
+        (quotation.items ?? []).map((item) => {
+          // Handle service items
+          if (item.itemType === 'service' && item.service) {
+            return {
+              id: item.service.id,
+              type: 'service' as const,
+              name: item.service.name,
+              unitPrice: item.unitPrice,
+              quantity: item.quantity,
+              discountPercent: item.discountPercent,
+              description: item.notes ?? '',
+            };
+          }
+          // Handle package items
+          if (item.itemType === 'package' && item.package) {
+            return {
+              id: item.package.id,
+              type: 'package' as const,
+              name: item.package.name,
+              unitPrice: item.unitPrice,
+              quantity: item.quantity,
+              discountPercent: item.discountPercent,
+              description: item.notes ?? '',
+            };
+          }
+          // Fallback for inventory or missing relations
+          return {
+            id: item.itemId,
+            type:
+              item.itemType === 'inventory'
+                ? 'service'
+                : (item.itemType as 'service' | 'package'),
+            name: item.itemName,
             unitPrice: item.unitPrice,
             quantity: item.quantity,
             discountPercent: item.discountPercent,
-          })
-        )
+            description: item.notes ?? '',
+          };
+        })
       );
       editForm.setFieldsValue({
         title: quotation.title,
@@ -368,32 +394,33 @@ export function useQuotationManagement() {
     []
   );
 
-  const calculateSubtotal = useCallback(
-    (items: CreateQuotationItem[]) =>
-      items.reduce(
+  const calculateCreateSubtotal = useCallback(
+    () =>
+      createSelectedItems.reduce(
         (sum, i) =>
           sum + i.unitPrice * i.quantity * (1 - i.discountPercent / 100),
         0
       ),
-    []
+    [createSelectedItems]
   );
 
-  const calculateCreateSubtotal = useMemo(
-    () => calculateSubtotal(createSelectedItems),
-    [calculateSubtotal, createSelectedItems]
-  );
-
-  const calculateEditSubtotal = useMemo(
-    () => calculateSubtotal(editSelectedItems),
-    [calculateSubtotal, editSelectedItems]
-  );
-
-  const calculateCreateTotal = useMemo(
-    () => calculateCreateSubtotal,
+  const calculateCreateTotal = useCallback(
+    () => calculateCreateSubtotal(),
     [calculateCreateSubtotal]
   );
-  const calculateEditTotal = useMemo(
-    () => calculateEditSubtotal,
+
+  const calculateEditSubtotal = useCallback(
+    () =>
+      editSelectedItems.reduce(
+        (sum, i) =>
+          sum + i.unitPrice * i.quantity * (1 - i.discountPercent / 100),
+        0
+      ),
+    [editSelectedItems]
+  );
+
+  const calculateEditTotal = useCallback(
+    () => calculateEditSubtotal(),
     [calculateEditSubtotal]
   );
 

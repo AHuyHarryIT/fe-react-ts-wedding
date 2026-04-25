@@ -179,8 +179,8 @@ export const BookingDetailWithOrders: React.FC<
       setActionReasonState((prev) => ({ ...prev, deleteReason: null }));
       message.success('Booking deleted successfully');
       onClose();
-      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      void queryClient.invalidateQueries({ queryKey: ['booking-detail', id] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['booking-detail', id] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'deleteReason')) {
@@ -197,8 +197,8 @@ export const BookingDetailWithOrders: React.FC<
       setActionReasonState((prev) => ({ ...prev, cancelReason: null }));
       message.success('Booking cancelled successfully');
       onBookingUpdated?.(data.data);
-      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      void queryClient.invalidateQueries({
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({
         queryKey: ['booking-detail', data.data.id],
       });
     },
@@ -217,8 +217,8 @@ export const BookingDetailWithOrders: React.FC<
       setActionReasonState((prev) => ({ ...prev, confirmReason: null }));
       message.success('Booking confirmed successfully');
       onBookingUpdated?.(data.data);
-      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      void queryClient.invalidateQueries({
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({
         queryKey: ['booking-detail', data.data.id],
       });
     },
@@ -237,8 +237,8 @@ export const BookingDetailWithOrders: React.FC<
       setActionReasonState((prev) => ({ ...prev, completeReason: null }));
       message.success('Booking marked as completed');
       onBookingUpdated?.(data.data);
-      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
-      void queryClient.invalidateQueries({
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({
         queryKey: ['booking-detail', data.data.id],
       });
     },

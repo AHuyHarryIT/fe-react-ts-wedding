@@ -202,7 +202,7 @@ export const albumApi = {
     onProgress?: (progress: UploadProgress[]) => void,
     signal?: AbortSignal
   ): Promise<StandardResponse<AlbumWithFiles>> => {
-    const MAX_CONCURRENT = 10; // Limit concurrent uploads to avoid overwhelming browser/server
+    const MAX_CONCURRENT = 10; // Limit concurrent uploads to aoverwhelming browser/server
 
     // Track progress for each file independently
     const fileProgress: UploadProgress[] = files.map((file) => ({

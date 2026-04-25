@@ -48,7 +48,7 @@ export const useCheckout = (bookingId: string): UseCheckoutReturn => {
   });
 
   const loadOrder = () => {
-    void refetchOrder();
+    refetchOrder();
   };
 
   const checkout = (data: CheckoutRequest) => {
@@ -57,7 +57,7 @@ export const useCheckout = (bookingId: string): UseCheckoutReturn => {
         queryClient.invalidateQueries({
           queryKey: ['checkout-order', bookingId],
         });
-        void refetchOrder();
+        refetchOrder();
       },
     });
   };
@@ -68,13 +68,13 @@ export const useCheckout = (bookingId: string): UseCheckoutReturn => {
         queryClient.invalidateQueries({
           queryKey: ['checkout-order', bookingId],
         });
-        void refetchOrder();
+        refetchOrder();
       },
     });
   };
 
   const getStatus = () => {
-    void refetchOrder();
+    refetchOrder();
   };
 
   const reset = () => {

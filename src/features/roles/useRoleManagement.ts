@@ -158,7 +158,7 @@ export function useRoleManagement() {
       messageApi.success('Role created successfully');
       setIsCreateModalOpen(false);
       createForm.resetFields();
-      void queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'createReason')) {
@@ -181,7 +181,7 @@ export function useRoleManagement() {
       setIsEditModalOpen(false);
       setSelectedRole(null);
       editForm.resetFields();
-      void queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'updateReason')) {
@@ -200,7 +200,7 @@ export function useRoleManagement() {
     onSuccess: () => {
       setActionState((prev) => ({ ...prev, deleteReason: null }));
       messageApi.success('Role deleted successfully');
-      void queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'deleteReason')) {
@@ -225,8 +225,8 @@ export function useRoleManagement() {
     onSuccess: () => {
       setActionState((prev) => ({ ...prev, managePermissionsReason: null }));
       messageApi.success('Permissions assigned successfully');
-      void queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
-      void queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'managePermissionsReason')) {
@@ -251,8 +251,8 @@ export function useRoleManagement() {
     onSuccess: () => {
       setActionState((prev) => ({ ...prev, managePermissionsReason: null }));
       messageApi.success('Permissions revoked successfully');
-      void queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
-      void queryClient.invalidateQueries({ queryKey: ['roles'] });
+      queryClient.invalidateQueries({ queryKey: ['role-permissions'] });
+      queryClient.invalidateQueries({ queryKey: ['roles'] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'managePermissionsReason')) {

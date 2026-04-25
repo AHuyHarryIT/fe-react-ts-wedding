@@ -155,7 +155,7 @@ export function useUserManagement() {
       messageApi.success('Staff account created successfully');
       createForm.resetFields();
       setIsCreateModalOpen(false);
-      void queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error) => {
       if (applyForbiddenReason(error, 'createReason')) {
@@ -177,7 +177,7 @@ export function useUserManagement() {
       messageApi.success('Staff account updated successfully');
       editForm.resetFields();
       setIsEditModalOpen(false);
-      void queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
       setSelectedUserId(null);
     },
     onError: (error) => {
@@ -197,7 +197,7 @@ export function useUserManagement() {
     onSuccess: () => {
       setActionState((prev) => ({ ...prev, deleteReason: null }));
       messageApi.success('Staff account deleted successfully');
-      void queryClient.invalidateQueries({ queryKey: ['users'] });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
     },
     onError: (error) => {
       if (applyForbiddenReason(error, 'deleteReason')) {
@@ -225,7 +225,12 @@ export function useUserManagement() {
         roleIds: values.roleIds ?? [],
       });
     },
-    [actionState.createReason, createMutation, messageApi, userActionState.canCreate]
+    [
+      actionState.createReason,
+      createMutation,
+      messageApi,
+      userActionState.canCreate,
+    ]
   );
 
   const handleEdit = useCallback(
@@ -298,12 +303,7 @@ export function useUserManagement() {
       });
       setIsEditModalOpen(true);
     },
-    [
-      actionState.updateReason,
-      editForm,
-      messageApi,
-      userActionState.canUpdate,
-    ]
+    [actionState.updateReason, editForm, messageApi, userActionState.canUpdate]
   );
 
   const handleCloseCreateModal = useCallback(() => {

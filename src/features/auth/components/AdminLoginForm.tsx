@@ -18,6 +18,7 @@ import {
   type AuthFeedbackReason,
 } from '@/auth/sessionPolicy';
 import { VIETNAM_PHONE_REGEX } from '@utils/phone';
+import { useNavigate } from '@tanstack/react-router';
 
 const { Title, Text, Paragraph } = Typography;
 

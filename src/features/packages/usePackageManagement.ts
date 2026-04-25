@@ -113,7 +113,7 @@ export function usePackageManagement() {
       messageApi.success('Package created successfully');
       setIsCreateModalOpen(false);
       createForm.resetFields();
-      void queryClient.invalidateQueries({ queryKey: ['packages'] });
+      queryClient.invalidateQueries({ queryKey: ['packages'] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'createReason')) {
@@ -136,7 +136,7 @@ export function usePackageManagement() {
       setIsEditModalOpen(false);
       setSelectedPackage(null);
       editForm.resetFields();
-      void queryClient.invalidateQueries({ queryKey: ['packages'] });
+      queryClient.invalidateQueries({ queryKey: ['packages'] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'updateReason')) {
@@ -155,7 +155,7 @@ export function usePackageManagement() {
     onSuccess: () => {
       setActionState((prev) => ({ ...prev, deleteReason: null }));
       messageApi.success('Package deactivated successfully');
-      void queryClient.invalidateQueries({ queryKey: ['packages'] });
+      queryClient.invalidateQueries({ queryKey: ['packages'] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'deleteReason')) {

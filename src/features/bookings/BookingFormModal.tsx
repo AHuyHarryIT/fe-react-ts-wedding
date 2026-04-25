@@ -968,7 +968,7 @@ export function BookingFormModal({
                       <Button
                         type="primary"
                         onClick={() => {
-                          void assignmentConflictState.onRetryWithOverride();
+                          assignmentConflictState.onRetryWithOverride();
                         }}
                         loading={assignmentConflictState.isRetryPending}
                         disabled={

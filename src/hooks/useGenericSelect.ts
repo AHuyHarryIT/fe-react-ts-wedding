@@ -60,7 +60,7 @@ export function useGenericSelect<TExtra = unknown>({
     onSearch: (value: string) => setSearch(value),
     loadMore: () => {
       if (query.hasNextPage && !query.isFetchingNextPage) {
-        void query.fetchNextPage();
+        query.fetchNextPage();
       }
     },
     refetch: query.refetch,

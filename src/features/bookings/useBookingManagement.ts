@@ -215,7 +215,7 @@ export function useBookingManagement() {
     mutationFn: (id: string) => bookingApi.delete(id),
     onSuccess: () => {
       messageApi.success('Booking deleted successfully');
-      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'deleteReason')) {
@@ -242,7 +242,7 @@ export function useBookingManagement() {
     onSuccess: (_data, ids) => {
       messageApi.success(`Successfully deleted ${ids.length} booking(s)`);
       setSelectedRowKeys([]);
-      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'deleteReason')) {
@@ -259,7 +259,7 @@ export function useBookingManagement() {
   const createMutation = useMutation({
     mutationFn: (data: CreateBookingRequest) => bookingApi.create(data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'createReason')) {
@@ -277,7 +277,7 @@ export function useBookingManagement() {
     mutationFn: ({ id, data }: { id: string; data: UpdateBookingRequest }) =>
       bookingApi.update(id, data),
     onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['bookings'] });
+      queryClient.invalidateQueries({ queryKey: ['bookings'] });
     },
     onError: (error: unknown) => {
       if (applyForbiddenReason(error, 'updateReason')) {

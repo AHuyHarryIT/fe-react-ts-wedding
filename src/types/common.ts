@@ -14,7 +14,7 @@ export interface PaginationInfo {
   limit: number;
   totalPages: number;
   hasNext: boolean;
-  hasPrev: boolean;
+  hasPrevious: boolean;
 }
 
 export interface PaginatedResponse<T> {

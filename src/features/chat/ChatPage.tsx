@@ -95,8 +95,8 @@ export function ChatPage({ customerId }: ChatPageProps) {
       return;
     }
 
-    void refreshChats();
-    void retryCurrentThread();
+    refreshChats();
+    retryCurrentThread();
   }, [reconnectStatus, refreshChats, retryCurrentThread]);
 
   const sortedChats = useMemo(
@@ -252,7 +252,7 @@ export function ChatPage({ customerId }: ChatPageProps) {
               type="error"
               message="We couldn’t load or send messages right now. Retry this action. If the issue continues, refresh the page and try again."
               action={
-                <Button size="small" onClick={() => void refreshChats()}>
+                <Button size="small" onClick={() => refreshChats()}>
                   Retry
                 </Button>
               }
@@ -287,7 +287,7 @@ export function ChatPage({ customerId }: ChatPageProps) {
                   key={chat.id}
                   type="button"
                   aria-label={`Open conversation with ${customerName}`}
-                  onClick={() => void selectChat(chat.id)}
+                  onClick={() => selectChat(chat.id)}
                   className={`w-full text-left px-4 py-3 border-b border-gray-100 transition-colors ${
                     isActive ? 'bg-blue-50' : 'hover:bg-gray-50'
                   }`}
