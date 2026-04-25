@@ -9,6 +9,7 @@ import {
   ManagementLayout,
   SearchBar,
 } from '@shared/components/management';
+import { ActionButton } from '@shared/components/ui';
 import { Tabs, Typography } from 'antd';
 
 const { Text } = Typography;
@@ -46,14 +47,15 @@ export function QuotationManagement() {
     editSelectedItems,
     isDetailDrawerOpen,
     activeStatusFilter,
+    quotationActionState,
     setActiveStatusFilter,
-    setIsCreateModalOpen,
     setSearchText,
     setCurrentPage,
     setPageSize,
     handleCreate,
     handleEdit,
     handleDelete,
+    handleOpenCreateModal,
     handleOpenEdit,
     handleViewQuotation,
     handleCloseCreateModal,
@@ -84,9 +86,18 @@ export function QuotationManagement() {
             kicker="Quotation operations"
             title="Quotations"
             subtitle="Create and manage quotations for wedding services, send them to customers, and track their status until conversion to bookings."
-            createButtonText="New Quotation"
-            icon={<PlusOutlined />}
-            onCreateClick={() => setIsCreateModalOpen(true)}
+            showCreateButton={false}
+            extra={
+              <ActionButton
+                action="create"
+                label="New Quotation"
+                icon={<PlusOutlined />}
+                disabled={!quotationActionState.canCreate}
+                tooltip={quotationActionState.createReason ?? undefined}
+                title={quotationActionState.createReason ?? undefined}
+                onClick={handleOpenCreateModal}
+              />
+            }
             summary={
               <div className="staff-surface rounded-3xl px-4 py-3">
                 <Text className="!text-xs !font-semibold !uppercase !tracking-[0.18em] !text-slate-500 dark:!text-slate-400">
@@ -142,6 +153,18 @@ export function QuotationManagement() {
               currentPage={currentPage}
               pageSize={pageSize}
               total={total}
+              actionState={{
+                canUpdate: quotationActionState.canUpdate,
+                canDelete: quotationActionState.canDelete,
+                canSend: quotationActionState.canSend,
+                canAccept: quotationActionState.canAccept,
+                canReject: quotationActionState.canReject,
+                updateReason: quotationActionState.updateReason,
+                deleteReason: quotationActionState.deleteReason,
+                sendReason: quotationActionState.sendReason,
+                acceptReason: quotationActionState.acceptReason,
+                rejectReason: quotationActionState.rejectReason,
+              }}
               onView={handleViewQuotation}
               onEdit={handleOpenEdit}
               onDelete={handleDelete}
@@ -192,6 +215,16 @@ export function QuotationManagement() {
             key="quotation-detail-drawer"
             open={isDetailDrawerOpen}
             quotation={detailQuotation}
+            actionState={{
+              canSend: quotationActionState.canSend,
+              canAccept: quotationActionState.canAccept,
+              canReject: quotationActionState.canReject,
+              canConvert: quotationActionState.canConvert,
+              sendReason: quotationActionState.sendReason,
+              acceptReason: quotationActionState.acceptReason,
+              rejectReason: quotationActionState.rejectReason,
+              convertReason: quotationActionState.convertReason,
+            }}
             onClose={handleCloseDetailDrawer}
             onSend={handleSend}
             onAccept={handleAccept}

@@ -54,6 +54,16 @@ const STATUS_CONFIG: Record<
 interface QuotationDetailDrawerProps {
   open: boolean;
   quotation: Quotation | null;
+  actionState: {
+    canSend: boolean;
+    canAccept: boolean;
+    canReject: boolean;
+    canConvert: boolean;
+    sendReason: string | null;
+    acceptReason: string | null;
+    rejectReason: string | null;
+    convertReason: string | null;
+  };
   onClose: () => void;
   onSend: (id: string) => void;
   onAccept: (id: string) => void;
@@ -64,6 +74,7 @@ interface QuotationDetailDrawerProps {
 export function QuotationDetailDrawer({
   open,
   quotation,
+  actionState,
   onClose,
   onSend,
   onAccept,
@@ -126,8 +137,14 @@ export function QuotationDetailDrawer({
           onConfirm={() => onSend(quotation.id)}
           okText="Send"
           cancelText="Cancel"
+          disabled={!actionState.canSend}
         >
-          <Button type="primary" icon={<SendOutlined />}>
+          <Button
+            type="primary"
+            icon={<SendOutlined />}
+            disabled={!actionState.canSend}
+            title={actionState.sendReason ?? undefined}
+          >
             Send
           </Button>
         </Popconfirm>
@@ -143,11 +160,14 @@ export function QuotationDetailDrawer({
           onConfirm={() => onAccept(quotation.id)}
           okText="Accept"
           cancelText="Cancel"
+          disabled={!actionState.canAccept}
         >
           <Button
             type="primary"
             icon={<CheckCircleOutlined />}
             style={{ background: '#52c41a', borderColor: '#52c41a' }}
+            disabled={!actionState.canAccept}
+            title={actionState.acceptReason ?? undefined}
           >
             Accept
           </Button>
@@ -162,8 +182,14 @@ export function QuotationDetailDrawer({
           okText="Reject"
           cancelText="Cancel"
           okButtonProps={{ danger: true }}
+          disabled={!actionState.canReject}
         >
-          <Button danger icon={<CloseCircleOutlined />}>
+          <Button
+            danger
+            icon={<CloseCircleOutlined />}
+            disabled={!actionState.canReject}
+            title={actionState.rejectReason ?? undefined}
+          >
             Reject
           </Button>
         </Popconfirm>
@@ -179,6 +205,7 @@ export function QuotationDetailDrawer({
           onConfirm={() => onConvertToBooking(quotation.id)}
           okText="Convert"
           cancelText="Cancel"
+          disabled={!actionState.canConvert}
         >
           <Button
             type="primary"
@@ -188,6 +215,8 @@ export function QuotationDetailDrawer({
                 'linear-gradient(135deg, rgba(236,72,153,0.96), rgba(225,29,72,0.92))',
               borderColor: '#ec4899',
             }}
+            disabled={!actionState.canConvert}
+            title={actionState.convertReason ?? undefined}
           >
             Convert to Booking
           </Button>

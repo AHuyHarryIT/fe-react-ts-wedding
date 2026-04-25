@@ -48,6 +48,18 @@ interface QuotationTableProps {
   currentPage: number;
   pageSize: number;
   total: number;
+  actionState: {
+    canUpdate: boolean;
+    canDelete: boolean;
+    canSend: boolean;
+    canAccept: boolean;
+    canReject: boolean;
+    updateReason: string | null;
+    deleteReason: string | null;
+    sendReason: string | null;
+    acceptReason: string | null;
+    rejectReason: string | null;
+  };
   onView: (quotation: Quotation) => void;
   onEdit: (quotation: Quotation) => void;
   onDelete: (id: string) => void;
@@ -64,6 +76,7 @@ export function QuotationTable({
   currentPage,
   pageSize,
   total,
+  actionState,
   onView,
   onEdit,
   onDelete,
@@ -174,6 +187,8 @@ export function QuotationTable({
                 type="link"
                 size="small"
                 icon={<EditOutlined />}
+                disabled={!actionState.canUpdate}
+                title={actionState.updateReason ?? undefined}
                 onClick={() => onEdit(record)}
               />
               <Popconfirm
@@ -189,6 +204,8 @@ export function QuotationTable({
                   danger
                   size="small"
                   icon={<DeleteOutlined />}
+                  disabled={!actionState.canDelete}
+                  title={actionState.deleteReason ?? undefined}
                 />
               </Popconfirm>
             </>
@@ -199,6 +216,8 @@ export function QuotationTable({
               size="small"
               icon={<SendOutlined />}
               style={{ color: '#1677ff' }}
+              disabled={!actionState.canSend}
+              title={actionState.sendReason ?? undefined}
               onClick={() => onSend(record.id)}
             />
           )}
@@ -209,6 +228,8 @@ export function QuotationTable({
                 size="small"
                 icon={<CheckCircleOutlined />}
                 style={{ color: '#52c41a' }}
+                disabled={!actionState.canAccept}
+                title={actionState.acceptReason ?? undefined}
                 onClick={() => onAccept(record.id)}
               />
               <Button
@@ -216,6 +237,8 @@ export function QuotationTable({
                 size="small"
                 icon={<CloseCircleOutlined />}
                 danger
+                disabled={!actionState.canReject}
+                title={actionState.rejectReason ?? undefined}
                 onClick={() => onReject(record.id)}
               />
             </>

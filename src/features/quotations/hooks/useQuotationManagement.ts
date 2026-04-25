@@ -1,10 +1,15 @@
+import {
+  buildForbiddenReason,
+  isPermissionDeniedError,
+} from '@/auth/permissionPolicy';
 import { quotationApi } from '@services/QuotationService';
 import { serviceApi } from '@services/ServiceService';
 import { packageApi } from '@services/PackageService';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   Quotation,
-  QuotationItem,
+  QuotationSelectedItem,
+  CreateQuotationItemInput,
   CreateQuotationRequest,
   UpdateQuotationRequest,
   QuotationStatus,
@@ -14,14 +19,86 @@ import { getErrorMessage } from '@utils/error';
 import { Form, message } from 'antd';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 
-type CreateQuotationItem = {
-  id: string;
-  type: 'service' | 'package';
-  name: string;
-  unitPrice: number;
-  quantity: number;
-  discountPercent: number;
-  description?: string;
+interface QuotationActionState {
+  createReason: string | null;
+  updateReason: string | null;
+  deleteReason: string | null;
+  sendReason: string | null;
+  acceptReason: string | null;
+  rejectReason: string | null;
+  convertReason: string | null;
+}
+
+interface QuotationActionPermissions {
+  canCreate: boolean;
+  canUpdate: boolean;
+  canDelete: boolean;
+  canSend: boolean;
+  canAccept: boolean;
+  canReject: boolean;
+  canConvert: boolean;
+  createReason: string | null;
+  updateReason: string | null;
+  deleteReason: string | null;
+  sendReason: string | null;
+  acceptReason: string | null;
+  rejectReason: string | null;
+  convertReason: string | null;
+}
+
+const INITIAL_QUOTATION_ACTION_STATE: QuotationActionState = {
+  createReason: null,
+  updateReason: null,
+  deleteReason: null,
+  sendReason: null,
+  acceptReason: null,
+  rejectReason: null,
+  convertReason: null,
+};
+
+const mapSelectedItemToCreateInput = (
+  item: QuotationSelectedItem
+): CreateQuotationItemInput => ({
+  itemType: item.type,
+  itemId: item.id,
+  quantity: item.quantity,
+  unitPrice: item.price,
+  notes: item.notes,
+});
+
+const mapQuotationItemToSelectedItem = (
+  item: NonNullable<Quotation['items']>[number]
+): QuotationSelectedItem => {
+  if (item.itemType === 'service') {
+    return {
+      id: item.service?.id ?? item.itemId,
+      type: 'service',
+      name: item.service?.name ?? item.itemName,
+      price: item.unitPrice,
+      quantity: item.quantity,
+      notes: item.notes,
+    };
+  }
+
+  if (item.itemType === 'package') {
+    return {
+      id: item.package?.id ?? item.itemId,
+      type: 'package',
+      name: item.package?.name ?? item.itemName,
+      price: item.unitPrice,
+      quantity: item.quantity,
+      notes: item.notes,
+    };
+  }
+
+  return {
+    id: item.inventoryItem?.id ?? item.itemId,
+    type: 'inventory',
+    name: item.inventoryItem?.name ?? item.itemName,
+    price: item.unitPrice,
+    quantity: item.quantity,
+    notes: item.notes,
+  };
 };
 
 export function useQuotationManagement() {
@@ -45,11 +122,14 @@ export function useQuotationManagement() {
   const [messageApi, contextHolder] = message.useMessage();
 
   const [createSelectedItems, setCreateSelectedItems] = useState<
-    CreateQuotationItem[]
+    QuotationSelectedItem[]
   >([]);
   const [editSelectedItems, setEditSelectedItems] = useState<
-    CreateQuotationItem[]
+    QuotationSelectedItem[]
   >([]);
+  const [actionState, setActionState] = useState<QuotationActionState>(
+    INITIAL_QUOTATION_ACTION_STATE
+  );
 
   const { data: servicesData } = useQuery({
     queryKey: ['services', 'all'],
@@ -82,6 +162,41 @@ export function useQuotationManagement() {
       })) ?? [],
     [packagesData]
   );
+
+  const quotationActionState: QuotationActionPermissions = {
+    canCreate: actionState.createReason === null,
+    canUpdate: actionState.updateReason === null,
+    canDelete: actionState.deleteReason === null,
+    canSend: actionState.sendReason === null,
+    canAccept: actionState.acceptReason === null,
+    canReject: actionState.rejectReason === null,
+    canConvert: actionState.convertReason === null,
+    createReason: actionState.createReason,
+    updateReason: actionState.updateReason,
+    deleteReason: actionState.deleteReason,
+    sendReason: actionState.sendReason,
+    acceptReason: actionState.acceptReason,
+    rejectReason: actionState.rejectReason,
+    convertReason: actionState.convertReason,
+  };
+
+  const applyForbiddenReason = (
+    error: unknown,
+    key: keyof QuotationActionState
+  ): boolean => {
+    if (!isPermissionDeniedError(error)) {
+      return false;
+    }
+
+    const reason = buildForbiddenReason(error);
+    setActionState((prev) => ({
+      ...prev,
+      [key]: reason,
+    }));
+    messageApi.warning(reason);
+
+    return true;
+  };
 
   const queryClient = useQueryClient();
 
@@ -117,8 +232,10 @@ export function useQuotationManagement() {
   }, [detailData]);
 
   const createMutation = useMutation({
-    mutationFn: (data: CreateQuotationRequest) => quotationApi.create(data),
+    mutationFn: (payload: CreateQuotationRequest) =>
+      quotationApi.create(payload),
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, createReason: null }));
       messageApi.success('Quotation created successfully');
       createForm.resetFields();
       setIsCreateModalOpen(false);
@@ -126,6 +243,9 @@ export function useQuotationManagement() {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
     },
     onError: (error) => {
+      if (applyForbiddenReason(error, 'createReason')) {
+        return;
+      }
       messageApi.error(getErrorMessage(error) || 'Failed to create quotation');
     },
   });
@@ -134,6 +254,7 @@ export function useQuotationManagement() {
     mutationFn: ({ id, data }: { id: string; data: UpdateQuotationRequest }) =>
       quotationApi.update(id, data),
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, updateReason: null }));
       messageApi.success('Quotation updated successfully');
       editForm.resetFields();
       setIsEditModalOpen(false);
@@ -142,6 +263,9 @@ export function useQuotationManagement() {
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
     },
     onError: (error) => {
+      if (applyForbiddenReason(error, 'updateReason')) {
+        return;
+      }
       messageApi.error(getErrorMessage(error) || 'Failed to update quotation');
     },
   });
@@ -149,156 +273,196 @@ export function useQuotationManagement() {
   const deleteMutation = useMutation({
     mutationFn: quotationApi.delete,
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, deleteReason: null }));
       messageApi.success('Quotation deleted successfully');
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
     },
-    onError: () => {
-      messageApi.error('Failed to delete quotation');
+    onError: (error) => {
+      if (applyForbiddenReason(error, 'deleteReason')) {
+        return;
+      }
+      messageApi.error(getErrorMessage(error) || 'Failed to delete quotation');
     },
   });
 
   const sendMutation = useMutation({
     mutationFn: quotationApi.send,
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, sendReason: null }));
       messageApi.success('Quotation sent');
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
     },
-    onError: () => {
-      messageApi.error('Failed to send quotation');
+    onError: (error) => {
+      if (applyForbiddenReason(error, 'sendReason')) {
+        return;
+      }
+      messageApi.error(getErrorMessage(error) || 'Failed to send quotation');
     },
   });
 
   const acceptMutation = useMutation({
     mutationFn: quotationApi.accept,
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, acceptReason: null }));
       messageApi.success('Quotation accepted');
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
     },
-    onError: () => {
-      messageApi.error('Failed to accept quotation');
+    onError: (error) => {
+      if (applyForbiddenReason(error, 'acceptReason')) {
+        return;
+      }
+      messageApi.error(getErrorMessage(error) || 'Failed to accept quotation');
     },
   });
 
   const rejectMutation = useMutation({
     mutationFn: quotationApi.reject,
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, rejectReason: null }));
       messageApi.success('Quotation rejected');
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
     },
-    onError: () => {
-      messageApi.error('Failed to reject quotation');
+    onError: (error) => {
+      if (applyForbiddenReason(error, 'rejectReason')) {
+        return;
+      }
+      messageApi.error(getErrorMessage(error) || 'Failed to reject quotation');
     },
   });
 
   const convertMutation = useMutation({
     mutationFn: quotationApi.convertToBooking,
     onSuccess: () => {
+      setActionState((prev) => ({ ...prev, convertReason: null }));
       messageApi.success('Quotation converted to booking');
       setIsDetailDrawerOpen(false);
       queryClient.invalidateQueries({ queryKey: ['quotations'] });
     },
-    onError: () => {
-      messageApi.error('Failed to convert quotation to booking');
+    onError: (error) => {
+      if (applyForbiddenReason(error, 'convertReason')) {
+        return;
+      }
+      messageApi.error(
+        getErrorMessage(error) || 'Failed to convert quotation to booking'
+      );
     },
   });
 
   const handleCreate = useCallback(
     (values: CreateQuotationRequest) => {
-      const items: QuotationItem[] = createSelectedItems.map(
-        ({ id, unitPrice, quantity, discountPercent }) => ({
-          id,
-          unitPrice,
-          quantity,
-          discountPercent,
-        })
-      );
+      if (!quotationActionState.canCreate) {
+        messageApi.warning(actionState.createReason || 'Action is not allowed');
+        return;
+      }
+
+      const items = createSelectedItems.map(mapSelectedItemToCreateInput);
+
       createMutation.mutate({
         ...values,
         items,
-      } as unknown as CreateQuotationRequest);
+      });
     },
-    [createMutation, createSelectedItems]
+    [
+      actionState.createReason,
+      createMutation,
+      createSelectedItems,
+      messageApi,
+      quotationActionState.canCreate,
+    ]
   );
 
   const handleEdit = useCallback(
     (values: UpdateQuotationRequest) => {
+      if (!quotationActionState.canUpdate) {
+        messageApi.warning(actionState.updateReason || 'Action is not allowed');
+        return;
+      }
+
       const id = selectedQuotation?.id;
       if (!id) return;
-      const items: QuotationItem[] = editSelectedItems.map(
-        ({ id: itemId, unitPrice, quantity, discountPercent }) => ({
-          id: itemId,
-          unitPrice,
-          quantity,
-          discountPercent,
-        })
-      );
+
+      const items = editSelectedItems.map(mapSelectedItemToCreateInput);
+
       updateMutation.mutate({
         id,
-        data: { ...values, items } as unknown as QuotationItem[],
+        data: { ...values, items },
       });
     },
-    [updateMutation, editSelectedItems, selectedQuotation]
+    [
+      actionState.updateReason,
+      editSelectedItems,
+      messageApi,
+      quotationActionState.canUpdate,
+      selectedQuotation,
+      updateMutation,
+    ]
   );
 
   const handleDelete = useCallback(
     (id: string) => {
+      if (!quotationActionState.canDelete) {
+        messageApi.warning(actionState.deleteReason || 'Action is not allowed');
+        return;
+      }
+
       deleteMutation.mutate(id);
     },
-    [deleteMutation]
+    [
+      actionState.deleteReason,
+      deleteMutation,
+      messageApi,
+      quotationActionState.canDelete,
+    ]
   );
 
   const handleOpenEdit = useCallback(
     (quotation: Quotation) => {
+      if (!quotationActionState.canUpdate) {
+        messageApi.warning(actionState.updateReason || 'Action is not allowed');
+        return;
+      }
+
       setSelectedQuotation(quotation);
       setEditSelectedItems(
-        (quotation.items ?? []).map((item) => {
-          // Handle service items
-          if (item.itemType === 'service' && item.service) {
-            return {
-              id: item.service.id,
-              type: 'service' as const,
-              name: item.service.name,
-              unitPrice: item.unitPrice,
-              quantity: item.quantity,
-              discountPercent: item.discountPercent,
-              description: item.notes ?? '',
-            };
-          }
-          // Handle package items
-          if (item.itemType === 'package' && item.package) {
-            return {
-              id: item.package.id,
-              type: 'package' as const,
-              name: item.package.name,
-              unitPrice: item.unitPrice,
-              quantity: item.quantity,
-              discountPercent: item.discountPercent,
-              description: item.notes ?? '',
-            };
-          }
-          // Fallback for inventory or missing relations
-          return {
-            id: item.itemId,
-            type:
-              item.itemType === 'inventory'
-                ? 'service'
-                : (item.itemType as 'service' | 'package'),
-            name: item.itemName,
-            unitPrice: item.unitPrice,
-            quantity: item.quantity,
-            discountPercent: item.discountPercent,
-            description: item.notes ?? '',
-          };
-        })
+        (quotation.items ?? []).map(mapQuotationItemToSelectedItem)
       );
       editForm.setFieldsValue({
         title: quotation.title,
-        customerId: quotation.customer?.id,
+        customerId: quotation.customer?.id ?? quotation.customerId,
         notes: quotation.notes,
+        validUntil: quotation.validUntil,
+        discountPercent: quotation.discountPercent,
+        taxPercent: quotation.taxPercent,
       });
       setIsEditModalOpen(true);
     },
-    [editForm]
+    [
+      actionState.updateReason,
+      editForm,
+      messageApi,
+      quotationActionState.canUpdate,
+    ]
+  );
+
+  const handleOpenCreateModal = useCallback(() => {
+    if (!quotationActionState.canCreate) {
+      messageApi.warning(actionState.createReason || 'Action is not allowed');
+      return;
+    }
+
+    setIsCreateModalOpen(true);
+  }, [actionState.createReason, messageApi, quotationActionState.canCreate]);
+
+  const handleSetCreateModalOpen = useCallback(
+    (open: boolean) => {
+      if (open) {
+        handleOpenCreateModal();
+        return;
+      }
+
+      setIsCreateModalOpen(false);
+    },
+    [handleOpenCreateModal]
   );
 
   const handleViewQuotation = useCallback((quotation: Quotation) => {
@@ -324,59 +488,67 @@ export function useQuotationManagement() {
     setDetailQuotation(null);
   }, []);
 
-  const handleAddCreateItem = useCallback(
-    (item: {
-      id: string;
-      type: 'service' | 'package';
-      name: string;
-      unitPrice: number;
-    }) => {
-      setCreateSelectedItems((prev) => [
-        ...prev,
-        {
-          ...item,
-          quantity: 1,
-          discountPercent: 0,
-          description: '',
-        },
-      ]);
+  const handleAddCreateItem = useCallback((item: QuotationSelectedItem) => {
+    setCreateSelectedItems((prev) => {
+      const existing = prev.find(
+        (candidate) => candidate.id === item.id && candidate.type === item.type
+      );
+
+      if (!existing) {
+        return [...prev, item];
+      }
+
+      return prev.map((candidate) =>
+        candidate.id === item.id && candidate.type === item.type
+          ? { ...candidate, quantity: candidate.quantity + item.quantity }
+          : candidate
+      );
+    });
+  }, []);
+
+  const handleRemoveCreateItem = useCallback(
+    (id: string, type: QuotationSelectedItem['type']) => {
+      setCreateSelectedItems((prev) =>
+        prev.filter((item) => !(item.id === id && item.type === type))
+      );
     },
     []
   );
 
-  const handleRemoveCreateItem = useCallback((id: string) => {
-    setCreateSelectedItems((prev) => prev.filter((i) => i.id !== id));
+  const handleAddEditItem = useCallback((item: QuotationSelectedItem) => {
+    setEditSelectedItems((prev) => {
+      const existing = prev.find(
+        (candidate) => candidate.id === item.id && candidate.type === item.type
+      );
+
+      if (!existing) {
+        return [...prev, item];
+      }
+
+      return prev.map((candidate) =>
+        candidate.id === item.id && candidate.type === item.type
+          ? { ...candidate, quantity: candidate.quantity + item.quantity }
+          : candidate
+      );
+    });
   }, []);
 
-  const handleAddEditItem = useCallback(
-    (item: {
-      id: string;
-      type: 'service' | 'package';
-      name: string;
-      unitPrice: number;
-    }) => {
-      setEditSelectedItems((prev) => [
-        ...prev,
-        {
-          ...item,
-          quantity: 1,
-          discountPercent: 0,
-          description: '',
-        },
-      ]);
+  const handleRemoveEditItem = useCallback(
+    (id: string, type: QuotationSelectedItem['type']) => {
+      setEditSelectedItems((prev) =>
+        prev.filter((item) => !(item.id === id && item.type === type))
+      );
     },
     []
   );
-
-  const handleRemoveEditItem = useCallback((id: string) => {
-    setEditSelectedItems((prev) => prev.filter((i) => i.id !== id));
-  }, []);
 
   const handleUpdateCreateItemQuantity = useCallback(
-    (id: string, field: 'quantity' | 'discountPercent', value: number) => {
+    (id: string, type: QuotationSelectedItem['type'], quantity: number) => {
       setCreateSelectedItems((prev) =>
-        prev.map((i) =>
-          i.id === id ? { ...i, [field]: Math.max(0, value) } : i
+        prev.map((item) =>
+          item.id === id && item.type === type
+            ? { ...item, quantity: Math.max(1, quantity) }
+            : item
         )
       );
     },
@@ -384,10 +556,12 @@ export function useQuotationManagement() {
   );
 
   const handleUpdateEditItemQuantity = useCallback(
-    (id: string, field: 'quantity' | 'discountPercent', value: number) => {
+    (id: string, type: QuotationSelectedItem['type'], quantity: number) => {
       setEditSelectedItems((prev) =>
-        prev.map((i) =>
-          i.id === id ? { ...i, [field]: Math.max(0, value) } : i
+        prev.map((item) =>
+          item.id === id && item.type === type
+            ? { ...item, quantity: Math.max(1, quantity) }
+            : item
         )
       );
     },
@@ -397,8 +571,7 @@ export function useQuotationManagement() {
   const calculateCreateSubtotal = useCallback(
     () =>
       createSelectedItems.reduce(
-        (sum, i) =>
-          sum + i.unitPrice * i.quantity * (1 - i.discountPercent / 100),
+        (sum, item) => sum + item.price * item.quantity,
         0
       ),
     [createSelectedItems]
@@ -412,8 +585,7 @@ export function useQuotationManagement() {
   const calculateEditSubtotal = useCallback(
     () =>
       editSelectedItems.reduce(
-        (sum, i) =>
-          sum + i.unitPrice * i.quantity * (1 - i.discountPercent / 100),
+        (sum, item) => sum + item.price * item.quantity,
         0
       ),
     [editSelectedItems]
@@ -426,30 +598,72 @@ export function useQuotationManagement() {
 
   const handleSend = useCallback(
     (id: string) => {
+      if (!quotationActionState.canSend) {
+        messageApi.warning(actionState.sendReason || 'Action is not allowed');
+        return;
+      }
+
       sendMutation.mutate(id);
     },
-    [sendMutation]
+    [
+      actionState.sendReason,
+      messageApi,
+      quotationActionState.canSend,
+      sendMutation,
+    ]
   );
 
   const handleAccept = useCallback(
     (id: string) => {
+      if (!quotationActionState.canAccept) {
+        messageApi.warning(actionState.acceptReason || 'Action is not allowed');
+        return;
+      }
+
       acceptMutation.mutate(id);
     },
-    [acceptMutation]
+    [
+      acceptMutation,
+      actionState.acceptReason,
+      messageApi,
+      quotationActionState.canAccept,
+    ]
   );
 
   const handleReject = useCallback(
     (id: string) => {
+      if (!quotationActionState.canReject) {
+        messageApi.warning(actionState.rejectReason || 'Action is not allowed');
+        return;
+      }
+
       rejectMutation.mutate(id);
     },
-    [rejectMutation]
+    [
+      actionState.rejectReason,
+      messageApi,
+      quotationActionState.canReject,
+      rejectMutation,
+    ]
   );
 
   const handleConvertToBooking = useCallback(
     (id: string) => {
+      if (!quotationActionState.canConvert) {
+        messageApi.warning(
+          actionState.convertReason || 'Action is not allowed'
+        );
+        return;
+      }
+
       convertMutation.mutate(id);
     },
-    [convertMutation]
+    [
+      actionState.convertReason,
+      convertMutation,
+      messageApi,
+      quotationActionState.canConvert,
+    ]
   );
 
   return {
@@ -471,8 +685,9 @@ export function useQuotationManagement() {
     editSelectedItems,
     isDetailDrawerOpen,
     activeStatusFilter,
+    quotationActionState,
     setActiveStatusFilter,
-    setIsCreateModalOpen,
+    setIsCreateModalOpen: handleSetCreateModalOpen,
     setSearchText,
     setCurrentPage,
     setPageSize,
@@ -481,6 +696,7 @@ export function useQuotationManagement() {
     handleCreate,
     handleEdit,
     handleDelete,
+    handleOpenCreateModal,
     handleOpenEdit,
     handleViewQuotation,
     handleCloseCreateModal,
