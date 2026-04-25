@@ -31,7 +31,7 @@ export function ManagementLayout({
   return (
     <div className={`staff-page ${className}`.trim()}>
       {header}
-      {searchBar}
+      <div className="mb-4">{searchBar}</div>
       <StaffPanel bodyClassName="staff-table-wrap">{table}</StaffPanel>
       {createModal}
       {editModal}
