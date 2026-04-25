@@ -18,7 +18,7 @@ import {
   type AuthFeedbackReason,
 } from '@/auth/sessionPolicy';
 import { VIETNAM_PHONE_REGEX } from '@utils/phone';
-import { useNavigate } from '@tanstack/react-router';
+import { Link } from '@tanstack/react-router';
 
 const { Title, Text, Paragraph } = Typography;
 
@@ -28,7 +28,6 @@ type AdminLoginProps = {
 
 const AdminLogin: React.FC<AdminLoginProps> = ({ feedbackReason = null }) => {
   const { darkMode, setDarkMode } = useTheme();
-  const navigate = useNavigate();
   const { setAuth } = useAuthStore();
   const [form] = Form.useForm();
   const [messageApi, contextHolder] = message.useMessage();
@@ -309,13 +308,12 @@ const AdminLogin: React.FC<AdminLoginProps> = ({ feedbackReason = null }) => {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.6, delay: 1 }}
           >
-            <Button
-              type="link"
-              onClick={() => navigate({ to: '/' })}
+            <Link
+              to="/"
               className={`${darkMode ? 'text-gray-300 hover:text-white' : 'text-slate-600 hover:text-slate-900'}`}
             >
               ← Back to Home
-            </Button>
+            </Link>
           </motion.div>
         </motion.div>
       </div>

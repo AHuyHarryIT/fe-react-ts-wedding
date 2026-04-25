@@ -1,4 +1,4 @@
-import { createFileRoute, useNavigate } from '@tanstack/react-router';
+import { createFileRoute, Link } from '@tanstack/react-router';
 import {
   ArrowRightOutlined,
   CalendarOutlined,
@@ -20,7 +20,6 @@ const { Text, Title } = Typography;
 function Dashboard() {
   const { darkMode } = useTheme();
   const { user } = useAuthStore();
-  const navigate = useNavigate();
 
   const stats = {
     totalBookings: 42,
@@ -133,43 +132,47 @@ function Dashboard() {
                 }
               >
                 <div className="grid gap-3 md:grid-cols-4">
-                  <Button
-                    type="primary"
-                    icon={<CalendarOutlined />}
-                    size="large"
-                    className="!h-11 !rounded-2xl !border-none"
-                    style={{
-                      background:
-                        'linear-gradient(135deg, rgba(236,72,153,0.96), rgba(225,29,72,0.92))',
-                    }}
-                    onClick={() => navigate({ to: '/bookings' })}
-                  >
-                    New Booking
-                  </Button>
-                  <Button
-                    icon={<UserOutlined />}
-                    size="large"
-                    className="!h-11 !rounded-2xl"
-                    onClick={() => navigate({ to: '/customers' })}
-                  >
-                    Manage Customers
-                  </Button>
-                  <Button
-                    icon={<ShoppingOutlined />}
-                    size="large"
-                    className="!h-11 !rounded-2xl"
-                    onClick={() => navigate({ to: '/services' })}
-                  >
-                    View Services
-                  </Button>
-                  <Button
-                    icon={<ToolOutlined />}
-                    size="large"
-                    className="!h-11 !rounded-2xl"
-                    onClick={() => navigate({ to: '/jobs' })}
-                  >
-                    Manage Jobs
-                  </Button>
+                  <Link to="/bookings" className="block">
+                    <Button
+                      type="primary"
+                      icon={<CalendarOutlined />}
+                      size="large"
+                      className="!h-11 !w-full !rounded-2xl !border-none"
+                      style={{
+                        background:
+                          'linear-gradient(135deg, rgba(236,72,153,0.96), rgba(225,29,72,0.92))',
+                      }}
+                    >
+                      New Booking
+                    </Button>
+                  </Link>
+                  <Link to="/customers" className="block">
+                    <Button
+                      icon={<UserOutlined />}
+                      size="large"
+                      className="!h-11 !w-full !rounded-2xl"
+                    >
+                      Manage Customers
+                    </Button>
+                  </Link>
+                  <Link to="/services" className="block">
+                    <Button
+                      icon={<ShoppingOutlined />}
+                      size="large"
+                      className="!h-11 !w-full !rounded-2xl"
+                    >
+                      View Services
+                    </Button>
+                  </Link>
+                  <Link to="/jobs" className="block">
+                    <Button
+                      icon={<ToolOutlined />}
+                      size="large"
+                      className="!h-11 !w-full !rounded-2xl"
+                    >
+                      Manage Jobs
+                    </Button>
+                  </Link>
                 </div>
               </Card>
             </div>
