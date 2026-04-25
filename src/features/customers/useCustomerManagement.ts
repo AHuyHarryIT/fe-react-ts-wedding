@@ -22,6 +22,7 @@ export function useCustomerManagement() {
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
+  const [selectedRowKeys, setSelectedRowKeys] = useState<string[]>([]);
   const [messageApi, contextHolder] = message.useMessage();
 
   const [createForm] = Form.useForm();
@@ -84,8 +85,9 @@ export function useCustomerManagement() {
 
   const deleteMutation = useMutation({
     mutationFn: customerApi.delete,
-    onSuccess: () => {
+    onSuccess: (_, deletedId) => {
       messageApi.success('Customer account deleted successfully');
+      setSelectedRowKeys((keys) => keys.filter((key) => key !== deletedId));
       refetchCustomers();
     },
     onError: (error) => {
@@ -94,6 +96,27 @@ export function useCustomerManagement() {
       );
     },
   });
+
+  const handleBulkDelete = useCallback(
+    async (ids: string[]) => {
+      if (ids.length === 0) return;
+
+      try {
+        await Promise.all(ids.map((id) => customerApi.delete(id)));
+        messageApi.success(
+          `Deleted ${ids.length} customer account${ids.length > 1 ? 's' : ''} successfully`
+        );
+        setSelectedRowKeys([]);
+        refetchCustomers();
+      } catch (error) {
+        messageApi.error(
+          getErrorMessage(error) ||
+            'Failed to delete selected customer accounts'
+        );
+      }
+    },
+    [messageApi, refetchCustomers]
+  );
 
   const handleCreate = useCallback(
     (values: CreateCustomerRequest) => {
@@ -165,6 +188,8 @@ export function useCustomerManagement() {
     contextHolder,
     createMutation,
     updateMutation,
+    selectedRowKeys,
+    setSelectedRowKeys,
     setIsCreateModalOpen,
     setSearchText,
     setCurrentPage,
@@ -172,6 +197,7 @@ export function useCustomerManagement() {
     handleCreate,
     handleEdit,
     handleDelete,
+    handleBulkDelete,
     handleOpenEdit,
     handleCloseCreateModal,
     handleCloseEditModal,
