@@ -403,20 +403,33 @@ export function ChatPage({ customerId }: ChatPageProps) {
               ) : (
                 <div className="space-y-3">
                   {messages.map((message: Message) => {
-                    const isCustomerMessage =
-                      message.senderId === currentChat.customerId;
+                    const senderType =
+                      message.senderType ||
+                      (message.senderId === currentChat.customerId
+                        ? 'CUSTOMER'
+                        : 'STAFF');
+                    const isCustomerMessage = senderType === 'CUSTOMER';
+                    const isAiMessage = senderType === 'AI';
+
                     return (
                       <div
                         key={message.id}
-                        className={`flex ${isCustomerMessage ? 'justify-start' : 'justify-end'}`}
+                        className={`flex ${isCustomerMessage || isAiMessage ? 'justify-start' : 'justify-end'}`}
                       >
                         <div
                           className={`max-w-xl rounded-2xl px-4 py-2 ${
                             isCustomerMessage
                               ? 'bg-emerald-100 text-gray-900 rounded-bl-none'
-                              : 'bg-blue-500 text-white rounded-br-none'
+                              : isAiMessage
+                                ? 'bg-violet-100 text-violet-900 border border-violet-200 rounded-bl-none'
+                                : 'bg-blue-500 text-white rounded-br-none'
                           }`}
                         >
+                          {isAiMessage ? (
+                            <p className="m-0 mb-1 text-xs font-semibold uppercase tracking-wide text-violet-700">
+                              AI Assistant
+                            </p>
+                          ) : null}
                           <p className="m-0 whitespace-pre-wrap break-words">
                             {message.content}
                           </p>

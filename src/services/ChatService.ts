@@ -22,7 +22,8 @@ export interface Chat {
 export interface Message {
   id: string;
   chatId: string;
-  senderId: string;
+  senderId?: string;
+  senderType?: 'CUSTOMER' | 'STAFF' | 'AI';
   content: string;
   isRead: boolean;
   readAt?: Date;
