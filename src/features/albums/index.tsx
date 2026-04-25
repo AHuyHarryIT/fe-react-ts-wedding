@@ -1,3 +1,4 @@
+import { Button } from 'antd';
 import {
   ManagementLayout,
   ManagementHeader,
@@ -85,7 +86,7 @@ function AlbumManagement() {
               showDeletedAlbums ? undefined : () => setIsCreateModalOpen(true)
             }
             extra={
-              <button
+              <Button
                 onClick={() => {
                   setShowDeletedAlbums(!showDeletedAlbums);
                   setCurrentPage(1);
@@ -97,13 +98,12 @@ function AlbumManagement() {
                   borderColor: showDeletedAlbums ? '#52c41a' : '#ff4d4f',
                   background: showDeletedAlbums ? '#f6ffed' : '#fff2f0',
                   color: showDeletedAlbums ? '#52c41a' : '#ff4d4f',
-                  cursor: 'pointer',
                   fontWeight: 500,
                   fontSize: 14,
                 }}
               >
                 {showDeletedAlbums ? '← Back to Albums' : '🗑️ View Deleted'}
-              </button>
+              </Button>
             }
           />
         }

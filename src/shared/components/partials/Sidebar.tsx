@@ -18,7 +18,7 @@ import {
   TeamOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from '@tanstack/react-router';
-import { Drawer, Layout, Menu, Typography } from 'antd';
+import { Button, Drawer, Layout, Menu, Typography } from 'antd';
 
 const { Sider } = Layout;
 const { Text } = Typography;
@@ -201,19 +201,18 @@ export function Sidebar({
           </div>
 
           {mobile && (
-            <button
-              type="button"
+            <Button
+              type="text"
               aria-label="Close navigation"
               onClick={() => onClose?.()}
-              className="flex h-10 w-10 items-center justify-center rounded-xl border transition-colors"
+              className="!flex !h-10 !w-10 !items-center !justify-center !rounded-xl !border transition-colors"
               style={{
                 borderColor,
                 color: darkMode ? '#e2e8f0' : '#334155',
                 background: darkMode ? 'rgba(30, 41, 59, 0.88)' : '#f8fafc',
               }}
-            >
-              <CloseOutlined />
-            </button>
+              icon={<CloseOutlined />}
+            />
           )}
         </div>
       </div>

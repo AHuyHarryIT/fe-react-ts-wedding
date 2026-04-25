@@ -283,13 +283,13 @@ export function ChatPage({ customerId }: ChatPageProps) {
               const customerName = getCustomerName(chat);
 
               return (
-                <button
+                <Button
                   key={chat.id}
-                  type="button"
+                  type="text"
                   aria-label={`Open conversation with ${customerName}`}
                   onClick={() => selectChat(chat.id)}
-                  className={`w-full text-left px-4 py-3 border-b border-gray-100 transition-colors ${
-                    isActive ? 'bg-blue-50' : 'hover:bg-gray-50'
+                  className={`!h-auto !w-full !rounded-none !border-b !border-gray-100 !px-4 !py-3 !text-left transition-colors ${
+                    isActive ? '!bg-blue-50' : 'hover:!bg-gray-50'
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -325,7 +325,7 @@ export function ChatPage({ customerId }: ChatPageProps) {
                       </div>
                     </div>
                   </div>
-                </button>
+                </Button>
               );
             })
           )}
