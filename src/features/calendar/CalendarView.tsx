@@ -105,18 +105,9 @@ export function CalendarView() {
   ];
 
   return (
-    <div style={{ padding: 24 }}>
-      <div
-        style={{
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-          marginBottom: 24,
-          flexWrap: 'wrap',
-          gap: 12,
-        }}
-      >
-        <h1 style={{ margin: 0, fontSize: 24, fontWeight: 700 }}>Calendar</h1>
+    <div className="staff-page">
+      <div className="staff-page-header">
+        <h1 className="staff-title">Calendar</h1>
         <Space>
           <Input
             placeholder="Search customer..."
@@ -162,19 +153,21 @@ export function CalendarView() {
         </Space>
       </div>
 
-      <Table
-        columns={columns}
-        dataSource={bookings}
-        rowKey="id"
-        loading={isLoading}
-        pagination={{
-          pageSize: 20,
-          showSizeChanger: true,
-          total: bookings.length,
-        }}
-        onRow={() => ({ onClick: () => navigate({ to: '/bookings' }) })}
-        style={{ cursor: 'pointer' }}
-      />
+      <div className="staff-surface p-4 md:p-6">
+        <Table
+          columns={columns}
+          dataSource={bookings}
+          rowKey="id"
+          loading={isLoading}
+          pagination={{
+            pageSize: 20,
+            showSizeChanger: true,
+            total: bookings.length,
+          }}
+          onRow={() => ({ onClick: () => navigate({ to: '/bookings' }) })}
+          style={{ cursor: 'pointer' }}
+        />
+      </div>
     </div>
   );
 }

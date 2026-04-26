@@ -8,7 +8,7 @@ export const Route = createFileRoute('/reminders')({
 
 function RemindersPage() {
   return (
-    <AdminLayout adminOnly>
+    <AdminLayout selectedKey="reminders">
       <RemindersManagement />
     </AdminLayout>
   );
