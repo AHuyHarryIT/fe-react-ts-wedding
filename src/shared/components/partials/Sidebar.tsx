@@ -236,6 +236,30 @@ export function Sidebar({
           }}
         />
       </div>
+
+      {(!collapsed || mobile) && (
+        <div className="border-t px-4 py-4" style={{ borderColor }}>
+          <Text
+            style={{
+              color: darkMode ? '#cbd5e1' : '#334155',
+              fontSize: 12,
+              fontWeight: 600,
+              textTransform: 'uppercase',
+              letterSpacing: '0.08em',
+            }}
+          >
+            Tips
+          </Text>
+          <ul
+            className="mt-2 list-disc space-y-1 pl-4 text-xs"
+            style={{ color: darkMode ? '#94a3b8' : '#64748b' }}
+          >
+            <li>Review today&apos;s bookings before opening your schedule.</li>
+            <li>Use reminders to stay ahead of upcoming deadlines.</li>
+            <li>Check reports weekly to spot booking and revenue trends.</li>
+          </ul>
+        </div>
+      )}
     </div>
   );
 
