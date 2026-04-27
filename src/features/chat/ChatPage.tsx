@@ -184,23 +184,29 @@ export function ChatPage({ customerId }: ChatPageProps) {
 
   const sendDisabled = Boolean(composeDisabledReason);
 
-  const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-
+  const submitCurrentMessage = async () => {
     if (sendDisabled || !currentChat) {
       return;
     }
 
+    const outgoingMessage = messageContent.trim();
+    setMessageContent('');
+
     try {
       setSending(true);
       setSendError(null);
-      await sendMessage(messageContent.trim());
-      setMessageContent('');
+      await sendMessage(outgoingMessage);
     } catch {
+      setMessageContent(outgoingMessage);
       setSendError('Message not sent. Check your connection and try again.');
     } finally {
       setSending(false);
     }
+  };
+
+  const handleSendMessage = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    await submitCurrentMessage();
   };
 
   if (loading && chats.length === 0) {
@@ -470,6 +476,14 @@ export function ChatPage({ customerId }: ChatPageProps) {
                   placeholder="Type your message"
                   value={messageContent}
                   onChange={(e) => setMessageContent(e.target.value)}
+                  onPressEnter={(e) => {
+                    if (e.shiftKey) {
+                      return;
+                    }
+
+                    e.preventDefault();
+                    submitCurrentMessage();
+                  }}
                   rows={2}
                   maxLength={1000}
                 />

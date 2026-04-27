@@ -183,6 +183,7 @@ export const useChat = (userId: string): UseChatReturn => {
       auth: {
         userId,
       },
+      withCredentials: true,
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
