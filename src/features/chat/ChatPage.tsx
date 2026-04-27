@@ -246,7 +246,7 @@ export function ChatPage({ customerId }: ChatPageProps) {
           })}
         </div>
 
-        {error ? (
+        {error && (
           <div className="p-4">
             <Alert
               type="error"
@@ -259,7 +259,7 @@ export function ChatPage({ customerId }: ChatPageProps) {
               showIcon
             />
           </div>
-        ) : null}
+        )}
 
         <div
           className="overflow-y-auto"
@@ -316,12 +316,12 @@ export function ChatPage({ customerId }: ChatPageProps) {
                         ) : (
                           <Tag className="m-0">General Support</Tag>
                         )}
-                        {unreadCount > 0 ? (
+                        {unreadCount > 0 && (
                           <Badge
                             count={unreadCount > 99 ? '99+' : unreadCount}
                             className="site-badge-count-109"
                           />
-                        ) : null}
+                        )}
                       </div>
                     </div>
                   </div>
@@ -425,11 +425,11 @@ export function ChatPage({ customerId }: ChatPageProps) {
                                 : 'bg-blue-500 text-white rounded-br-none'
                           }`}
                         >
-                          {isAiMessage ? (
+                          {isAiMessage && (
                             <p className="m-0 mb-1 text-xs font-semibold uppercase tracking-wide text-violet-700">
                               AI Assistant
                             </p>
-                          ) : null}
+                          )}
                           <p className="m-0 whitespace-pre-wrap break-words">
                             {message.content}
                           </p>
@@ -442,7 +442,7 @@ export function ChatPage({ customerId }: ChatPageProps) {
             </div>
 
             <div className="px-6 py-4 border-t border-gray-100 sticky bottom-0 bg-white">
-              {sendError ? (
+              {sendError && (
                 <Alert
                   type="error"
                   className="mb-3"
@@ -454,13 +454,13 @@ export function ChatPage({ customerId }: ChatPageProps) {
                   }
                   showIcon
                 />
-              ) : null}
+              )}
 
-              {composeDisabledReason ? (
+              {composeDisabledReason && (
                 <Text className="block mb-2 text-gray-500">
                   {composeDisabledReason}
                 </Text>
-              ) : null}
+              )}
 
               <form
                 onSubmit={handleSendMessage}

@@ -134,7 +134,7 @@ export function AccountTable<T extends AccountRecord>({
             title={resolvedActionState.updateReason ?? undefined}
             onClick={() => onEdit(record)}
           />
-          {onManageRoles ? (
+          {onManageRoles && (
             <ActionButton
               action="custom"
               icon={<LockOutlined />}
@@ -146,7 +146,7 @@ export function AccountTable<T extends AccountRecord>({
               title={resolvedActionState.manageRolesReason ?? undefined}
               onClick={() => onManageRoles(record)}
             />
-          ) : null}
+          )}
           <ActionButton
             action="delete"
             size="small"

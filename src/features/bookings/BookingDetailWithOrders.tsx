@@ -676,7 +676,7 @@ export const BookingDetailWithOrders: React.FC<
                                                     </span>
                                                   </div>
                                                   {pkgService.service?.job
-                                                    ?.name ? (
+                                                    ?.name && (
                                                     <Tag
                                                       color="blue"
                                                       className="text-[10px] px-1 py-0"
@@ -686,7 +686,7 @@ export const BookingDetailWithOrders: React.FC<
                                                           .name
                                                       }
                                                     </Tag>
-                                                  ) : null}
+                                                  )}
                                                 </div>
                                                 {relatedStaff.length > 0 && (
                                                   <div className="ml-5 mt-1 flex flex-col gap-1">
@@ -703,7 +703,7 @@ export const BookingDetailWithOrders: React.FC<
                                                             {staff.lastName}{' '}
                                                             {staff.firstName}
                                                           </span>
-                                                          {staff.phoneNumber ? (
+                                                          {staff.phoneNumber && (
                                                             <span className="text-gray-400">
                                                               (
                                                               {
@@ -711,8 +711,8 @@ export const BookingDetailWithOrders: React.FC<
                                                               }
                                                               )
                                                             </span>
-                                                          ) : null}
-                                                          {staff.locationName ? (
+                                                          )}
+                                                          {staff.locationName && (
                                                             <Tag
                                                               color="orange"
                                                               className="text-[10px] px-1 py-0"
@@ -722,9 +722,9 @@ export const BookingDetailWithOrders: React.FC<
                                                                 staff.locationName
                                                               }
                                                             </Tag>
-                                                          ) : null}
-                                                          {staff.startTime ||
-                                                          staff.endTime ? (
+                                                          )}
+                                                          {(staff.startTime ||
+                                                            staff.endTime) && (
                                                             <Tag
                                                               color="purple"
                                                               className="text-[10px] px-1 py-0"
@@ -738,7 +738,7 @@ export const BookingDetailWithOrders: React.FC<
                                                                 staff.endTime
                                                               )}
                                                             </Tag>
-                                                          ) : null}
+                                                          )}
                                                         </div>
                                                       )
                                                     )}
@@ -794,11 +794,11 @@ export const BookingDetailWithOrders: React.FC<
                                         <div className="text-xs text-gray-500">
                                           {item.service?.description}
                                         </div>
-                                        {item.service?.job?.name ? (
+                                        {item.service?.job?.name && (
                                           <div className="text-xs text-blue-500">
                                             Job: {item.service.job.name}
                                           </div>
-                                        ) : null}
+                                        )}
                                       </div>
                                     </div>
                                     <div style={{ textAlign: 'right' }}>
@@ -842,21 +842,21 @@ export const BookingDetailWithOrders: React.FC<
                                             <span className="font-medium text-gray-700 dark:text-gray-300">
                                               {staff.lastName} {staff.firstName}
                                             </span>
-                                            {staff.phoneNumber ? (
+                                            {staff.phoneNumber && (
                                               <span className="text-gray-400">
                                                 ({staff.phoneNumber})
                                               </span>
-                                            ) : null}
-                                            {staff.locationName ? (
+                                            )}
+                                            {staff.locationName && (
                                               <Tag
                                                 color="orange"
                                                 className="text-[10px] px-1 py-0"
                                               >
                                                 📍 {staff.locationName}
                                               </Tag>
-                                            ) : null}
-                                            {staff.startTime ||
-                                            staff.endTime ? (
+                                            )}
+                                            {(staff.startTime ||
+                                              staff.endTime) && (
                                               <Tag
                                                 color="purple"
                                                 className="text-[10px] px-1 py-0"
@@ -870,7 +870,7 @@ export const BookingDetailWithOrders: React.FC<
                                                   staff.endTime
                                                 )}
                                               </Tag>
-                                            ) : null}
+                                            )}
                                           </div>
                                         ))}
                                       </div>

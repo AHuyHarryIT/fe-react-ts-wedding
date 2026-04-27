@@ -228,7 +228,7 @@ export function BookingSessionsPanel({
               schedule.
             </Paragraph>
           </div>
-          {canManage ? (
+          {canManage && (
             <Button
               type="primary"
               icon={<PlusOutlined />}
@@ -236,7 +236,7 @@ export function BookingSessionsPanel({
             >
               Add Session
             </Button>
-          ) : null}
+          )}
         </div>
 
         {orderedSessions.length === 0 ? (
@@ -245,11 +245,11 @@ export function BookingSessionsPanel({
               image={Empty.PRESENTED_IMAGE_SIMPLE}
               description="No booking sessions yet"
             >
-              {canManage ? (
+              {canManage && (
                 <Button type="primary" onClick={openCreateModal}>
                   Create first session
                 </Button>
-              ) : null}
+              )}
             </Empty>
           </Card>
         ) : (
@@ -267,7 +267,7 @@ export function BookingSessionsPanel({
                   </Space>
                 }
                 extra={
-                  canManage ? (
+                  canManage && (
                     <Space>
                       <Button
                         size="small"
@@ -296,7 +296,7 @@ export function BookingSessionsPanel({
                         </Button>
                       </Popconfirm>
                     </Space>
-                  ) : null
+                  )
                 }
               >
                 <Space
@@ -319,17 +319,17 @@ export function BookingSessionsPanel({
                         ? dayjs(session.endsAt).format('HH:mm')
                         : '--:--'}
                     </Tag>
-                    {session.locationName ? (
+                    {session.locationName && (
                       <Tag icon={<EnvironmentOutlined />} color="geekblue">
                         {session.locationName}
                       </Tag>
-                    ) : null}
+                    )}
                   </Space>
-                  {session.address ? (
+                  {session.address && (
                     <Paragraph style={{ margin: 0 }}>
                       {session.address}
                     </Paragraph>
-                  ) : null}
+                  )}
                 </Space>
               </Card>
             ))}
