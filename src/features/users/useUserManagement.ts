@@ -8,6 +8,7 @@ import { userApi } from '@services/UserService';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import type {
   CreateUserRequest,
+  ResetUserPasswordRequest,
   Role,
   UpdateUserRequest,
   User,
@@ -21,29 +22,38 @@ interface UserActionState {
   createReason: string | null;
   updateReason: string | null;
   deleteReason: string | null;
+  resetPasswordReason: string | null;
 }
 
 interface UserActionPermissions {
   canCreate: boolean;
   canUpdate: boolean;
   canDelete: boolean;
+  canResetPassword: boolean;
   createReason: string | null;
   updateReason: string | null;
   deleteReason: string | null;
+  resetPasswordReason: string | null;
 }
 
 const INITIAL_USER_ACTION_STATE: UserActionState = {
   createReason: null,
   updateReason: null,
   deleteReason: null,
+  resetPasswordReason: null,
 };
 
 export function useUserManagement() {
   const queryClient = useQueryClient();
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isResetPasswordModalOpen, setIsResetPasswordModalOpen] =
+    useState(false);
   const [selectedUserId, setSelectedUserId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserWithRoles | null>(null);
+  const [resetPasswordUserId, setResetPasswordUserId] = useState<string | null>(
+    null
+  );
   const [searchText, setSearchText] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -54,6 +64,7 @@ export function useUserManagement() {
 
   const [createForm] = Form.useForm();
   const [editForm] = Form.useForm();
+  const [resetPasswordForm] = Form.useForm<ResetUserPasswordRequest>();
 
   const applyForbiddenReason = (
     error: unknown,
@@ -77,9 +88,11 @@ export function useUserManagement() {
     canCreate: actionState.createReason === null,
     canUpdate: actionState.updateReason === null,
     canDelete: actionState.deleteReason === null,
+    canResetPassword: actionState.resetPasswordReason === null,
     createReason: actionState.createReason,
     updateReason: actionState.updateReason,
     deleteReason: actionState.deleteReason,
+    resetPasswordReason: actionState.resetPasswordReason,
   };
 
   // Fetch users
@@ -210,6 +223,31 @@ export function useUserManagement() {
     },
   });
 
+  // Reset password mutation
+  const resetPasswordMutation = useMutation({
+    mutationFn: ({
+      id,
+      data,
+    }: {
+      id: string;
+      data: ResetUserPasswordRequest;
+    }) => userApi.resetPassword(id, data),
+    onSuccess: () => {
+      setActionState((prev) => ({ ...prev, resetPasswordReason: null }));
+      messageApi.success('Staff password reset successfully');
+      resetPasswordForm.resetFields();
+      setIsResetPasswordModalOpen(false);
+      setResetPasswordUserId(null);
+    },
+    onError: (error) => {
+      if (applyForbiddenReason(error, 'resetPasswordReason')) {
+        return;
+      }
+
+      messageApi.error(getErrorMessage(error) || 'Failed to reset password');
+    },
+  });
+
   const handleCreate = useCallback(
     (values: CreateUserRequest) => {
       if (!userActionState.canCreate) {
@@ -306,6 +344,53 @@ export function useUserManagement() {
     [actionState.updateReason, editForm, messageApi, userActionState.canUpdate]
   );
 
+  const handleOpenResetPassword = useCallback(
+    (user: User) => {
+      if (!userActionState.canResetPassword) {
+        messageApi.warning(
+          actionState.resetPasswordReason || 'Action is not allowed'
+        );
+        return;
+      }
+
+      setResetPasswordUserId(user.id);
+      setIsResetPasswordModalOpen(true);
+    },
+    [
+      actionState.resetPasswordReason,
+      messageApi,
+      resetPasswordForm,
+      userActionState.canResetPassword,
+    ]
+  );
+
+  const handleSubmitResetPassword = useCallback(
+    (values: ResetUserPasswordRequest) => {
+      if (!userActionState.canResetPassword) {
+        messageApi.warning(
+          actionState.resetPasswordReason || 'Action is not allowed'
+        );
+        return;
+      }
+
+      if (!resetPasswordUserId) {
+        return;
+      }
+
+      resetPasswordMutation.mutate({
+        id: resetPasswordUserId,
+        data: values,
+      });
+    },
+    [
+      actionState.resetPasswordReason,
+      messageApi,
+      resetPasswordMutation,
+      resetPasswordUserId,
+      userActionState.canResetPassword,
+    ]
+  );
+
   const handleCloseCreateModal = useCallback(() => {
     setIsCreateModalOpen(false);
     createForm.resetFields();
@@ -322,10 +407,18 @@ export function useUserManagement() {
     setSelectedUserId(null);
   }, [editForm]);
 
+  const handleCloseResetPasswordModal = useCallback(() => {
+    setIsResetPasswordModalOpen(false);
+    resetPasswordForm.resetFields();
+    setResetPasswordUserId(null);
+  }, [resetPasswordForm]);
+
   return {
     isCreateModalOpen,
     isEditModalOpen,
+    isResetPasswordModalOpen,
     selectedUser: selectedUserData?.data || selectedUser,
+    resetPasswordUserId,
     searchText,
     currentPage,
     pageSize,
@@ -336,10 +429,12 @@ export function useUserManagement() {
     userActionState,
     createForm,
     editForm,
+    resetPasswordForm,
     contextHolder,
     createMutation,
     updateMutation,
     deleteMutation,
+    resetPasswordMutation,
     setIsCreateModalOpen,
     handleOpenCreateModal,
     setSearchText,
@@ -349,7 +444,10 @@ export function useUserManagement() {
     handleEdit,
     handleDelete,
     handleOpenEdit,
+    handleOpenResetPassword,
+    handleSubmitResetPassword,
     handleCloseCreateModal,
     handleCloseEditModal,
+    handleCloseResetPasswordModal,
   };
 }

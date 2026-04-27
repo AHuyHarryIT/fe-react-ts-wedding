@@ -49,6 +49,15 @@ export interface UpdateUserRequest {
   isActive?: boolean;
 }
 
+export interface ResetUserPasswordRequest {
+  newPassword: string;
+  confirmPassword: string;
+}
+
+export interface ResetUserPasswordResponse {
+  message: string;
+}
+
 export interface AssignRolesToUserRequest {
   roleIds: string[];
 }

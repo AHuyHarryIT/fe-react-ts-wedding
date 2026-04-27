@@ -123,7 +123,7 @@ export function AccountTable<T extends AccountRecord>({
     {
       title: 'Actions',
       key: 'actions',
-      width: onManageRoles ? 210 : 150,
+      width: onManageRoles ? 280 : 150,
       render: (_, record) => (
         <Space size="small">
           <ActionButton

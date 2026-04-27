@@ -15,6 +15,8 @@ import type {
   CreateUserRequest,
   UpdateUserRequest,
   AssignRolesToUserRequest,
+  ResetUserPasswordRequest,
+  ResetUserPasswordResponse,
 } from '@types';
 import type { ForbiddenMeta, ForbiddenServiceError } from './PermissionService';
 
@@ -152,5 +154,17 @@ export const userApi = {
         isActive,
       });
       return response.data;
+    }, 'Missing permission: users:update'),
+
+  // Reset staff password
+  resetPassword: async (
+    id: string,
+    data: ResetUserPasswordRequest
+  ): Promise<ResetUserPasswordResponse> =>
+    withForbiddenContext(async () => {
+      const response = await api.post<
+        StandardResponse<ResetUserPasswordResponse>
+      >(`/users/${id}/reset-password`, data);
+      return response.data.data;
     }, 'Missing permission: users:update'),
 };

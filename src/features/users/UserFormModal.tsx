@@ -23,6 +23,7 @@ interface UserFormModalProps {
   form: FormInstance;
   roles?: Role[];
   jobs?: Job[];
+  resetPasswordAction?: React.ReactNode;
   onCancel: () => void;
   onSubmit:
     | ((values: CreateUserRequest) => void)
@@ -36,6 +37,7 @@ export function UserFormModal({
   form,
   roles = [],
   jobs = [],
+  resetPasswordAction,
   onCancel,
   onSubmit,
 }: UserFormModalProps) {
@@ -289,6 +291,13 @@ export function UserFormModal({
               </Col>
             </Row>
           </Flex>
+
+          {type === 'edit' && resetPasswordAction && (
+            <>
+              <Divider style={{ margin: 0 }} />
+              <Flex justify="flex-start">{resetPasswordAction}</Flex>
+            </>
+          )}
 
           <Divider style={{ margin: 0 }} />
 

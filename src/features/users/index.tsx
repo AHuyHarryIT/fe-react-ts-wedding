@@ -7,12 +7,14 @@ import {
 import { ActionButton } from '@shared/components/ui';
 import { UserTable } from './UserTable';
 import { UserFormModal } from './UserFormModal';
+import { ResetPasswordModal } from './ResetPasswordModal';
 import { useUserManagement } from './useUserManagement';
-
 export function UserManagement() {
   const {
     isCreateModalOpen,
     isEditModalOpen,
+    isResetPasswordModalOpen,
+    resetPasswordUserId,
     searchText,
     currentPage,
     pageSize,
@@ -20,9 +22,11 @@ export function UserManagement() {
     usersLoading,
     createForm,
     editForm,
+    resetPasswordForm,
     contextHolder,
     createMutation,
     updateMutation,
+    resetPasswordMutation,
     rolesData,
     jobsData,
     userActionState,
@@ -34,8 +38,11 @@ export function UserManagement() {
     handleEdit,
     handleDelete,
     handleOpenEdit,
+    handleOpenResetPassword,
+    handleSubmitResetPassword,
     handleCloseCreateModal,
     handleCloseEditModal,
+    handleCloseResetPasswordModal,
   } = useUserManagement();
 
   const allRoles = rolesData?.data || [];
@@ -105,16 +112,45 @@ export function UserManagement() {
           />
         }
         editModal={
-          <UserFormModal
-            type="edit"
-            open={isEditModalOpen}
-            loading={updateMutation.isPending}
-            form={editForm}
-            roles={allRoles}
-            jobs={activeJobs}
-            onCancel={handleCloseEditModal}
-            onSubmit={handleEdit}
-          />
+          <>
+            <UserFormModal
+              type="edit"
+              open={isEditModalOpen}
+              loading={updateMutation.isPending}
+              form={editForm}
+              roles={allRoles}
+              jobs={activeJobs}
+              resetPasswordAction={
+                <ActionButton
+                  action="custom"
+                  label="Reset Password"
+                  disabled={!userActionState.canResetPassword}
+                  tooltip={userActionState.resetPasswordReason ?? undefined}
+                  title={userActionState.resetPasswordReason ?? undefined}
+                  onClick={() => {
+                    if (usersData?.data) {
+                      const user = usersData.data.find(
+                        (item) => item.id === editForm.getFieldValue('id')
+                      );
+                      if (user) {
+                        handleOpenResetPassword(user);
+                      }
+                    }
+                  }}
+                />
+              }
+              onCancel={handleCloseEditModal}
+              onSubmit={handleEdit}
+            />
+            <ResetPasswordModal
+              open={isResetPasswordModalOpen}
+              loading={resetPasswordMutation.isPending}
+              staffId={resetPasswordUserId}
+              form={resetPasswordForm}
+              onCancel={handleCloseResetPasswordModal}
+              onSubmit={handleSubmitResetPassword}
+            />
+          </>
         }
       />
     </>
