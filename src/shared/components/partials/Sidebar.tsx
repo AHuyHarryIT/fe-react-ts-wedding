@@ -14,6 +14,7 @@ import {
   KeyOutlined,
   MessageOutlined,
   SafetyOutlined,
+  SettingOutlined,
   ShoppingOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
@@ -160,11 +161,12 @@ export function Sidebar({
       label: 'Chat',
       onClick: () => navigate({ to: '/chat' }),
     },
-    // {
-    //   key: 'settings',
-    //   icon: <SettingOutlined />,
-    //   label: 'Settings',
-    // },
+    {
+      key: 'settings',
+      icon: <SettingOutlined />,
+      label: 'Settings',
+      onClick: () => navigate({ to: '/settings' }),
+    },
   ];
 
   const menuNode = (
