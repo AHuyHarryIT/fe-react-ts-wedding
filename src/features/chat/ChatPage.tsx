@@ -40,6 +40,20 @@ const RECONNECT_COPY = {
   recovering: 'Back online. Refreshing latest messages…',
 } as const;
 
+const WEBSOCKET_STATUS_COPY = {
+  live: 'WebSocket live',
+  reconnecting: 'WebSocket reconnecting',
+  offline: 'WebSocket offline',
+  recovering: 'WebSocket recovering',
+} as const;
+
+const WEBSOCKET_STATUS_CLASS = {
+  live: 'text-green-600',
+  reconnecting: 'text-amber-600',
+  offline: 'text-red-600',
+  recovering: 'text-blue-600',
+} as const;
+
 const formatDate = (date?: Date | string): string => {
   if (!date) {
     return 'No activity yet';
@@ -228,9 +242,14 @@ export function ChatPage({ customerId }: ChatPageProps) {
         theme="light"
       >
         <div className="p-4 border-b border-gray-200">
-          <h2 className="m-0 text-lg font-semibold text-gray-900">
-            Conversation Queue
-          </h2>
+          <div className="flex items-center justify-between gap-2">
+            <h2 className="m-0 text-lg font-semibold text-gray-900">
+              Conversation Queue
+            </h2>
+            <Text className={WEBSOCKET_STATUS_CLASS[reconnectStatus]}>
+              {WEBSOCKET_STATUS_COPY[reconnectStatus]}
+            </Text>
+          </div>
           <Text type="secondary">Latest activity first</Text>
         </div>
 
@@ -294,7 +313,7 @@ export function ChatPage({ customerId }: ChatPageProps) {
                   type="text"
                   aria-label={`Open conversation with ${customerName}`}
                   onClick={() => selectChat(chat.id)}
-                  className={`!h-auto !w-full !rounded-none !border-b !border-gray-100 !px-4 !py-3 !text-left transition-colors ${
+                  className={`!h-auto !w-full !rounded-none !border-b !border-gray-100 !px-4 !py-3 !text-left !justify-start transition-colors ${
                     isActive ? '!bg-blue-50' : 'hover:!bg-gray-50'
                   }`}
                 >
