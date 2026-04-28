@@ -16,11 +16,13 @@ const { useBreakpoint } = Grid;
 interface AdminLayoutProps {
   children: ReactNode;
   selectedKey?: string;
+  showFooter?: boolean;
 }
 
 export function AdminLayout({
   children,
   selectedKey = 'dashboard',
+  showFooter = true,
 }: AdminLayoutProps) {
   const { darkMode, setDarkMode } = useTheme();
   const { user, isAuthenticated, setAuth, clearAuth } = useAuthStore();
@@ -130,17 +132,21 @@ export function AdminLayout({
                 flexDirection: 'column',
                 minHeight: 'calc(100vh - 88px)',
                 background: 'transparent',
+                overflow: 'hidden',
               }}
             >
               <div
-                style={{ flex: 1 }}
-                className="px-0 pb-4 pt-2 md:pb-6 md:pt-3"
+                style={{ flex: 1, minHeight: 0 }}
+                className={
+                  showFooter
+                    ? 'px-0 pb-4 pt-2 md:pb-6 md:pt-3'
+                    : 'h-full overflow-hidden px-0'
+                }
               >
                 {children}
               </div>
 
-              {/* Footer */}
-              <Footer darkMode={darkMode} />
+              {showFooter && <Footer darkMode={darkMode} />}
             </Content>
           </Layout>
         </Layout>

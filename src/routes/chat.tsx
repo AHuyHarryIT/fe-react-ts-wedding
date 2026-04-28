@@ -16,7 +16,7 @@ function ChatPageRoute() {
   const userId = user?.id || '';
 
   return (
-    <AdminLayout selectedKey="chat">
+    <AdminLayout selectedKey="chat" showFooter={false}>
       <ChatPage customerId={userId} />
     </AdminLayout>
   );

@@ -59,6 +59,29 @@ const normalizeIncomingMessage = (message: IncomingStaffMessage): Message => ({
 const createClientMessageId = (): string =>
   `staff-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
+const getChatActivityTime = (chat: Chat): number => {
+  const lastMessageEpoch = chat.lastMessageAt
+    ? new Date(chat.lastMessageAt).getTime()
+    : 0;
+  const createdEpoch = chat.createdAt ? new Date(chat.createdAt).getTime() : 0;
+  return Math.max(lastMessageEpoch, createdEpoch);
+};
+
+const getLatestChat = (items: Chat[]): Chat | null => {
+  if (items.length === 0) {
+    return null;
+  }
+
+  return [...items].sort(
+    (a, b) => getChatActivityTime(b) - getChatActivityTime(a)
+  )[0];
+};
+
+const sortMessagesChronologically = (items: Message[]): Message[] =>
+  [...items].sort(
+    (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
+  );
+
 export const useChat = (userId: string): UseChatReturn => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChat, setCurrentChat] = useState<Chat | null>(null);
@@ -150,7 +173,7 @@ export const useChat = (userId: string): UseChatReturn => {
     }
 
     const latestMessages = await ChatService.getMessages(activeChatId);
-    setMessages(latestMessages);
+    setMessages(sortMessagesChronologically(latestMessages));
     clearUnreadForChat(activeChatId);
     await ChatService.markMessagesAsRead(activeChatId);
 
@@ -455,7 +478,7 @@ export const useChat = (userId: string): UseChatReturn => {
 
         const chatMessages = await ChatService.getMessages(chatId);
         setCurrentChat(chat);
-        setMessages(chatMessages);
+        setMessages(sortMessagesChronologically(chatMessages));
 
         if (socketRef.current?.connected) {
           socketRef.current.emit('join_staff_chat', { chatId });
@@ -486,8 +509,9 @@ export const useChat = (userId: string): UseChatReturn => {
       try {
         setLoading(true);
         const data = await refreshChatsInternal();
-        if (data.length > 0) {
-          await selectChat(data[0].id);
+        const latestChat = getLatestChat(data);
+        if (latestChat) {
+          await selectChat(latestChat.id);
         }
         setError(null);
       } catch (err) {
