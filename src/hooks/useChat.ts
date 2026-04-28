@@ -20,6 +20,8 @@ interface UseChatReturn {
   currentChat: Chat | null;
   messages: Message[];
   loading: boolean;
+  loadingOlderMessages: boolean;
+  hasMoreMessages: boolean;
   error: string | null;
   reconnectStatus: ReconnectStatus;
   canRead: boolean;
@@ -36,6 +38,7 @@ interface UseChatReturn {
   sendMessage: (content: string) => Promise<void>;
   refreshChats: () => Promise<void>;
   retryCurrentThread: () => Promise<void>;
+  loadOlderMessages: () => Promise<void>;
   markAsRead: () => Promise<void>;
   archiveChat: (chatId: string) => Promise<void>;
   deleteChat: (chatId: string) => Promise<void>;
@@ -82,11 +85,16 @@ const sortMessagesChronologically = (items: Message[]): Message[] =>
     (a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime()
   );
 
+const INITIAL_MESSAGES_TAKE = 20;
+const OLDER_MESSAGES_TAKE = 10;
+
 export const useChat = (userId: string): UseChatReturn => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChat, setCurrentChat] = useState<Chat | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadingOlderMessages, setLoadingOlderMessages] = useState(false);
+  const [hasMoreMessages, setHasMoreMessages] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isTyping, setIsTyping] = useState(false);
   const [otherUserTyping, setOtherUserTyping] = useState(false);
@@ -105,6 +113,7 @@ export const useChat = (userId: string): UseChatReturn => {
   const pendingSocketSendsRef = useRef<Map<string, PendingSocketSend>>(
     new Map()
   );
+  const loadedMessageCountRef = useRef(0);
 
   const setReadForbiddenFromError = useCallback(
     (err: unknown, fallback: string): boolean => {
@@ -172,8 +181,18 @@ export const useChat = (userId: string): UseChatReturn => {
       return;
     }
 
-    const latestMessages = await ChatService.getMessages(activeChatId);
-    setMessages(sortMessagesChronologically(latestMessages));
+    const latestMessages = await ChatService.getMessages(
+      activeChatId,
+      0,
+      INITIAL_MESSAGES_TAKE
+    );
+    const sortedMessages = sortMessagesChronologically(latestMessages);
+
+    setLoadingOlderMessages(false);
+    setMessages(sortedMessages);
+    loadedMessageCountRef.current = latestMessages.length;
+    setHasMoreMessages(latestMessages.length === INITIAL_MESSAGES_TAKE);
+
     clearUnreadForChat(activeChatId);
     await ChatService.markMessagesAsRead(activeChatId);
 
@@ -317,6 +336,8 @@ export const useChat = (userId: string): UseChatReturn => {
         if (messageExists) {
           return prev;
         }
+
+        loadedMessageCountRef.current += 1;
         return [...prev, normalized];
       });
     };
@@ -476,9 +497,18 @@ export const useChat = (userId: string): UseChatReturn => {
         setLoading(true);
         const chat = await ChatService.getChat(chatId);
 
-        const chatMessages = await ChatService.getMessages(chatId);
+        const chatMessages = await ChatService.getMessages(
+          chatId,
+          0,
+          INITIAL_MESSAGES_TAKE
+        );
+        const sortedMessages = sortMessagesChronologically(chatMessages);
+
         setCurrentChat(chat);
-        setMessages(sortMessagesChronologically(chatMessages));
+        setLoadingOlderMessages(false);
+        setMessages(sortedMessages);
+        loadedMessageCountRef.current = chatMessages.length;
+        setHasMoreMessages(chatMessages.length === INITIAL_MESSAGES_TAKE);
 
         if (socketRef.current?.connected) {
           socketRef.current.emit('join_staff_chat', { chatId });
@@ -525,6 +555,51 @@ export const useChat = (userId: string): UseChatReturn => {
 
     loadChats();
   }, [refreshChatsInternal, selectChat, setReadForbiddenFromError, userId]);
+
+  const loadOlderMessages = useCallback(async () => {
+    const activeChatId = currentChatIdRef.current;
+
+    if (!activeChatId || loadingOlderMessages || !hasMoreMessages) {
+      return;
+    }
+
+    try {
+      setLoadingOlderMessages(true);
+
+      const olderMessages = await ChatService.getMessages(
+        activeChatId,
+        loadedMessageCountRef.current,
+        OLDER_MESSAGES_TAKE
+      );
+
+      if (olderMessages.length === 0) {
+        setHasMoreMessages(false);
+        return;
+      }
+
+      const sortedOlder = sortMessagesChronologically(olderMessages);
+
+      setMessages((prev) => {
+        const seen = new Set(prev.map((message) => message.id));
+        const dedupedOlder = sortedOlder.filter(
+          (message) => !seen.has(message.id)
+        );
+        return [...dedupedOlder, ...prev];
+      });
+
+      loadedMessageCountRef.current += olderMessages.length;
+      setHasMoreMessages(olderMessages.length === OLDER_MESSAGES_TAKE);
+      setError(null);
+    } catch (err) {
+      if (!setReadForbiddenFromError(err, 'Required permission: chat.read')) {
+        setError(
+          err instanceof Error ? err.message : 'Failed to load older messages'
+        );
+      }
+    } finally {
+      setLoadingOlderMessages(false);
+    }
+  }, [hasMoreMessages, loadingOlderMessages, setReadForbiddenFromError]);
 
   const sendMessage = async (content: string) => {
     if (!currentChat) {
@@ -623,6 +698,8 @@ export const useChat = (userId: string): UseChatReturn => {
     currentChat,
     messages,
     loading,
+    loadingOlderMessages,
+    hasMoreMessages,
     error,
     reconnectStatus,
     canRead: !readForbiddenReason,
@@ -635,6 +712,7 @@ export const useChat = (userId: string): UseChatReturn => {
     sendMessage,
     refreshChats,
     retryCurrentThread,
+    loadOlderMessages,
     markAsRead,
     archiveChat,
     deleteChat,

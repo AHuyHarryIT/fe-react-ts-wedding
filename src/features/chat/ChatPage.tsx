@@ -115,6 +115,8 @@ export function ChatPage({ customerId }: ChatPageProps) {
     currentChat,
     messages,
     loading,
+    loadingOlderMessages,
+    hasMoreMessages,
     error,
     reconnectStatus,
     canRead,
@@ -124,6 +126,7 @@ export function ChatPage({ customerId }: ChatPageProps) {
     sendMessage,
     refreshChats,
     retryCurrentThread,
+    loadOlderMessages,
   } = useChat(customerId);
 
   const [messageContent, setMessageContent] = useState('');
@@ -131,41 +134,100 @@ export function ChatPage({ customerId }: ChatPageProps) {
   const [sendError, setSendError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const previousChatIdRef = useRef<string | null>(null);
+  const previousFirstMessageIdRef = useRef<string | null>(null);
+  const previousMessageCountRef = useRef(0);
+  const loadingOlderRef = useRef(false);
 
   useEffect(() => {
-    if (messagesContainerRef.current) {
-      messagesContainerRef.current.scrollTop =
-        messagesContainerRef.current.scrollHeight;
-    }
-  }, [messages]);
-
-  useEffect(() => {
-    if (loading || !currentChat || !messagesContainerRef.current) {
+    if (!currentChat || loading) {
       return;
     }
 
-    const frameOne = requestAnimationFrame(() => {
-      if (!messagesContainerRef.current) {
-        return;
-      }
+    const nextChatId = currentChat.id;
+    const chatChanged = previousChatIdRef.current !== nextChatId;
 
-      messagesContainerRef.current.scrollTop =
-        messagesContainerRef.current.scrollHeight;
-
-      const frameTwo = requestAnimationFrame(() => {
+    if (chatChanged && messagesContainerRef.current) {
+      const frameOne = requestAnimationFrame(() => {
         if (!messagesContainerRef.current) {
           return;
         }
 
         messagesContainerRef.current.scrollTop =
           messagesContainerRef.current.scrollHeight;
+
+        const frameTwo = requestAnimationFrame(() => {
+          if (!messagesContainerRef.current) {
+            return;
+          }
+
+          messagesContainerRef.current.scrollTop =
+            messagesContainerRef.current.scrollHeight;
+        });
+
+        return () => cancelAnimationFrame(frameTwo);
       });
 
-      return () => cancelAnimationFrame(frameTwo);
-    });
+      previousChatIdRef.current = nextChatId;
+      previousFirstMessageIdRef.current = messages[0]?.id || null;
+      previousMessageCountRef.current = messages.length;
 
-    return () => cancelAnimationFrame(frameOne);
-  }, [loading, currentChat?.id, messages.length]);
+      return () => cancelAnimationFrame(frameOne);
+    }
+
+    const nextFirstMessageId = messages[0]?.id || null;
+    const prependedOlderMessages =
+      previousMessageCountRef.current > 0 &&
+      messages.length > previousMessageCountRef.current &&
+      previousFirstMessageIdRef.current !== null &&
+      nextFirstMessageId !== null &&
+      previousFirstMessageIdRef.current !== nextFirstMessageId;
+
+    if (!prependedOlderMessages && messagesContainerRef.current) {
+      messagesContainerRef.current.scrollTop =
+        messagesContainerRef.current.scrollHeight;
+    }
+
+    previousFirstMessageIdRef.current = nextFirstMessageId;
+    previousMessageCountRef.current = messages.length;
+  }, [currentChat, loading, messages]);
+
+  const handleThreadScroll = async () => {
+    const container = messagesContainerRef.current;
+
+    if (!container || !currentChat || loadingOlderRef.current) {
+      return;
+    }
+
+    if (!hasMoreMessages || loadingOlderMessages) {
+      return;
+    }
+
+    if (container.scrollTop > 40) {
+      return;
+    }
+
+    const previousScrollHeight = container.scrollHeight;
+    const previousScrollTop = container.scrollTop;
+
+    loadingOlderRef.current = true;
+
+    try {
+      await loadOlderMessages();
+
+      requestAnimationFrame(() => {
+        if (!messagesContainerRef.current) {
+          return;
+        }
+
+        const newScrollHeight = messagesContainerRef.current.scrollHeight;
+        messagesContainerRef.current.scrollTop =
+          newScrollHeight - previousScrollHeight + previousScrollTop;
+      });
+    } finally {
+      loadingOlderRef.current = false;
+    }
+  };
 
   useEffect(() => {
     if (reconnectStatus !== 'recovering') {
@@ -485,9 +547,28 @@ export function ChatPage({ customerId }: ChatPageProps) {
             <>
               <div
                 ref={messagesContainerRef}
+                onScroll={() => {
+                  handleThreadScroll();
+                }}
                 className="flex-1 overflow-y-auto px-6 py-4"
                 data-testid="thread-messages"
               >
+                {loadingOlderMessages && (
+                  <div className="mb-3 flex justify-center">
+                    <Spin size="small" />
+                  </div>
+                )}
+
+                {!loadingOlderMessages &&
+                  !hasMoreMessages &&
+                  messages.length > 0 && (
+                    <div className="mb-3 text-center">
+                      <Text className="text-xs text-gray-400">
+                        Beginning of conversation
+                      </Text>
+                    </div>
+                  )}
+
                 {messages.length === 0 ? (
                   <div
                     className="h-full flex items-center justify-center"
