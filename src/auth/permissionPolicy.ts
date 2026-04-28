@@ -130,6 +130,18 @@ export const buildForbiddenReason = (
       : extractPermissionContext(source);
 
   if (!context) {
+    const data = getErrorData(source);
+    const messageCandidate =
+      typeof data?.message === 'string' && data.message.trim()
+        ? data.message
+        : typeof data?.error?.message === 'string' && data.error.message.trim()
+          ? data.error.message
+          : null;
+
+    if (messageCandidate) {
+      return messageCandidate;
+    }
+
     return fallback;
   }
 
@@ -147,6 +159,18 @@ export const buildForbiddenReason = (
 
   if (context.requiredPermissions.length > 1) {
     return `Required permissions: ${context.requiredPermissions.join(', ')}`;
+  }
+
+  const data = getErrorData(source);
+  const messageCandidate =
+    typeof data?.message === 'string' && data.message.trim()
+      ? data.message
+      : typeof data?.error?.message === 'string' && data.error.message.trim()
+        ? data.error.message
+        : null;
+
+  if (messageCandidate) {
+    return messageCandidate;
   }
 
   return fallback;

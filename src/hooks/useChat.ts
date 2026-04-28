@@ -7,6 +7,12 @@ import {
 import ChatService from '../services/ChatService';
 import type { Chat, Message } from '../services/ChatService';
 
+type IncomingStaffMessage = Message & {
+  senderCustomerId?: string | null;
+  senderStaffId?: string | null;
+  clientMessageId?: string;
+};
+
 type ReconnectStatus = 'live' | 'reconnecting' | 'offline' | 'recovering';
 
 interface UseChatReturn {
@@ -35,6 +41,24 @@ interface UseChatReturn {
   deleteChat: (chatId: string) => Promise<void>;
 }
 
+type PendingSocketSend = {
+  resolve: () => void;
+  reject: (error: Error) => void;
+  timeoutId: ReturnType<typeof setTimeout>;
+};
+
+const normalizeIncomingMessage = (message: IncomingStaffMessage): Message => ({
+  ...message,
+  senderId:
+    message.senderId ||
+    message.senderStaffId ||
+    message.senderCustomerId ||
+    undefined,
+});
+
+const createClientMessageId = (): string =>
+  `staff-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+
 export const useChat = (userId: string): UseChatReturn => {
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChat, setCurrentChat] = useState<Chat | null>(null);
@@ -55,6 +79,9 @@ export const useChat = (userId: string): UseChatReturn => {
   const currentChatIdRef = useRef<string | null>(null);
   const socketRef = useRef<Socket | null>(null);
   const hasConnectedOnceRef = useRef(false);
+  const pendingSocketSendsRef = useRef<Map<string, PendingSocketSend>>(
+    new Map()
+  );
 
   const setReadForbiddenFromError = useCallback(
     (err: unknown, fallback: string): boolean => {
@@ -63,19 +90,6 @@ export const useChat = (userId: string): UseChatReturn => {
       }
 
       setReadForbiddenReason(buildForbiddenReason(err, fallback));
-      setError(null);
-      return true;
-    },
-    []
-  );
-
-  const setReplyForbiddenFromError = useCallback(
-    (err: unknown, fallback: string): boolean => {
-      if (!isPermissionDeniedError(err)) {
-        return false;
-      }
-
-      setReplyForbiddenReason(buildForbiddenReason(err, fallback));
       setError(null);
       return true;
     },
@@ -140,8 +154,8 @@ export const useChat = (userId: string): UseChatReturn => {
     clearUnreadForChat(activeChatId);
     await ChatService.markMessagesAsRead(activeChatId);
 
-    if (socketRef.current) {
-      socketRef.current.emit('join_chat', { chatId: activeChatId });
+    if (socketRef.current?.connected) {
+      socketRef.current.emit('join_staff_chat', { chatId: activeChatId });
     }
   }, [clearUnreadForChat]);
 
@@ -179,10 +193,7 @@ export const useChat = (userId: string): UseChatReturn => {
         ? 'http://127.0.0.1:3000'
         : import.meta.env.VITE_API_BASE_URL || 'http://localhost:3000';
 
-    const newSocket = io(`${apiUrl}/chat`, {
-      auth: {
-        userId,
-      },
+    const newSocket = io(`${apiUrl}/staff-chat`, {
       withCredentials: true,
       reconnection: true,
       reconnectionDelay: 1000,
@@ -191,6 +202,36 @@ export const useChat = (userId: string): UseChatReturn => {
     });
 
     socketRef.current = newSocket;
+
+    const rejectPendingSend = (clientMessageId: string, reason: string) => {
+      const pending = pendingSocketSendsRef.current.get(clientMessageId);
+      if (!pending) {
+        return;
+      }
+
+      clearTimeout(pending.timeoutId);
+      pendingSocketSendsRef.current.delete(clientMessageId);
+      pending.reject(new Error(reason));
+    };
+
+    const resolvePendingSend = (clientMessageId: string) => {
+      const pending = pendingSocketSendsRef.current.get(clientMessageId);
+      if (!pending) {
+        return;
+      }
+
+      clearTimeout(pending.timeoutId);
+      pendingSocketSendsRef.current.delete(clientMessageId);
+      pending.resolve();
+    };
+
+    const rejectAllPendingSends = (reason: string) => {
+      pendingSocketSendsRef.current.forEach((pending, clientMessageId) => {
+        clearTimeout(pending.timeoutId);
+        pending.reject(new Error(reason));
+        pendingSocketSendsRef.current.delete(clientMessageId);
+      });
+    };
 
     const healAfterReconnect = async () => {
       setReconnectStatus('recovering');
@@ -215,7 +256,7 @@ export const useChat = (userId: string): UseChatReturn => {
     const handleConnect = () => {
       const activeChatId = currentChatIdRef.current;
       if (activeChatId) {
-        newSocket.emit('join_chat', { chatId: activeChatId });
+        newSocket.emit('join_staff_chat', { chatId: activeChatId });
       }
 
       if (hasConnectedOnceRef.current) {
@@ -228,44 +269,75 @@ export const useChat = (userId: string): UseChatReturn => {
 
     const handleDisconnect = () => {
       setReconnectStatus('offline');
+      rejectAllPendingSends('Connection lost before message delivery');
     };
 
     const handleReconnectAttempt = () => {
       setReconnectStatus('reconnecting');
     };
 
-    const handleMessageReceived = (data: Message) => {
-      updateChatsWithMessage(data);
+    const handleMessageReceived = (data: IncomingStaffMessage) => {
+      const normalized = normalizeIncomingMessage(data);
 
-      if (data.chatId !== currentChatIdRef.current) {
+      if (data.clientMessageId) {
+        resolvePendingSend(data.clientMessageId);
+      }
+
+      updateChatsWithMessage(normalized);
+
+      if (normalized.chatId !== currentChatIdRef.current) {
         return;
       }
 
       setMessages((prev) => {
-        const messageExists = prev.some((msg) => msg.id === data.id);
+        const messageExists = prev.some((msg) => msg.id === normalized.id);
         if (messageExists) {
           return prev;
         }
-        return [...prev, data];
+        return [...prev, normalized];
       });
     };
 
-    newSocket.on('connect', handleConnect);
-    newSocket.on('disconnect', handleDisconnect);
-    newSocket.io.on('reconnect_attempt', handleReconnectAttempt);
+    const handleStaffError = (socketError: {
+      message?: string;
+      details?: { clientMessageId?: string };
+      clientMessageId?: string;
+    }) => {
+      const rawMessage =
+        typeof socketError?.message === 'string' && socketError.message.trim()
+          ? socketError.message
+          : 'Socket request failed';
 
-    newSocket.on('message_received', handleMessageReceived);
+      const clientMessageId =
+        socketError?.clientMessageId || socketError?.details?.clientMessageId;
 
-    newSocket.on(
-      'user_typing',
-      (data: { userId: string; isTyping: boolean }) => {
-        if (data.userId !== userId) {
-          setOtherUserTyping(data.isTyping);
-        }
+      if (clientMessageId) {
+        rejectPendingSend(clientMessageId, rawMessage);
+      } else {
+        rejectAllPendingSends(rawMessage);
       }
-    );
 
-    newSocket.on('messages_marked_read', (data: { chatId: string }) => {
+      setError(rawMessage);
+      setReplyForbiddenReason(rawMessage);
+    };
+
+    const handleConnectError = (socketError: { message?: string }) => {
+      setReconnectStatus('offline');
+      if (socketError?.message) {
+        setError(socketError.message);
+      }
+    };
+
+    const handleTyping = (data: { userId: string; isTyping: boolean }) => {
+      if (data.userId !== userId) {
+        setOtherUserTyping(data.isTyping);
+      }
+    };
+
+    const handleMessagesMarkedRead = (data: {
+      chatId: string;
+      userId: string;
+    }) => {
       clearUnreadForChat(data.chatId);
       setMessages((prev) =>
         prev.map((msg) =>
@@ -274,57 +346,63 @@ export const useChat = (userId: string): UseChatReturn => {
             : msg
         )
       );
-    });
+    };
 
+    const handleNewMessageNotification = async (data: { chatId: string }) => {
+      if (data?.chatId) {
+        promoteChat(data.chatId, {
+          lastMessageAt: new Date().toISOString(),
+          lastMessage: 'New message',
+        });
+      }
+
+      try {
+        await refreshChatsInternal();
+      } catch (refreshError) {
+        if (
+          !setReadForbiddenFromError(
+            refreshError,
+            'Required permission: chat.read'
+          )
+        ) {
+          setError(
+            refreshError instanceof Error
+              ? refreshError.message
+              : 'Failed to refresh chats'
+          );
+        }
+      }
+    };
+
+    newSocket.on('connect', handleConnect);
+    newSocket.on('disconnect', handleDisconnect);
+    newSocket.io.on('reconnect_attempt', handleReconnectAttempt);
+
+    newSocket.on('staff_message_received', handleMessageReceived);
+    newSocket.on('staff_user_typing', handleTyping);
+    newSocket.on('staff_messages_marked_read', handleMessagesMarkedRead);
     newSocket.on(
-      'new_message_notification',
-      async (data: { chatId: string }) => {
-        if (data?.chatId) {
-          promoteChat(data.chatId, {
-            lastMessageAt: new Date().toISOString(),
-            lastMessage: 'New message',
-          });
-        }
-
-        try {
-          await refreshChatsInternal();
-        } catch (refreshError) {
-          if (
-            !setReadForbiddenFromError(
-              refreshError,
-              'Required permission: chat.read'
-            )
-          ) {
-            setError(
-              refreshError instanceof Error
-                ? refreshError.message
-                : 'Failed to refresh chats'
-            );
-          }
-        }
-      }
+      'staff_new_message_notification',
+      handleNewMessageNotification
     );
-
-    newSocket.on('error', (socketError: { message: string }) => {
-      if (socketError.message !== 'User not authenticated') {
-        setError(socketError.message);
-      }
-    });
-
-    newSocket.on('connect_error', () => {
-      setReconnectStatus('offline');
-    });
+    newSocket.on('staff_error', handleStaffError);
+    newSocket.on('connect_error', handleConnectError);
 
     return () => {
+      rejectAllPendingSends('Chat connection closed');
+
       newSocket.off('connect', handleConnect);
       newSocket.off('disconnect', handleDisconnect);
       newSocket.io.off('reconnect_attempt', handleReconnectAttempt);
-      newSocket.off('message_received', handleMessageReceived);
-      newSocket.off('user_typing');
-      newSocket.off('messages_marked_read');
-      newSocket.off('new_message_notification');
-      newSocket.off('error');
-      newSocket.off('connect_error');
+      newSocket.off('staff_message_received', handleMessageReceived);
+      newSocket.off('staff_user_typing', handleTyping);
+      newSocket.off('staff_messages_marked_read', handleMessagesMarkedRead);
+      newSocket.off(
+        'staff_new_message_notification',
+        handleNewMessageNotification
+      );
+      newSocket.off('staff_error', handleStaffError);
+      newSocket.off('connect_error', handleConnectError);
       newSocket.close();
 
       if (socketRef.current === newSocket) {
@@ -355,8 +433,8 @@ export const useChat = (userId: string): UseChatReturn => {
       );
       setChats((prev) => [newChat, ...prev]);
       setCurrentChat(newChat);
-      if (socketRef.current) {
-        socketRef.current.emit('join_chat', { chatId: newChat.id });
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('join_staff_chat', { chatId: newChat.id });
       }
       setError(null);
       setReadForbiddenReason(null);
@@ -379,8 +457,8 @@ export const useChat = (userId: string): UseChatReturn => {
         setCurrentChat(chat);
         setMessages(chatMessages);
 
-        if (socketRef.current) {
-          socketRef.current.emit('join_chat', { chatId });
+        if (socketRef.current?.connected) {
+          socketRef.current.emit('join_staff_chat', { chatId });
         }
 
         clearUnreadForChat(chatId);
@@ -429,28 +507,43 @@ export const useChat = (userId: string): UseChatReturn => {
       return;
     }
 
-    try {
-      const sentMessage = await ChatService.sendMessage(
-        currentChat.id,
-        content
-      );
-      setReplyForbiddenReason(null);
-      setIsTyping(false);
+    const socket = socketRef.current;
+    const trimmedContent = content.trim();
 
-      setMessages((prev) => {
-        const messageExists = prev.some((msg) => msg.id === sentMessage.id);
-        if (messageExists) {
-          return prev;
-        }
-        return [...prev, sentMessage];
-      });
-      updateChatsWithMessage(sentMessage);
-      setError(null);
-    } catch (err) {
-      if (!setReplyForbiddenFromError(err, 'Required permission: chat.reply')) {
-        setError(err instanceof Error ? err.message : 'Failed to send message');
-      }
+    if (!trimmedContent) {
+      return;
     }
+
+    if (!socket || !socket.connected) {
+      const connectionError = new Error('Chat connection is offline');
+      setError(connectionError.message);
+      throw connectionError;
+    }
+
+    const clientMessageId = createClientMessageId();
+
+    await new Promise<void>((resolve, reject) => {
+      const timeoutId = setTimeout(() => {
+        pendingSocketSendsRef.current.delete(clientMessageId);
+        reject(new Error('Message delivery timed out'));
+      }, 10000);
+
+      pendingSocketSendsRef.current.set(clientMessageId, {
+        resolve,
+        reject,
+        timeoutId,
+      });
+
+      socket.emit('send_staff_message', {
+        chatId: currentChat.id,
+        content: trimmedContent,
+        clientMessageId,
+      });
+    });
+
+    setReplyForbiddenReason(null);
+    setIsTyping(false);
+    setError(null);
   };
 
   const markAsRead = async () => {
@@ -462,6 +555,12 @@ export const useChat = (userId: string): UseChatReturn => {
       await ChatService.markMessagesAsRead(currentChat.id);
       clearUnreadForChat(currentChat.id);
       setReadForbiddenReason(null);
+
+      if (socketRef.current?.connected) {
+        socketRef.current.emit('staff_mark_as_read', {
+          chatId: currentChat.id,
+        });
+      }
     } catch (err) {
       if (!setReadForbiddenFromError(err, 'Required permission: chat.read')) {
         setError(err instanceof Error ? err.message : 'Failed to mark as read');
