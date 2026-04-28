@@ -6,6 +6,7 @@ export interface Chat {
   staffId?: string;
   bookingId?: string;
   chatType: 'DIRECT' | 'GROUP';
+  aiEnabled?: boolean;
   lastMessageAt?: Date;
   unreadCount?: number;
   isArchived: boolean;
@@ -81,7 +82,7 @@ class ChatService {
 
   async updateChat(
     chatId: string,
-    data: { staffId?: string; isArchived?: boolean }
+    data: { staffId?: string; isArchived?: boolean; aiEnabled?: boolean }
   ): Promise<Chat> {
     const response = await api.put(`/chats/${chatId}`, data);
     return this.extractData<Chat>(response);

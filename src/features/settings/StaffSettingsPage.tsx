@@ -13,6 +13,11 @@ export function StaffSettingsPage() {
     onSuccess: (response) => {
       messageApi.success(response.message || 'Password changed successfully');
       form.resetFields();
+      form.setFieldsValue({
+        currentPassword: '',
+        newPassword: '',
+        confirmPassword: '',
+      });
     },
     onError: (error) => {
       messageApi.error(getErrorMessage(error) || 'Failed to change password');
