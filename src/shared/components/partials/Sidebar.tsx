@@ -8,14 +8,12 @@ import {
   DashboardOutlined,
   DollarOutlined,
   FileImageOutlined,
-  FileTextOutlined,
   GiftOutlined,
   ToolOutlined,
   KeyOutlined,
   MessageOutlined,
   SafetyOutlined,
   SettingOutlined,
-  ShoppingOutlined,
   TeamOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from '@tanstack/react-router';
@@ -63,12 +61,6 @@ export function Sidebar({
           icon: <CalendarOutlined />,
           label: 'Bookings',
           onClick: () => navigate({ to: '/bookings' }),
-        },
-        {
-          key: 'quotations',
-          icon: <FileTextOutlined />,
-          label: 'Quotations',
-          onClick: () => navigate({ to: '/quotations' }),
         },
         {
           key: 'orders',
@@ -136,12 +128,6 @@ export function Sidebar({
       type: 'group' as const,
       label: 'Sales & Insights',
       children: [
-        {
-          key: 'pos',
-          icon: <ShoppingOutlined />,
-          label: 'POS',
-          onClick: () => navigate({ to: '/pos' }),
-        },
         {
           key: 'reports',
           icon: <BarChartOutlined />,
