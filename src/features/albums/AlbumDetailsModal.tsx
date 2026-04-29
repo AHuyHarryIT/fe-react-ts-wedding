@@ -28,6 +28,7 @@ import {
   ClearOutlined,
   FileImageOutlined,
   FolderOpenOutlined,
+  StarOutlined,
 } from '@ant-design/icons';
 import type { Album, AlbumImage, AlbumWithFiles } from '@/types';
 import type { UploadFile, UploadProps } from 'antd';
@@ -40,123 +41,164 @@ const { Text, Title } = Typography;
 /* ─── Memoized image grid — won't re-render during upload progress ticks ─── */
 const ImageGrid = memo(function ImageGrid({
   files,
+  coverFileId,
+  onSetCover,
   onRemoveFile,
 }: {
   files: AlbumImage[];
+  coverFileId?: string;
+  onSetCover?: (fileId: string) => void;
   onRemoveFile?: (fileId: string) => void;
 }) {
   const { modal } = App.useApp();
+
   return (
     <Image.PreviewGroup>
       <Row gutter={[12, 12]}>
-        {files.map((albumFile: AlbumImage) => (
-          <Col key={albumFile.fileId} xs={24} sm={8} lg={6}>
-            <div
-              style={{
-                position: 'relative',
-                borderRadius: '8px',
-                overflow: 'hidden',
-                background: '#fff',
-                border: '1px solid #e8e8e8',
-                transition: 'all 0.2s ease',
-                cursor: 'pointer',
-                height: '180px',
-                display: 'flex',
-                flexDirection: 'column',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.boxShadow =
-                  '0 2px 8px rgba(0, 0, 0, 0.12)';
-                e.currentTarget.style.borderColor = '#d0d0d0';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.boxShadow = 'none';
-                e.currentTarget.style.borderColor = '#e8e8e8';
-              }}
-            >
-              {/* Image */}
+        {files.map((albumFile: AlbumImage) => {
+          const isCover = coverFileId === albumFile.fileId;
+
+          return (
+            <Col key={albumFile.fileId} xs={24} sm={8} lg={6}>
               <div
                 style={{
-                  flex: 1,
-                  overflow: 'hidden',
                   position: 'relative',
-                  background: '#fafafa',
-                }}
-              >
-                <LazyImage
-                  src={albumApi.getThumbnailUrl(albumFile.fileId)}
-                  cacheKey={albumFile.fileId}
-                  alt={albumFile.image.name}
-                  preview={{
-                    src: albumApi.getOriginalContentUrl(albumFile.fileId),
-                  }}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    borderRadius: 0,
-                  }}
-                />
-              </div>
-
-              {/* Delete Button */}
-              {onRemoveFile && (
-                <Button
-                  type="text"
-                  danger
-                  size="small"
-                  icon={<DeleteOutlined />}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    modal.confirm({
-                      title: 'Move to Trash',
-                      content: `Move "${albumFile.image.name}" to trash? You can restore it later.`,
-                      okText: 'Move to Trash',
-                      okType: 'danger',
-                      cancelText: 'Cancel',
-                      onOk() {
-                        onRemoveFile(albumFile.fileId);
-                      },
-                    });
-                  }}
-                  style={{
-                    position: 'absolute',
-                    top: '4px',
-                    right: '4px',
-                    background: 'rgba(255, 255, 255, 0.95)',
-                    borderRadius: '4px',
-                  }}
-                />
-              )}
-
-              {/* Info Section */}
-              <div
-                style={{
-                  padding: '8px',
-                  borderTop: '1px solid #f0f0f0',
-                  minHeight: '48px',
+                  borderRadius: '8px',
+                  overflow: 'hidden',
+                  background: '#fff',
+                  border: '1px solid #e8e8e8',
+                  transition: 'all 0.2s ease',
+                  cursor: 'pointer',
+                  height: '180px',
                   display: 'flex',
                   flexDirection: 'column',
-                  justifyContent: 'center',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.boxShadow =
+                    '0 2px 8px rgba(0, 0, 0, 0.12)';
+                  e.currentTarget.style.borderColor = '#d0d0d0';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.boxShadow = 'none';
+                  e.currentTarget.style.borderColor = '#e8e8e8';
                 }}
               >
-                <Text
-                  ellipsis
-                  title={albumFile.image.name}
+                <div
                   style={{
-                    display: 'block',
-                    fontSize: '12px',
-                    fontWeight: 500,
-                    color: '#1f1f1f',
-                    lineHeight: '1.4',
+                    flex: 1,
+                    overflow: 'hidden',
+                    position: 'relative',
+                    background: '#fafafa',
                   }}
                 >
-                  {albumFile.image.name}
-                </Text>
+                  <LazyImage
+                    src={albumApi.getThumbnailUrl(albumFile.fileId)}
+                    cacheKey={albumFile.fileId}
+                    alt={albumFile.image.name}
+                    preview={{
+                      src: albumApi.getOriginalContentUrl(albumFile.fileId),
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: 'cover',
+                      borderRadius: 0,
+                    }}
+                  />
+                </div>
+
+                {isCover && (
+                  <Tag
+                    color="gold"
+                    style={{
+                      position: 'absolute',
+                      top: 4,
+                      left: 4,
+                      margin: 0,
+                      fontWeight: 600,
+                    }}
+                  >
+                    Cover
+                  </Tag>
+                )}
+
+                {onSetCover && !isCover && (
+                  <Tooltip title="Set as cover">
+                    <Button
+                      type="primary"
+                      size="small"
+                      icon={<StarOutlined />}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        onSetCover(albumFile.fileId);
+                      }}
+                      style={{
+                        position: 'absolute',
+                        top: '4px',
+                        left: '4px',
+                        borderRadius: '4px',
+                      }}
+                    />
+                  </Tooltip>
+                )}
+
+                {onRemoveFile && (
+                  <Button
+                    type="text"
+                    danger
+                    size="small"
+                    icon={<DeleteOutlined />}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      modal.confirm({
+                        title: 'Move to Trash',
+                        content: `Move "${albumFile.image.name}" to trash? You can restore it later.`,
+                        okText: 'Move to Trash',
+                        okType: 'danger',
+                        cancelText: 'Cancel',
+                        onOk() {
+                          onRemoveFile(albumFile.fileId);
+                        },
+                      });
+                    }}
+                    style={{
+                      position: 'absolute',
+                      top: '4px',
+                      right: '4px',
+                      background: 'rgba(255, 255, 255, 0.95)',
+                      borderRadius: '4px',
+                    }}
+                  />
+                )}
+
+                <div
+                  style={{
+                    padding: '8px',
+                    borderTop: '1px solid #f0f0f0',
+                    minHeight: '48px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <Text
+                    ellipsis
+                    title={albumFile.image.name}
+                    style={{
+                      display: 'block',
+                      fontSize: '12px',
+                      fontWeight: 500,
+                      color: '#1f1f1f',
+                      lineHeight: '1.4',
+                    }}
+                  >
+                    {albumFile.image.name}
+                  </Text>
+                </div>
               </div>
-            </div>
-          </Col>
-        ))}
+            </Col>
+          );
+        })}
       </Row>
     </Image.PreviewGroup>
   );
@@ -168,12 +210,14 @@ interface AlbumDetailsModalProps {
   fetching: boolean;
   album: Album | null;
   albumWithFiles: AlbumWithFiles | null;
+  coverFileId?: string;
   uploadProgress?: UploadProgress[];
   showTrash: boolean;
   deletedFiles?: AlbumImage[];
   deletedFilesLoading?: boolean;
   onCancel: () => void;
   onAddFiles?: (fileIds: string[]) => void;
+  onSetCover?: (fileId: string) => void;
   onRemoveFile?: (fileId: string) => void;
   onRestoreFile?: (fileId: string) => void;
   onForceDeleteFile?: (fileId: string) => void;
@@ -189,11 +233,13 @@ export function AlbumDetailsModal({
   fetching,
   album,
   albumWithFiles,
+  coverFileId,
   uploadProgress = [],
   showTrash,
   deletedFiles = [],
   deletedFilesLoading = false,
   onCancel,
+  onSetCover,
   onRemoveFile,
   onRestoreFile,
   onForceDeleteFile,
@@ -728,6 +774,8 @@ export function AlbumDetailsModal({
                 <>
                   <ImageGrid
                     files={paginatedFiles}
+                    coverFileId={coverFileId}
+                    onSetCover={onSetCover}
                     onRemoveFile={onRemoveFile}
                   />
 

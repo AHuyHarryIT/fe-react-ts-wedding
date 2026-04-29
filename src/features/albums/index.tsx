@@ -31,6 +31,10 @@ function AlbumManagement() {
     deletedAlbumsLoading,
     deletedFilesData,
     deletedFilesLoading,
+    customerOptions,
+    customerSelectionLoading,
+    handleCustomerSearch,
+    handleCustomerLoadMore,
     albumsData,
     albumsLoading,
     albumDetailsData,
@@ -59,6 +63,7 @@ function AlbumManagement() {
     handleRemoveFiles,
     handleRestoreFiles,
     handleForceDeleteFiles,
+    handleSetCover,
     handleGenerateShareToken,
     handleRevokeShareToken,
     handleCloseCreateModal,
@@ -158,6 +163,10 @@ function AlbumManagement() {
             loading={createMutation.isPending}
             selectedAlbum={null}
             form={createForm}
+            customerOptions={customerOptions}
+            customerLoading={customerSelectionLoading}
+            onCustomerSearch={handleCustomerSearch}
+            onCustomerLoadMore={handleCustomerLoadMore}
             onCancel={handleCloseCreateModal}
             onSubmit={handleCreate}
           />
@@ -169,6 +178,10 @@ function AlbumManagement() {
             loading={updateMutation.isPending}
             selectedAlbum={selectedAlbum}
             form={editForm}
+            customerOptions={customerOptions}
+            customerLoading={customerSelectionLoading}
+            onCustomerSearch={handleCustomerSearch}
+            onCustomerLoadMore={handleCustomerLoadMore}
             onCancel={handleCloseEditModal}
             onSubmit={handleEdit}
           />
@@ -186,6 +199,10 @@ function AlbumManagement() {
         deletedFiles={deletedFilesData?.data || []}
         deletedFilesLoading={deletedFilesLoading}
         onCancel={handleCloseDetailsModal}
+        coverFileId={
+          albumDetailsData?.data?.coverFile?.id || selectedAlbum?.coverFile?.id
+        }
+        onSetCover={handleSetCover}
         onRemoveFile={(fileId) => handleRemoveFiles([fileId])}
         onRestoreFile={(fileId) => handleRestoreFiles([fileId])}
         onForceDeleteFile={(fileId) => handleForceDeleteFiles([fileId])}

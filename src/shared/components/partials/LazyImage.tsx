@@ -9,6 +9,8 @@ const DEFAULT_IMAGE_PLACEHOLDER_URL =
 interface LazyImageProps {
   /** Direct image URL (preferred — no extra request) */
   src?: string;
+  /** Fallback image URL if src fails to load */
+  fallbackSrc?: string;
   /** Async function that resolves to the image URL (legacy) */
   loadSrc?: () => Promise<string>;
   alt?: string;
@@ -26,6 +28,7 @@ const urlCache = new Map<string, string>();
 
 export function LazyImage({
   src: directSrc,
+  fallbackSrc,
   loadSrc,
   alt = '',
   width = '100%',
@@ -130,7 +133,7 @@ export function LazyImage({
       width={width}
       height={height}
       style={{ objectFit: 'cover', borderRadius: '4px', ...style }}
-      fallback={DEFAULT_IMAGE_PLACEHOLDER_URL}
+      fallback={fallbackSrc || DEFAULT_IMAGE_PLACEHOLDER_URL}
       preview={preview}
     />
   );

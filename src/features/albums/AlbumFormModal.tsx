@@ -1,7 +1,7 @@
 import type { Album } from '@types';
-import { Modal, Form, Input, Switch, DatePicker } from 'antd';
+import { Modal, Form, Input, Switch, DatePicker, Select } from 'antd';
 import { type FormInstance } from 'antd';
-import dayjs from 'dayjs';
+import dayjs, { type Dayjs } from 'dayjs';
 
 const { TextArea } = Input;
 
@@ -9,9 +9,14 @@ interface AlbumFormData {
   ownerUserId?: string;
   title: string;
   description?: string;
-  bookingId?: string;
+  customerId?: string;
   isPublic: boolean;
-  expiresAt?: string;
+  expiresAt?: string | Dayjs;
+}
+
+interface CustomerOption {
+  value: string;
+  label: string;
 }
 
 interface AlbumFormModalProps {
@@ -20,6 +25,10 @@ interface AlbumFormModalProps {
   loading: boolean;
   selectedAlbum: Album | null;
   form: FormInstance<AlbumFormData>;
+  customerOptions: CustomerOption[];
+  customerLoading: boolean;
+  onCustomerSearch: (value: string) => void;
+  onCustomerLoadMore: () => void;
   onCancel: () => void;
   onSubmit: (values: AlbumFormData) => void;
 }
@@ -30,6 +39,10 @@ export function AlbumFormModal({
   loading,
   selectedAlbum,
   form,
+  customerOptions,
+  customerLoading,
+  onCustomerSearch,
+  onCustomerLoadMore,
   onCancel,
   onSubmit,
 }: AlbumFormModalProps) {
@@ -69,9 +82,26 @@ export function AlbumFormModal({
           />
         </Form.Item>
 
-        {/* <Form.Item name="bookingId" label="Booking ID (Optional)">
-          <Input placeholder="Link to booking" />
-        </Form.Item> */}
+        <Form.Item name="customerId" label="Assigned Customer (Optional)">
+          <Select
+            placeholder="Select customer"
+            showSearch={{
+              filterOption: false,
+              onSearch: onCustomerSearch,
+            }}
+            loading={customerLoading}
+            options={customerOptions}
+            onPopupScroll={(e) => {
+              const target = e.target as HTMLDivElement;
+              if (
+                target.scrollTop + target.offsetHeight >=
+                target.scrollHeight - 8
+              ) {
+                onCustomerLoadMore();
+              }
+            }}
+          />
+        </Form.Item>
 
         <Form.Item name="isPublic" label="Public Album" valuePropName="checked">
           <Switch checkedChildren="Public" unCheckedChildren="Private" />

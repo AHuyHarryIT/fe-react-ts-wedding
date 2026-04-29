@@ -9,6 +9,8 @@ import {
   ShareAltOutlined,
 } from '@ant-design/icons';
 import { useTheme } from '@hooks';
+import { albumApi } from '@/services/AlbumService';
+import { LazyImage } from '@shared/components/partials/LazyImage';
 import {
   Button,
   Card,
@@ -61,120 +63,163 @@ export function AlbumGrid({
     );
   }
 
+  const getAlbumCoverSources = (album: Album) => {
+    if (album.coverFile?.id) {
+      return {
+        primarySrc: albumApi.getThumbnailUrl(album.coverFile.id),
+        fallbackSrc: album.coverFile.storageUrl || undefined,
+      };
+    }
+
+    if (album.coverFile?.storageUrl) {
+      return {
+        primarySrc: album.coverFile.storageUrl,
+        fallbackSrc: undefined,
+      };
+    }
+
+    return {
+      primarySrc: null,
+      fallbackSrc: undefined,
+    };
+  };
+
   return (
     <div>
       <Row gutter={[16, 16]}>
-        {data.map((album) => (
-          <Col key={album.id} xs={24} sm={12} md={8} lg={6}>
-            <Card
-              hoverable
-              loading={loading}
-              cover={
-                <div
-                  style={{
-                    height: 200,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    background: isDark
-                      ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
-                      : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                  }}
-                  onClick={() => onViewDetails(album)}
-                >
-                  <PictureOutlined
+        {data.map((album) => {
+          const { primarySrc, fallbackSrc } = getAlbumCoverSources(album);
+
+          return (
+            <Col key={album.id} xs={24} sm={12} md={8} lg={6}>
+              <Card
+                hoverable
+                loading={loading}
+                cover={
+                  <div
                     style={{
-                      fontSize: 64,
-                      color: 'white',
-                      opacity: 0.8,
+                      height: 200,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      background: isDark
+                        ? 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)'
+                        : 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                      cursor: 'pointer',
+                      overflow: 'hidden',
                     }}
-                  />
-                </div>
-              }
-              actions={[
-                <Tooltip key="edit" title="Edit">
-                  <Button
-                    type="text"
-                    icon={<EditOutlined />}
-                    onClick={() => onEdit(album)}
-                  />
-                </Tooltip>,
-                <Tooltip key="share" title="Share">
-                  <Button
-                    type="text"
-                    icon={<ShareAltOutlined />}
-                    onClick={() => onShare(album)}
-                  />
-                </Tooltip>,
-                <Popconfirm
-                  key="delete"
-                  title="Delete Album"
-                  description="Are you sure you want to delete this album?"
-                  onConfirm={() => onDelete(album.id)}
-                  okText="Yes"
-                  cancelText="No"
-                >
-                  <Tooltip title="Delete">
-                    <Button type="text" danger icon={<DeleteOutlined />} />
-                  </Tooltip>
-                </Popconfirm>,
-              ]}
-            >
-              <Card.Meta
-                title={
-                  <Space
-                    style={{ width: '100%', justifyContent: 'space-between' }}
+                    onClick={() => onViewDetails(album)}
                   >
-                    <Text ellipsis style={{ flex: 1 }}>
-                      {album.title}
-                    </Text>
-                    {album.isPublic ? (
-                      <GlobalOutlined style={{ color: '#52c41a' }} />
+                    {primarySrc ? (
+                      <LazyImage
+                        src={primarySrc}
+                        fallbackSrc={fallbackSrc}
+                        cacheKey={`album-cover-${album.id}`}
+                        alt={album.title}
+                        preview={false}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          borderRadius: 0,
+                        }}
+                      />
                     ) : (
-                      <LockOutlined style={{ color: '#faad14' }} />
+                      <PictureOutlined
+                        style={{
+                          fontSize: 64,
+                          color: 'white',
+                          opacity: 0.8,
+                        }}
+                      />
                     )}
-                  </Space>
-                }
-                description={
-                  <div>
-                    {album.description && (
-                      <Text
-                        type="secondary"
-                        ellipsis
-                        style={{ display: 'block', marginBottom: 8 }}
-                      >
-                        {album.description}
-                      </Text>
-                    )}
-                    <Space
-                      orientation="vertical"
-                      size={4}
-                      style={{ width: '100%' }}
-                    >
-                      <Space>
-                        <ClockCircleOutlined />
-                        <Text type="secondary" style={{ fontSize: 12 }}>
-                          {new Date(album.createdAt).toLocaleDateString()}
-                        </Text>
-                      </Space>
-                      {album.expiresAt && (
-                        <Tag color="orange" style={{ marginTop: 4 }}>
-                          Expires:{' '}
-                          {new Date(album.expiresAt).toLocaleDateString()}
-                        </Tag>
-                      )}
-                      {album.share_token && (
-                        <Tag color="blue" style={{ marginTop: 4 }}>
-                          Shared
-                        </Tag>
-                      )}
-                    </Space>
                   </div>
                 }
-              />
-            </Card>
-          </Col>
-        ))}
+                actions={[
+                  <Tooltip key="edit" title="Edit">
+                    <Button
+                      type="text"
+                      icon={<EditOutlined />}
+                      onClick={() => onEdit(album)}
+                    />
+                  </Tooltip>,
+                  <Tooltip key="share" title="Share">
+                    <Button
+                      type="text"
+                      icon={<ShareAltOutlined />}
+                      onClick={() => onShare(album)}
+                    />
+                  </Tooltip>,
+                  <Popconfirm
+                    key="delete"
+                    title="Delete Album"
+                    description="Are you sure you want to delete this album?"
+                    onConfirm={() => onDelete(album.id)}
+                    okText="Yes"
+                    cancelText="No"
+                  >
+                    <Tooltip title="Delete">
+                      <Button type="text" danger icon={<DeleteOutlined />} />
+                    </Tooltip>
+                  </Popconfirm>,
+                ]}
+              >
+                <Card.Meta
+                  title={
+                    <Space
+                      style={{ width: '100%', justifyContent: 'space-between' }}
+                    >
+                      <Text ellipsis style={{ flex: 1 }}>
+                        {album.title}
+                      </Text>
+                      {album.isPublic ? (
+                        <GlobalOutlined style={{ color: '#52c41a' }} />
+                      ) : (
+                        <LockOutlined style={{ color: '#faad14' }} />
+                      )}
+                    </Space>
+                  }
+                  description={
+                    <div>
+                      {album.description && (
+                        <Text
+                          type="secondary"
+                          ellipsis
+                          style={{ display: 'block', marginBottom: 8 }}
+                        >
+                          {album.description}
+                        </Text>
+                      )}
+                      <Space
+                        orientation="vertical"
+                        size={4}
+                        style={{ width: '100%' }}
+                      >
+                        <Space>
+                          <ClockCircleOutlined />
+                          <Text type="secondary" style={{ fontSize: 12 }}>
+                            {new Date(album.createdAt).toLocaleDateString()}
+                          </Text>
+                        </Space>
+                        {album.expiresAt && (
+                          <Tag color="orange" style={{ marginTop: 4 }}>
+                            Expires:{' '}
+                            {new Date(album.expiresAt).toLocaleDateString()}
+                          </Tag>
+                        )}
+                        {album.share_token && (
+                          <Tag color="blue" style={{ marginTop: 4 }}>
+                            Shared
+                          </Tag>
+                        )}
+                      </Space>
+                    </div>
+                  }
+                />
+              </Card>
+            </Col>
+          );
+        })}
       </Row>
 
       <div style={{ marginTop: 24, textAlign: 'center' }}>

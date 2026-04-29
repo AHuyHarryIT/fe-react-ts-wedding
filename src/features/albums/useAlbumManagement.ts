@@ -1,6 +1,8 @@
 import { useState, useRef } from 'react';
 import { App, Form } from 'antd';
+import dayjs, { type Dayjs } from 'dayjs';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useGenericSelect } from '@hooks/useGenericSelect';
 import type {
   AddFilesToAlbumRequest,
   Album,
@@ -16,10 +18,17 @@ interface AlbumFormData {
   ownerUserId?: string;
   title: string;
   description?: string;
-  bookingId?: string;
+  customerId?: string;
   isPublic: boolean;
-  expiresAt?: string;
+  expiresAt?: string | Dayjs;
 }
+
+type CustomerSelectionItem = {
+  id: string;
+  firstName?: string;
+  lastName?: string;
+  phoneNumber: string;
+};
 
 // Query keys
 const albumKeys = {
@@ -108,6 +117,27 @@ export function useAlbumManagement() {
     enabled: !!selectedAlbum && isDetailsModalOpen && showTrash,
     staleTime: 30000,
   });
+
+  const customerSelection = useGenericSelect<CustomerSelectionItem>({
+    entity: 'customers',
+  });
+
+  const customerOptions = customerSelection.options.map((customer) => {
+    const customerName = [customer.lastName, customer.firstName]
+      .filter(Boolean)
+      .join(' ')
+      .trim();
+    const customerLabel = customerName || customer.phoneNumber || '—';
+
+    return {
+      value: customer.id,
+      label: `${customerLabel} (${customer.phoneNumber})`,
+    };
+  });
+
+  const customerSelectionLoading = customerSelection.loading;
+  const handleCustomerSearch = customerSelection.onSearch;
+  const handleCustomerLoadMore = customerSelection.loadMore;
 
   // Mutations
   const createMutation = useMutation({
@@ -355,8 +385,9 @@ export function useAlbumManagement() {
   const handleCreate = (values: AlbumFormData) => {
     const data: CreateAlbumRequest = {
       ...values,
+      customerId: values.customerId || undefined,
       expiresAt: values.expiresAt
-        ? new Date(values.expiresAt).toISOString()
+        ? dayjs(values.expiresAt).toISOString()
         : undefined,
     };
     createMutation.mutate(data, {
@@ -373,7 +404,11 @@ export function useAlbumManagement() {
     const data: UpdateAlbumRequest = {
       title: values.title,
       description: values.description,
+      customerId: values.customerId || undefined,
       isPublic: values.isPublic,
+      expiresAt: values.expiresAt
+        ? dayjs(values.expiresAt).toISOString()
+        : undefined,
     };
 
     updateMutation.mutate(
@@ -406,9 +441,9 @@ export function useAlbumManagement() {
       ownerUserId: album.ownerUserId,
       title: album.title,
       description: album.description || '',
-      bookingId: album.bookingId || '',
+      customerId: album.customerId || undefined,
       isPublic: album.isPublic,
-      expiresAt: album.expiresAt || undefined,
+      expiresAt: album.expiresAt ? dayjs(album.expiresAt) : undefined,
     });
     setIsEditModalOpen(true);
   };
@@ -452,6 +487,41 @@ export function useAlbumManagement() {
       id: selectedAlbum.id,
       data: { fileIds },
     });
+  };
+
+  const handleSetCover = (fileId: string) => {
+    if (!selectedAlbum) return;
+
+    updateMutation.mutate(
+      {
+        id: selectedAlbum.id,
+        data: {
+          title: selectedAlbum.title,
+          description: selectedAlbum.description,
+          customerId: selectedAlbum.customerId,
+          isPublic: selectedAlbum.isPublic,
+          expiresAt: selectedAlbum.expiresAt,
+          coverFileId: fileId,
+        },
+      },
+      {
+        onSuccess: () => {
+          setSelectedAlbum((previous) => {
+            if (!previous) {
+              return previous;
+            }
+
+            return {
+              ...previous,
+              coverFileId: fileId,
+              coverFile: previous.coverFile
+                ? { ...previous.coverFile, id: fileId }
+                : { id: fileId, storageUrl: '' },
+            };
+          });
+        },
+      }
+    );
   };
 
   const handleGenerateShareToken = (album: Album, expiresAt?: string) => {
@@ -560,6 +630,10 @@ export function useAlbumManagement() {
     deletedAlbumsLoading,
     deletedFilesData,
     deletedFilesLoading,
+    customerOptions,
+    customerSelectionLoading,
+    handleCustomerSearch,
+    handleCustomerLoadMore,
     createForm,
     editForm,
     messageApi,
@@ -597,6 +671,7 @@ export function useAlbumManagement() {
     handleRemoveFiles,
     handleRestoreFiles,
     handleForceDeleteFiles,
+    handleSetCover,
     handleGenerateShareToken,
     handleRevokeShareToken,
     handleCloseCreateModal,
