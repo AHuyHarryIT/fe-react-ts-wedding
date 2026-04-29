@@ -1,7 +1,5 @@
 import {
-  ApartmentOutlined,
   BarChartOutlined,
-  BellOutlined,
   CalendarOutlined,
   CameraOutlined,
   CloseOutlined,
@@ -75,18 +73,6 @@ export function Sidebar({
           onClick: () => navigate({ to: '/jobs' }),
         },
         {
-          key: 'calendar',
-          icon: <CalendarOutlined />,
-          label: 'Calendar',
-          onClick: () => navigate({ to: '/calendar' }),
-        },
-        {
-          key: 'reminders',
-          icon: <BellOutlined />,
-          label: 'Reminders',
-          onClick: () => navigate({ to: '/reminders' }),
-        },
-        {
           key: 'chat',
           icon: <MessageOutlined />,
           label: 'Chat',
@@ -109,12 +95,6 @@ export function Sidebar({
           icon: <GiftOutlined />,
           label: 'Packages',
           onClick: () => navigate({ to: '/packages' }),
-        },
-        {
-          key: 'inventory',
-          icon: <ApartmentOutlined />,
-          label: 'Inventory',
-          onClick: () => navigate({ to: '/inventory' }),
         },
         {
           key: 'albums',
@@ -266,7 +246,6 @@ export function Sidebar({
             style={{ color: darkMode ? '#94a3b8' : '#64748b' }}
           >
             <li>Review today&apos;s bookings before opening your schedule.</li>
-            <li>Use reminders to stay ahead of upcoming deadlines.</li>
             <li>Check reports weekly to spot booking and revenue trends.</li>
           </ul>
         </div>

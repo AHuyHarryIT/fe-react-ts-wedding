@@ -7,136 +7,9 @@ import {
   SunOutlined,
   UserOutlined,
 } from '@ant-design/icons';
-import { Avatar, Badge, Button, Dropdown, Space, Typography } from 'antd';
-import { BellOutlined } from '@ant-design/icons';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'react';
-import * as ReminderService from '@/services/ReminderService';
-import dayjs from 'dayjs';
-import relativeTime from 'dayjs/plugin/relativeTime';
-dayjs.extend(relativeTime);
+import { Avatar, Button, Space, Typography } from 'antd';
 
 const { Text } = Typography;
-
-interface NotifItem {
-  id: string;
-  reminderId: string;
-  channel: string;
-  title: string;
-  message: string;
-  isRead: boolean;
-  createdAt: string;
-}
-
-function NotificationBellInline({ darkMode }: { darkMode: boolean }) {
-  const queryClient = useQueryClient();
-  const setOpen = useState(false)[1];
-
-  const { data: unreadData } = useQuery({
-    queryKey: ['notifications-unread'],
-    queryFn: () => ReminderService.getUnreadCount(),
-    refetchInterval: 300000,
-  });
-
-  const { data: notificationsData } = useQuery({
-    queryKey: ['notifications-recent'],
-    queryFn: () => ReminderService.getNotifications({ limit: 10 }),
-    refetchInterval: 300000,
-  });
-
-  const markReadMutation = useMutation({
-    mutationFn: (id: string) => ReminderService.markNotificationRead(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
-      queryClient.invalidateQueries({ queryKey: ['notifications-unread'] });
-    },
-  });
-
-  const markAllReadMutation = useMutation({
-    mutationFn: () => ReminderService.markAllNotificationsRead(),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['notifications-recent'] });
-      queryClient.invalidateQueries({ queryKey: ['notifications-unread'] });
-    },
-  });
-
-  const unreadCount = unreadData?.count ?? 0;
-  const notifications: NotifItem[] = notificationsData?.data ?? [];
-
-  const dropdownItems = notifications.map((n: NotifItem) => ({
-    key: n.id,
-    label: (
-      <div style={{ maxWidth: 340, padding: '8px 4px' }}>
-        <div style={{ fontWeight: 600, fontSize: 13 }}>{n.title}</div>
-        <div style={{ fontSize: 12, color: '#888' }}>{n.message}</div>
-        <div style={{ fontSize: 11, color: '#aaa', marginTop: 2 }}>
-          {dayjs(n.createdAt).fromNow()}
-        </div>
-      </div>
-    ),
-    onClick: () => {
-      if (!n.isRead) markReadMutation.mutate(n.id);
-    },
-  }));
-
-  return (
-    <Dropdown
-      menu={{ items: dropdownItems }}
-      onOpenChange={setOpen}
-      trigger={['click']}
-      popupRender={(menu) => (
-        <div style={{ maxWidth: 360 }}>
-          <div
-            style={{
-              padding: '8px 12px',
-              display: 'flex',
-              justifyContent: 'space-between',
-              borderBottom: '1px solid #f0f0f0',
-              background: darkMode ? '#1e293b' : '#fafafa',
-              color: darkMode ? '#e2e8f0' : '#1f2937',
-            }}
-          >
-            <strong>{unreadCount} unread</strong>
-            {unreadCount > 0 && (
-              <Button
-                type="link"
-                size="small"
-                onClick={() => markAllReadMutation.mutate()}
-                style={{ padding: 0 }}
-              >
-                Mark all read
-              </Button>
-            )}
-          </div>
-          {unreadCount === 0 && (
-            <div
-              style={{
-                padding: 24,
-                textAlign: 'center',
-                color: '#999',
-                background: darkMode ? '#0f172a' : '#fff',
-              }}
-            >
-              No notifications
-            </div>
-          )}
-          {notifications.length > 0 && menu}
-        </div>
-      )}
-    >
-      <Badge count={unreadCount > 99 ? '99+' : unreadCount} size="small">
-        <Button
-          type="text"
-          icon={<BellOutlined />}
-          style={{
-            color: darkMode ? '#94a3b8' : '#475569',
-            fontSize: 16,
-          }}
-        />
-      </Badge>
-    </Dropdown>
-  );
-}
 
 interface HeaderProps {
   collapsed: boolean;
@@ -218,7 +91,6 @@ export function Header({
           </Space>
 
           <Space size="small" className="shrink-0">
-            <NotificationBellInline darkMode={darkMode} />
             <Button
               type="text"
               icon={darkMode ? <SunOutlined /> : <MoonOutlined />}

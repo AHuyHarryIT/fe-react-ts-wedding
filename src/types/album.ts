@@ -8,12 +8,20 @@ export interface Album {
   coverFileId?: string;
   ownerUserId: string;
   bookingId?: string;
+  customerId?: string;
   oneDriveFolderUrl?: string;
   owner: {
     id: string;
     firstName?: string;
     lastName?: string;
     phoneNumber: string;
+  };
+  customer?: {
+    id: string;
+    firstName?: string;
+    lastName?: string;
+    phoneNumber: string;
+    email?: string;
   };
   coverFile?: {
     id: string;
@@ -50,6 +58,7 @@ export interface CreateAlbumRequest {
   title: string;
   description?: string;
   bookingId?: string;
+  customerId?: string;
   isPublic?: boolean;
   share_token?: string;
   expiresAt?: string;
@@ -59,7 +68,10 @@ export interface CreateAlbumRequest {
 export interface UpdateAlbumRequest {
   title?: string;
   description?: string;
+  bookingId?: string;
+  customerId?: string;
   isPublic?: boolean;
+  expiresAt?: string;
   coverFileId?: string;
 }
 
