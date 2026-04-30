@@ -218,6 +218,7 @@ export interface QueryBookingParams extends PaginationParams {
   includePackages?: boolean;
   includeServices?: boolean;
   includeStaffs?: boolean;
+  includeOrders?: boolean;
 }
 
 export interface CreateBookingSessionRequest {

@@ -11,7 +11,13 @@ import {
   Spin,
 } from 'antd';
 import { useMutation } from '@tanstack/react-query';
-import { paymentApi, type MomoPaymentRequest } from '@services/PaymentService';
+import type { StandardResponse } from '@types';
+import {
+  paymentApi,
+  type MomoPaymentRequest,
+  type MomoPaymentResponse,
+  type Payment,
+} from '@services/PaymentService';
 
 interface PaymentFormModalProps {
   isOpen: boolean;
@@ -32,14 +38,18 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
   const [form] = Form.useForm();
   const [paymentMethod, setPaymentMethod] = useState<'CASH' | 'MOMO'>('CASH');
 
-  const createPaymentMutation = useMutation({
-    mutationFn: ({
-      method,
-      amount,
-    }: {
-      method: 'CASH' | 'MOMO';
-      amount: number;
-    }) => {
+  type PaymentMethod = 'CASH' | 'MOMO';
+  type PaymentMutationVariables = { method: PaymentMethod; amount: number };
+  type PaymentMutationResult =
+    | StandardResponse<MomoPaymentResponse>
+    | StandardResponse<Payment>;
+
+  const createPaymentMutation = useMutation<
+    PaymentMutationResult,
+    Error,
+    PaymentMutationVariables
+  >({
+    mutationFn: ({ method, amount }) => {
       if (method === 'CASH') {
         return paymentApi.createCash(bookingId, amount);
       }
@@ -48,16 +58,18 @@ export const PaymentFormModal: React.FC<PaymentFormModalProps> = ({
     },
     onSuccess: (result, variables) => {
       if (variables.method === 'CASH') {
-        if (result.data) {
+        const cashResult = result as StandardResponse<Payment>;
+        if (cashResult.data) {
           message.success('Cash payment recorded successfully');
           if (onPaymentSuccess) {
-            onPaymentSuccess(String(result.data.id));
+            onPaymentSuccess(String(cashResult.data.id));
           }
           form.resetFields();
           onClose();
         }
       } else {
-        const response = result.data;
+        const momoResult = result as StandardResponse<MomoPaymentResponse>;
+        const response = momoResult.data;
         if (response?.success && response?.payUrl) {
           localStorage.setItem('currentOrderId', bookingId);
           localStorage.setItem('orderId', bookingId);

@@ -194,6 +194,7 @@ export function useBookingManagement() {
         includePackage: true,
         includePackages: true,
         includeServices: true,
+        includeOrders: true,
       }),
   });
 

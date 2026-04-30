@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Result,
   Button,
@@ -29,6 +29,13 @@ import { formatMoneyVND } from '@utils/money';
  * - Shows real-time status updates
  * - Handles successful, partial, and pending states
  */
+const ORDER_STATUS_POLL_INTERVAL_MS = 2000;
+const MOMO_STATUS_POLL_INTERVAL_MS = 4000;
+const MAX_POLL_SECONDS = 60;
+const MAX_MANUAL_RETRIES = 3;
+
+type PaymentOrder = Awaited<ReturnType<typeof ordersService.getOrder>>;
+
 export const PaymentResultPage: React.FC = () => {
   const queryClient = useQueryClient();
 
@@ -44,7 +51,6 @@ export const PaymentResultPage: React.FC = () => {
   const momoResultCode = searchParams.get('resultCode');
   const momoMessage = searchParams.get('message');
 
-  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const pollCountRef = useRef(0);
   const elapsedRef = useRef(0);
 
@@ -53,6 +59,7 @@ export const PaymentResultPage: React.FC = () => {
   const [gatewayConfirmed, setGatewayConfirmed] = useState(false);
   const [pollCount, setPollCount] = useState(0);
   const [elapsedTime, setElapsedTime] = useState(0);
+  const [manualRetries, setManualRetries] = useState(0);
 
   // Early exit: Momo payment failed
   const momoFailed = momoResultCode && Number(momoResultCode) !== 0;
@@ -72,55 +79,67 @@ export const PaymentResultPage: React.FC = () => {
       return;
     }
 
-    console.log('🔄 PaymentResultPage: Loaded for bookingId:', bookingId);
+    console.log('PaymentResultPage: Loaded for bookingId:', bookingId);
     localStorage.setItem('currentBookingId', bookingId);
   }, [hasBookingId, bookingId, momoFailed, momoMessage]);
 
   // Query 1: Order status polling via useQuery
-  const { data: orderData, isFetching: isLoading } = useQuery({
+  const orderQuery = useQuery<PaymentOrder>({
     queryKey: ['payment-order-status', bookingId],
     queryFn: () => ordersService.getOrder(bookingId!),
     enabled: isPolling && hasBookingId && !momoFailed,
     refetchInterval: () => {
-      elapsedRef.current += 2;
+      elapsedRef.current += ORDER_STATUS_POLL_INTERVAL_MS / 1000;
       pollCountRef.current += 1;
-      setElapsedTime(elapsedRef.current);
-      setPollCount(pollCountRef.current);
 
-      if (elapsedRef.current >= 60) {
-        console.log('⏰ Polling timeout - stopped after 60 seconds');
+      if (elapsedRef.current >= MAX_POLL_SECONDS) {
+        console.log(
+          `Polling timeout - stopped after ${MAX_POLL_SECONDS} seconds`
+        );
+        setIsPolling(false);
+        setError(
+          gatewayConfirmed
+            ? 'MoMo confirmed payment, but order sync is delayed. Please retry or contact support with your booking ID.'
+            : "We couldn't verify your payment within the expected time. Please check Momo and retry."
+        );
         return false;
       }
 
-      return 2000;
+      return ORDER_STATUS_POLL_INTERVAL_MS;
     },
     retry: false,
     staleTime: 0, // keep 0 for real-time payment status
   });
+
+  const orderData = orderQuery.data as PaymentOrder | undefined;
+  const isLoading = orderQuery.isFetching;
+
+  useEffect(() => {
+    if (orderData) {
+      setElapsedTime(elapsedRef.current);
+      setPollCount(pollCountRef.current);
+    }
+  }, [orderData]);
 
   // Query 2: Momo gateway status polling via useQuery
   const { data: gatewayStatus } = useQuery({
     queryKey: ['momo-gateway-status', momoOrderId],
     queryFn: () => ordersService.checkMomoPaymentStatus(momoOrderId!),
     enabled: isPolling && !!momoOrderId && hasBookingId && !momoFailed,
-    refetchInterval: 4000,
+    refetchInterval: MOMO_STATUS_POLL_INTERVAL_MS,
     retry: false,
     staleTime: 0, // keep 0 for real-time payment status
   });
 
-  // Stop polling when payment is confirmed
-  const stopPollingIfPaid = useCallback(() => {
+  // Stop polling when payment reaches terminal status
+  useEffect(() => {
     if (orderData?.summary?.isPaid || orderData?.status === 'PAID') {
-      console.log('✅ PAYMENT CONFIRMED! Stopping polls.');
+      console.log('PAYMENT STATE RESOLVED! Stopping polls.');
       setIsPolling(false);
       localStorage.removeItem('currentBookingId');
       localStorage.removeItem('currentMomoOrderId');
     }
   }, [orderData?.summary?.isPaid, orderData?.status]);
-
-  useEffect(() => {
-    stopPollingIfPaid();
-  }, [stopPollingIfPaid]);
 
   // Track gateway confirmation
   useEffect(() => {
@@ -138,27 +157,26 @@ export const PaymentResultPage: React.FC = () => {
   useEffect(() => {
     if (orderData && isPolling) {
       console.log(
-        `📊 Poll #${pollCount} (${elapsedTime}s): Status=${orderData.status}, Paid=${orderData.summary?.totalPaid}/${orderData.summary?.totalPrice}`
+        `Poll #${pollCount} (${elapsedTime}s): Status=${orderData.status}, Paid=${orderData.summary?.totalPaid}/${orderData.summary?.totalPrice}`
       );
     }
   }, [orderData, pollCount, elapsedTime, isPolling]);
 
-  // Cleanup on unmount
-  useEffect(() => {
-    const currentTimer = timerRef.current;
-    return () => {
-      if (currentTimer) {
-        clearInterval(currentTimer);
-      }
-    };
-  }, []);
-
   const handleRetry = () => {
-    console.log('🔄 Manually retrying...');
+    if (manualRetries >= MAX_MANUAL_RETRIES) {
+      setError(
+        `Maximum retry attempts reached (${MAX_MANUAL_RETRIES}). Please contact support with your booking ID.`
+      );
+      setIsPolling(false);
+      return;
+    }
+
+    console.log('Manually retrying...');
     pollCountRef.current = 0;
     elapsedRef.current = 0;
     setPollCount(0);
     setElapsedTime(0);
+    setManualRetries((value) => value + 1);
     setIsPolling(true);
     setError(null);
     // Invalidate queries to trigger immediate refetch

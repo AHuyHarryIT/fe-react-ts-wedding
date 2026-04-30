@@ -128,14 +128,14 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
 
   const handleCheckout = async (values: CheckoutFormValues) => {
     try {
-      if (existingOrder && existingOrder.bookingId) {
-        // Second checkout: pay remaining
+      const isPartialOrder = existingOrder?.status === 'PARTIAL';
+
+      if (isPartialOrder && existingOrder?.bookingId) {
         if (!values.paymentMethod) {
           message.error('Payment method is required');
           return;
         }
 
-        // Calculate remaining amount from API summary
         const remainingAmount =
           existingOrder.summary?.remainingAmount ?? calculateRemaining();
 
@@ -144,20 +144,16 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
           return;
         }
 
-        // First, create the remaining payment
-        const payRemainingData = {
+        const updatedOrder = await payRemainingMutation.mutateAsync({
           bookingId: existingOrder.bookingId,
-          paymentAmount: remainingAmount,
-          paymentMethod: values.paymentMethod as PaymentMethod,
-          note: values.note || '',
-        };
+          data: {
+            paymentAmount: remainingAmount,
+            paymentMethod: values.paymentMethod as PaymentMethod,
+            note: values.note || '',
+          },
+        });
 
-        const updatedOrder =
-          await payRemainingMutation.mutateAsync(payRemainingData);
-
-        // Handle MOMO payment for E-WALLET
         if (values.paymentMethod === 'E_WALLET') {
-          // Extract the new remaining payment ID
           const remainingPayment = updatedOrder.payments?.find(
             (p) => p.paymentType === 'REMAINING' && p.status === 'PENDING'
           );
@@ -176,36 +172,33 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
           if (!handleMomoRedirect(momoResponse, existingOrder.bookingId)) {
             return;
           }
+
+          return;
         }
 
         message.success('Payment completed successfully!');
         onCheckoutSuccess?.(updatedOrder);
       } else {
-        // First checkout: create order with appropriate payment option
         if (paymentOption === 'deposit' || paymentOption === 'full') {
           const checkoutData: CheckoutRequest = {
             bookingId,
-            makeDeposit: paymentOption === 'deposit',
+            makeDeposit: true,
             depositValue:
-              paymentOption === 'deposit' ? MIN_DEPOSIT_PERCENTAGE : totalPrice,
-            isDepositPercentage: paymentOption === 'deposit',
+              paymentOption === 'deposit' ? MIN_DEPOSIT_PERCENTAGE : 100,
+            isDepositPercentage: true,
             paymentMethod: values.paymentMethod as PaymentMethod | undefined,
             note: values.note || '',
           };
 
-          // Handle MOMO payment for E-WALLET
-          if (values.paymentMethod === 'E_WALLET') {
-            // First create the order
-            const order = await checkoutMutation.mutateAsync(checkoutData);
+          const order = await checkoutMutation.mutateAsync(checkoutData);
 
-            // Extract payment ID from the created order
+          if (values.paymentMethod === 'E_WALLET') {
             const paymentId = order.payments?.[0]?.id;
             if (!paymentId) {
               message.error('Payment not created - unable to initiate MOMO');
               return;
             }
 
-            // Then initiate MOMO payment with payment ID
             const momoResponse = await momoMutation.mutateAsync({
               bookingId: order.bookingId,
               paymentId,
@@ -215,9 +208,10 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
             if (!handleMomoRedirect(momoResponse, order.bookingId)) {
               return;
             }
+
+            return;
           }
 
-          const order = await checkoutMutation.mutateAsync(checkoutData);
           message.success(
             `${paymentOption === 'deposit' ? 'Deposit' : 'Full'} payment processed successfully!`
           );
@@ -248,11 +242,12 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
     );
   };
 
-  const submitLabel = existingOrder
-    ? 'Collect Remaining Payment'
-    : paymentOption === 'deposit'
-      ? 'Collect 30% Deposit'
-      : 'Collect Full Payment';
+  const submitLabel =
+    existingOrder?.status === 'PARTIAL'
+      ? 'Collect Remaining Payment'
+      : paymentOption === 'deposit'
+        ? 'Collect 30% Deposit'
+        : 'Collect Full Payment';
 
   return (
     <Form form={form} layout="vertical" onFinish={handleCheckout}>
@@ -324,8 +319,8 @@ export const CheckoutForm: React.FC<CheckoutFormProps> = ({
         </>
       )}
 
-      {/* Deposit Option (First Checkout Only) */}
-      {!existingOrder && (
+      {/* Deposit Option (First Checkout + UNPAID Existing Order) */}
+      {existingOrder?.status !== 'PARTIAL' && (
         <>
           <Form.Item label="Payment Plan">
             <Radio.Group

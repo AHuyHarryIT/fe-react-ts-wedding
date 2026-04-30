@@ -289,6 +289,7 @@ export const BookingDetailWithOrders: React.FC<
     currentBooking?.status !== 'CANCELLED';
   const canMarkCompleted =
     currentBooking?.status === 'CONFIRMED' && order?.status === 'PAID';
+  const canOpenPayment = currentBooking?.status === 'CONFIRMED';
 
   const [actionReasonState, setActionReasonState] = useState<{
     editReason: string | null;
@@ -979,7 +980,11 @@ export const BookingDetailWithOrders: React.FC<
                   ) : order ? (
                     <OrderDetail
                       order={order}
-                      onPayRemainingClick={() => setCheckoutModalOpen(true)}
+                      onPayRemainingClick={
+                        canOpenPayment
+                          ? () => setCheckoutModalOpen(true)
+                          : undefined
+                      }
                     />
                   ) : (
                     <Card>
@@ -989,7 +994,13 @@ export const BookingDetailWithOrders: React.FC<
                         type="primary"
                         size="large"
                         block
-                        onClick={() => setCheckoutModalOpen(true)}
+                        disabled={!canOpenPayment}
+                        onClick={() => {
+                          if (!canOpenPayment) {
+                            return;
+                          }
+                          setCheckoutModalOpen(true);
+                        }}
                       >
                         Create Order / Collect Deposit
                       </Button>
@@ -1004,8 +1015,12 @@ export const BookingDetailWithOrders: React.FC<
 
       {/* Checkout Modal */}
       <Modal
-        title={order ? 'Collect Remaining Payment' : 'Deposit or Full Checkout'}
-        open={checkoutModalOpen}
+        title={
+          order?.status === 'PARTIAL'
+            ? 'Collect Remaining Payment'
+            : 'Deposit or Full Checkout'
+        }
+        open={checkoutModalOpen && canOpenPayment}
         onCancel={() => setCheckoutModalOpen(false)}
         footer={null}
         width={700}

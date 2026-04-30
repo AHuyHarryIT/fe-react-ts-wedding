@@ -5,7 +5,7 @@ import {
   StatusChip,
 } from '@shared/components/ui';
 import type { ColumnsType } from 'antd/es/table';
-import type { Booking, BookingStatus } from '@types';
+import type { Booking, BookingStatus, OrderStatus } from '@types';
 import { formatMoneyVND } from '@utils/money';
 import { DeleteOutlined } from '@ant-design/icons';
 
@@ -29,20 +29,55 @@ interface BookingTableProps {
   onBulkDelete?: () => void;
 }
 
-const statusToneMap: Record<
-  BookingStatus,
-  'orange' | 'blue' | 'green' | 'red' | 'purple'
+type BookingDisplayStatus = 'PENDING' | 'CONFIRM' | 'CANCEL' | 'COMPLETE';
+type PaymentDisplayStatus = 'PENDING' | 'REMAINING' | 'COMPLETE';
+
+const bookingStatusToneMap: Record<
+  BookingDisplayStatus,
+  'orange' | 'blue' | 'green' | 'red'
 > = {
   PENDING: 'orange',
-  DEPOSIT_PAID: 'purple',
-  CONFIRMED: 'blue',
-  COMPLETED: 'green',
-  CANCELLED: 'red',
-  RESCHEDULED: 'purple',
+  CONFIRM: 'blue',
+  CANCEL: 'red',
+  COMPLETE: 'green',
 };
 
-const formatBookingStatus = (status: BookingStatus) =>
-  status.replace(/_/g, ' ');
+const paymentStatusToneMap: Record<
+  PaymentDisplayStatus,
+  'orange' | 'blue' | 'green'
+> = {
+  PENDING: 'orange',
+  REMAINING: 'blue',
+  COMPLETE: 'green',
+};
+
+const getBookingDisplayStatus = (
+  status: BookingStatus
+): BookingDisplayStatus => {
+  if (status === 'CONFIRMED' || status === 'DEPOSIT_PAID') {
+    return 'CONFIRM';
+  }
+  if (status === 'COMPLETED') {
+    return 'COMPLETE';
+  }
+  if (status === 'CANCELLED') {
+    return 'CANCEL';
+  }
+  return 'PENDING';
+};
+
+const getPaymentDisplayStatus = (
+  orderStatus?: OrderStatus,
+  bookingStatus?: BookingStatus
+): PaymentDisplayStatus => {
+  if (orderStatus === 'PAID' || bookingStatus === 'COMPLETED') {
+    return 'COMPLETE';
+  }
+  if (orderStatus === 'PARTIAL' || bookingStatus === 'DEPOSIT_PAID') {
+    return 'REMAINING';
+  }
+  return 'PENDING';
+};
 
 export function BookingTable({
   bookings,
@@ -116,15 +151,34 @@ export function BookingTable({
       },
     },
     {
-      title: 'Status',
+      title: 'Booking Status',
       dataIndex: 'status',
-      key: 'status',
-      width: 120,
-      render: (status: BookingStatus) => (
-        <StatusChip tone={statusToneMap[status]}>
-          {formatBookingStatus(status)}
-        </StatusChip>
-      ),
+      key: 'bookingStatus',
+      width: 140,
+      render: (status: BookingStatus) => {
+        const bookingStatus = getBookingDisplayStatus(status);
+        return (
+          <StatusChip tone={bookingStatusToneMap[bookingStatus]}>
+            {bookingStatus}
+          </StatusChip>
+        );
+      },
+    },
+    {
+      title: 'Payment Status',
+      key: 'paymentStatus',
+      width: 140,
+      render: (_, record) => {
+        const paymentStatus = getPaymentDisplayStatus(
+          record.order?.status || record.orders?.[0]?.status,
+          record.status
+        );
+        return (
+          <StatusChip tone={paymentStatusToneMap[paymentStatus]}>
+            {paymentStatus}
+          </StatusChip>
+        );
+      },
     },
     {
       title: 'Created',
@@ -211,7 +265,7 @@ export function BookingTable({
           </Popconfirm>
         </div>
       )}
-      <StaffTableScroll minWidth={760}>
+      <StaffTableScroll minWidth={900}>
         <Table
           className="staff-table"
           columns={columns}
