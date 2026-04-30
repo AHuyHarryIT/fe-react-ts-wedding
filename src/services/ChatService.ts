@@ -120,6 +120,13 @@ class ChatService {
     return this.normalizeChat(this.extractData<Chat>(response));
   }
 
+  async assignStaffChat(chatId: string, staffId: string): Promise<Chat> {
+    const response = await api.put(`/staff-chats/${chatId}/assign`, {
+      staffId,
+    });
+    return this.normalizeChat(this.extractData<Chat>(response));
+  }
+
   async archiveChat(chatId: string): Promise<Chat> {
     const response = await api.put(`/chats/${chatId}/archive`);
     return this.normalizeChat(this.extractData<Chat>(response));

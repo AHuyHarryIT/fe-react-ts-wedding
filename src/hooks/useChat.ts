@@ -4,6 +4,8 @@ import {
   buildForbiddenReason,
   isPermissionDeniedError,
 } from '@/auth/permissionPolicy';
+import { selectionApi } from '@/services/SelectionService';
+import type { User } from '@/types/user';
 import ChatService from '../services/ChatService';
 import type { Chat, Message } from '../services/ChatService';
 
@@ -27,6 +29,7 @@ interface UseChatReturn {
   canRead: boolean;
   canReply: boolean;
   replyForbiddenReason: string | null;
+  assigningChatId: string | null;
   isTyping: boolean;
   otherUserTyping: boolean;
   createChat: (
@@ -36,6 +39,12 @@ interface UseChatReturn {
   ) => Promise<void>;
   selectChat: (chatId: string) => Promise<void>;
   sendMessage: (content: string) => Promise<void>;
+  assignChatToStaff: (staffId: string) => Promise<void>;
+  assignableStaff: User[];
+  loadingAssignableStaff: boolean;
+  loadingMoreAssignableStaff: boolean;
+  hasMoreAssignableStaff: boolean;
+  loadMoreAssignableStaff: () => Promise<void>;
   refreshChats: () => Promise<void>;
   retryCurrentThread: () => Promise<void>;
   loadOlderMessages: () => Promise<void>;
@@ -87,6 +96,10 @@ const sortMessagesChronologically = (items: Message[]): Message[] =>
 
 const INITIAL_MESSAGES_TAKE = 20;
 const OLDER_MESSAGES_TAKE = 10;
+const ASSIGNABLE_STAFF_PAGE_SIZE = 20;
+const ASSIGNABLE_STAFF_MAX_PAGES = 100;
+const ASSIGNABLE_STAFF_MAX_ITEMS =
+  ASSIGNABLE_STAFF_PAGE_SIZE * ASSIGNABLE_STAFF_MAX_PAGES;
 
 export const useChat = (userId: string): UseChatReturn => {
   const [chats, setChats] = useState<Chat[]>([]);
@@ -106,8 +119,17 @@ export const useChat = (userId: string): UseChatReturn => {
   const [replyForbiddenReason, setReplyForbiddenReason] = useState<
     string | null
   >(null);
+  const [assigningChatId, setAssigningChatId] = useState<string | null>(null);
+  const [assignableStaff, setAssignableStaff] = useState<User[]>([]);
+  const [loadingAssignableStaff, setLoadingAssignableStaff] = useState(false);
+  const [loadingMoreAssignableStaff, setLoadingMoreAssignableStaff] =
+    useState(false);
+  const [hasMoreAssignableStaff, setHasMoreAssignableStaff] = useState(true);
 
   const currentChatIdRef = useRef<string | null>(null);
+  const assignableStaffPageRef = useRef(0);
+  const loadingMoreAssignableStaffRef = useRef(false);
+  const loadingAssignableStaffRef = useRef(false);
   const socketRef = useRef<Socket | null>(null);
   const hasConnectedOnceRef = useRef(false);
   const pendingSocketSendsRef = useRef<Map<string, PendingSocketSend>>(
@@ -210,6 +232,58 @@ export const useChat = (userId: string): UseChatReturn => {
       }
     }
   }, [refreshChatsInternal, setReadForbiddenFromError]);
+
+  const loadAssignableStaffPage = useCallback(async (page: number) => {
+    const response = await selectionApi.getAll<User>({
+      entity: 'users',
+      page,
+      limit: ASSIGNABLE_STAFF_PAGE_SIZE,
+    });
+
+    const staff = response.data.filter(
+      (candidate) => candidate.isActive !== false
+    );
+
+    setAssignableStaff((prev) => {
+      const merged = [...prev, ...staff];
+      const deduped = merged.filter(
+        (candidate, index, items) =>
+          items.findIndex((entry) => entry.id === candidate.id) === index
+      );
+      return deduped.slice(0, ASSIGNABLE_STAFF_MAX_ITEMS);
+    });
+
+    assignableStaffPageRef.current = response.pagination.page;
+    setHasMoreAssignableStaff(response.pagination.hasNext);
+
+    return response.pagination.hasNext;
+  }, []);
+
+  const loadMoreAssignableStaff = useCallback(async () => {
+    if (
+      loadingAssignableStaffRef.current ||
+      loadingMoreAssignableStaffRef.current
+    ) {
+      return;
+    }
+
+    if (!hasMoreAssignableStaff) {
+      return;
+    }
+
+    loadingMoreAssignableStaffRef.current = true;
+    setLoadingMoreAssignableStaff(true);
+
+    try {
+      const nextPage = assignableStaffPageRef.current + 1;
+      await loadAssignableStaffPage(nextPage);
+    } catch {
+      setHasMoreAssignableStaff(false);
+    } finally {
+      loadingMoreAssignableStaffRef.current = false;
+      setLoadingMoreAssignableStaff(false);
+    }
+  }, [hasMoreAssignableStaff, loadAssignableStaffPage]);
 
   const updateChatsWithMessage = useCallback(
     (incomingMessage: Message) => {
@@ -535,6 +609,26 @@ export const useChat = (userId: string): UseChatReturn => {
       return;
     }
 
+    const loadAssignableStaff = async () => {
+      assignableStaffPageRef.current = 0;
+      setAssignableStaff([]);
+      setHasMoreAssignableStaff(true);
+      loadingAssignableStaffRef.current = true;
+      setLoadingAssignableStaff(true);
+
+      try {
+        await loadAssignableStaffPage(1);
+      } catch {
+        setAssignableStaff([]);
+        setHasMoreAssignableStaff(false);
+      } finally {
+        loadingAssignableStaffRef.current = false;
+        setLoadingAssignableStaff(false);
+      }
+    };
+
+    loadAssignableStaff();
+
     const loadChats = async () => {
       try {
         setLoading(true);
@@ -554,7 +648,13 @@ export const useChat = (userId: string): UseChatReturn => {
     };
 
     loadChats();
-  }, [refreshChatsInternal, selectChat, setReadForbiddenFromError, userId]);
+  }, [
+    loadAssignableStaffPage,
+    refreshChatsInternal,
+    selectChat,
+    setReadForbiddenFromError,
+    userId,
+  ]);
 
   const loadOlderMessages = useCallback(async () => {
     const activeChatId = currentChatIdRef.current;
@@ -601,6 +701,46 @@ export const useChat = (userId: string): UseChatReturn => {
     }
   }, [hasMoreMessages, loadingOlderMessages, setReadForbiddenFromError]);
 
+  const assignChatToStaff = async (staffId: string) => {
+    if (!currentChat) {
+      return;
+    }
+
+    try {
+      setAssigningChatId(currentChat.id);
+      const updatedChat = await ChatService.assignStaffChat(
+        currentChat.id,
+        staffId
+      );
+
+      setChats((prev) =>
+        prev.map((chat) => (chat.id === updatedChat.id ? updatedChat : chat))
+      );
+      setCurrentChat((prev) =>
+        prev?.id === updatedChat.id ? updatedChat : prev
+      );
+      setReplyForbiddenReason(null);
+      setError(null);
+    } catch (err) {
+      if (!setReadForbiddenFromError(err, 'Required permission: chat.read')) {
+        if (isPermissionDeniedError(err)) {
+          const reason = buildForbiddenReason(
+            err,
+            'Missing permission: chat.reply'
+          );
+          setReplyForbiddenReason(reason);
+          setError(reason);
+        } else {
+          setError(
+            err instanceof Error ? err.message : 'Failed to assign chat'
+          );
+        }
+      }
+    } finally {
+      setAssigningChatId(null);
+    }
+  };
+
   const sendMessage = async (content: string) => {
     if (!currentChat) {
       return;
@@ -613,36 +753,59 @@ export const useChat = (userId: string): UseChatReturn => {
       return;
     }
 
+    const sendViaHttp = async () => {
+      const sentMessage = await ChatService.sendMessage(
+        currentChat.id,
+        trimmedContent
+      );
+      updateChatsWithMessage(sentMessage);
+      setMessages((prev) => {
+        const exists = prev.some((message) => message.id === sentMessage.id);
+        if (exists) {
+          return prev;
+        }
+
+        loadedMessageCountRef.current += 1;
+        return [...prev, sentMessage];
+      });
+      setReplyForbiddenReason(null);
+      setIsTyping(false);
+      setError(null);
+    };
+
     if (!socket || !socket.connected) {
-      const connectionError = new Error('Chat connection is offline');
-      setError(connectionError.message);
-      throw connectionError;
+      await sendViaHttp();
+      return;
     }
 
     const clientMessageId = createClientMessageId();
 
-    await new Promise<void>((resolve, reject) => {
-      const timeoutId = setTimeout(() => {
-        pendingSocketSendsRef.current.delete(clientMessageId);
-        reject(new Error('Message delivery timed out'));
-      }, 10000);
+    try {
+      await new Promise<void>((resolve, reject) => {
+        const timeoutId = setTimeout(() => {
+          pendingSocketSendsRef.current.delete(clientMessageId);
+          reject(new Error('Message delivery timed out'));
+        }, 10000);
 
-      pendingSocketSendsRef.current.set(clientMessageId, {
-        resolve,
-        reject,
-        timeoutId,
+        pendingSocketSendsRef.current.set(clientMessageId, {
+          resolve,
+          reject,
+          timeoutId,
+        });
+
+        socket.emit('send_staff_message', {
+          chatId: currentChat.id,
+          content: trimmedContent,
+          clientMessageId,
+        });
       });
 
-      socket.emit('send_staff_message', {
-        chatId: currentChat.id,
-        content: trimmedContent,
-        clientMessageId,
-      });
-    });
-
-    setReplyForbiddenReason(null);
-    setIsTyping(false);
-    setError(null);
+      setReplyForbiddenReason(null);
+      setIsTyping(false);
+      setError(null);
+    } catch {
+      await sendViaHttp();
+    }
   };
 
   const markAsRead = async () => {
@@ -705,11 +868,18 @@ export const useChat = (userId: string): UseChatReturn => {
     canRead: !readForbiddenReason,
     canReply: !replyForbiddenReason,
     replyForbiddenReason: readForbiddenReason ?? replyForbiddenReason,
+    assigningChatId,
     isTyping,
     otherUserTyping,
     createChat,
     selectChat,
     sendMessage,
+    assignChatToStaff,
+    assignableStaff,
+    loadingAssignableStaff,
+    loadingMoreAssignableStaff,
+    hasMoreAssignableStaff,
+    loadMoreAssignableStaff,
     refreshChats,
     retryCurrentThread,
     loadOlderMessages,

@@ -7,6 +7,7 @@ import {
   Empty,
   Input,
   Layout,
+  Select,
   Spin,
   Tag,
   Typography,
@@ -18,6 +19,7 @@ import {
   SmileOutlined,
 } from '@ant-design/icons';
 import { useChat } from '../../hooks/useChat';
+import { useAuthStore } from '../../stores/authStore';
 import type { Chat, Message } from '../../services/ChatService';
 
 interface ChatPageProps {
@@ -28,7 +30,8 @@ interface ChatPageProps {
 type QueueFilter = 'all' | 'unread' | 'assigned' | 'booking-linked';
 
 const { Sider, Content } = Layout;
-const { Text } = Typography;
+const { Text, Paragraph } = Typography;
+const ASSIGNEE_SELECT_SCROLL_THRESHOLD_PX = 24;
 
 const FILTER_LABELS: Record<QueueFilter, string> = {
   all: 'All',
@@ -82,13 +85,37 @@ const formatMessageTime = (date?: Date | string): string => {
   }).format(new Date(date));
 };
 
-const getSenderLabel = (senderType: Message['senderType']): string => {
+const getSenderLabel = (
+  senderType: Message['senderType'],
+  senderStaffId: string | null,
+  senderCustomerId: string | null | undefined,
+  currentChat: Chat,
+  staffUserId: string,
+  staffNameById: Record<string, string>
+): string => {
   if (senderType === 'AI') {
     return 'AI Assistant';
   }
 
   if (senderType === 'CUSTOMER') {
-    return 'Customer';
+    if (senderCustomerId && senderCustomerId !== currentChat.customerId) {
+      return `Customer (${senderCustomerId.slice(0, 8)})`;
+    }
+
+    return getCustomerName(currentChat);
+  }
+
+  if (senderStaffId === staffUserId) {
+    return 'You';
+  }
+
+  if (senderStaffId) {
+    const staffName = staffNameById[senderStaffId];
+    if (staffName) {
+      return staffName;
+    }
+
+    return `Staff (${senderStaffId.slice(0, 8)})`;
   }
 
   return 'Staff';
@@ -122,17 +149,29 @@ export function ChatPage({ customerId }: ChatPageProps) {
     canRead,
     canReply,
     replyForbiddenReason,
+    assigningChatId,
+    assignableStaff,
+    loadingAssignableStaff,
+    loadingMoreAssignableStaff,
+    hasMoreAssignableStaff,
+    loadMoreAssignableStaff,
     selectChat,
     sendMessage,
+    assignChatToStaff,
     refreshChats,
     retryCurrentThread,
     loadOlderMessages,
   } = useChat(customerId);
 
+  const currentUser = useAuthStore((state) => state.user);
+
   const [messageContent, setMessageContent] = useState('');
+  const [selectedAssigneeStaffId, setSelectedAssigneeStaffId] =
+    useState<string>('');
   const [activeFilter, setActiveFilter] = useState<QueueFilter>('all');
   const [sendError, setSendError] = useState<string | null>(null);
   const [sending, setSending] = useState(false);
+  const loadingMoreAssignableRef = useRef(false);
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const previousChatIdRef = useRef<string | null>(null);
   const previousFirstMessageIdRef = useRef<string | null>(null);
@@ -290,6 +329,54 @@ export function ChatPage({ customerId }: ChatPageProps) {
     };
   }, [activeFilter]);
 
+  const isUnassigned = Boolean(currentChat && !currentChat.staffId);
+  const isAssignedToMe = Boolean(currentChat?.staffId === customerId);
+  const isAssignedToOther = Boolean(
+    currentChat?.staffId && currentChat.staffId !== customerId
+  );
+
+  const canAssignConversation = useMemo(() => {
+    if (!currentUser?.roles?.length) {
+      return false;
+    }
+
+    return currentUser.roles.some((role) =>
+      ['super-admin', 'admin', 'manager'].includes(role.name)
+    );
+  }, [currentUser]);
+
+  const staffNameById = useMemo(
+    () =>
+      assignableStaff.reduce<Record<string, string>>((map, candidate) => {
+        const first = candidate.firstName?.trim() || '';
+        const last = candidate.lastName?.trim() || '';
+        const fullName = `${first} ${last}`.trim();
+        map[candidate.id] = fullName || candidate.phoneNumber;
+        return map;
+      }, {}),
+    [assignableStaff]
+  );
+
+  const assignableStaffOptions = useMemo(
+    () =>
+      assignableStaff
+        .filter((candidate) => candidate.isActive !== false)
+        .map((candidate) => ({
+          label: staffNameById[candidate.id],
+          value: candidate.id,
+        })),
+    [assignableStaff, staffNameById]
+  );
+
+  useEffect(() => {
+    if (!currentChat) {
+      setSelectedAssigneeStaffId('');
+      return;
+    }
+
+    setSelectedAssigneeStaffId(currentChat.staffId || '');
+  }, [currentChat?.id, currentChat?.staffId]);
+
   const composeDisabledReason = useMemo(() => {
     if (!canRead) {
       return replyForbiddenReason || 'Required permission: chat.read';
@@ -301,6 +388,14 @@ export function ChatPage({ customerId }: ChatPageProps) {
 
     if (!canReply) {
       return replyForbiddenReason || 'Required permission: chat.reply';
+    }
+
+    if (!currentChat.staffId) {
+      return 'Assign this conversation before replying.';
+    }
+
+    if (currentChat.staffId !== customerId) {
+      return 'Only the assigned staff can reply in this conversation.';
     }
 
     if (!messageContent.trim()) {
@@ -316,12 +411,73 @@ export function ChatPage({ customerId }: ChatPageProps) {
     canRead,
     canReply,
     currentChat,
+    customerId,
     messageContent,
     replyForbiddenReason,
     sending,
   ]);
 
+  const handleAssign = async () => {
+    if (!selectedAssigneeStaffId || !currentChat) {
+      return;
+    }
+
+    await assignChatToStaff(selectedAssigneeStaffId);
+  };
+
+  const assignDisabled =
+    !currentChat ||
+    !selectedAssigneeStaffId ||
+    assigningChatId === currentChat.id ||
+    selectedAssigneeStaffId === currentChat.staffId;
+
+  const assignmentStatusLabel = isUnassigned
+    ? 'Unassigned'
+    : isAssignedToMe
+      ? 'Assigned to you'
+      : 'Assigned to another staff';
+
+  const assignmentStatusColor = isUnassigned
+    ? 'orange'
+    : isAssignedToMe
+      ? 'green'
+      : 'blue';
+
+  const assignmentHelperText = isUnassigned
+    ? 'Assign this conversation before replying.'
+    : isAssignedToOther
+      ? 'Only the assigned staff can reply in this conversation. You can reassign if needed.'
+      : 'Assigned to you. You can reassign this conversation.';
+
   const sendDisabled = Boolean(composeDisabledReason);
+
+  const handleAssignableStaffPopupScroll = async (
+    event: React.UIEvent<HTMLDivElement>
+  ) => {
+    const target = event.currentTarget;
+    const distanceToBottom =
+      target.scrollHeight - target.scrollTop - target.clientHeight;
+
+    if (distanceToBottom > ASSIGNEE_SELECT_SCROLL_THRESHOLD_PX) {
+      return;
+    }
+
+    if (
+      loadingAssignableStaff ||
+      loadingMoreAssignableStaff ||
+      loadingMoreAssignableRef.current ||
+      !hasMoreAssignableStaff
+    ) {
+      return;
+    }
+
+    loadingMoreAssignableRef.current = true;
+    try {
+      await loadMoreAssignableStaff();
+    } finally {
+      loadingMoreAssignableRef.current = false;
+    }
+  };
 
   const submitCurrentMessage = async () => {
     if (sendDisabled || !currentChat) {
@@ -503,19 +659,26 @@ export function ChatPage({ customerId }: ChatPageProps) {
                       : 'Choose a queue item to review messages'}
                 </Text>
               </div>
-              <Text
-                className={
-                  reconnectStatus === 'offline'
-                    ? 'text-red-600'
-                    : reconnectStatus === 'recovering'
-                      ? 'text-blue-600'
-                      : reconnectStatus === 'reconnecting'
-                        ? 'text-amber-600'
-                        : 'text-green-600'
-                }
-              >
-                {RECONNECT_COPY[reconnectStatus]}
-              </Text>
+              <div className="flex items-center gap-3">
+                {currentChat && (
+                  <Tag color={assignmentStatusColor}>
+                    {assignmentStatusLabel}
+                  </Tag>
+                )}
+                <Text
+                  className={
+                    reconnectStatus === 'offline'
+                      ? 'text-red-600'
+                      : reconnectStatus === 'recovering'
+                        ? 'text-blue-600'
+                        : reconnectStatus === 'reconnecting'
+                          ? 'text-amber-600'
+                          : 'text-green-600'
+                  }
+                >
+                  {RECONNECT_COPY[reconnectStatus]}
+                </Text>
+              </div>
             </div>
           </div>
 
@@ -577,68 +740,124 @@ export function ChatPage({ customerId }: ChatPageProps) {
                     <Empty description="No messages yet" />
                   </div>
                 ) : (
-                  <>
-                    <div className="space-y-6">
-                      {messages.map((message: Message) => {
-                        const senderType =
-                          message.senderType ||
-                          (message.senderId === currentChat.customerId
-                            ? 'CUSTOMER'
-                            : 'STAFF');
-                        const isIncoming = senderType !== 'STAFF';
+                  <div className="space-y-6">
+                    {messages.map((message: Message) => {
+                      const senderType =
+                        message.senderType ||
+                        (message.senderId === currentChat.customerId
+                          ? 'CUSTOMER'
+                          : 'STAFF');
 
-                        const senderChipClassName =
-                          senderType === 'AI'
-                            ? 'bg-slate-200 text-slate-700'
-                            : senderType === 'CUSTOMER'
-                              ? 'bg-emerald-100 text-emerald-700'
-                              : 'bg-blue-100 text-blue-700';
+                      const effectiveSenderStaffId =
+                        senderType === 'STAFF'
+                          ? message.senderStaffId || message.senderId || null
+                          : null;
 
-                        const bubbleClassName =
-                          senderType === 'AI'
-                            ? 'bg-slate-100 text-slate-800 border border-slate-200'
-                            : senderType === 'CUSTOMER'
-                              ? 'bg-gray-100 text-gray-800'
-                              : 'bg-blue-500 text-white';
+                      const effectiveSenderCustomerId =
+                        senderType === 'CUSTOMER'
+                          ? message.senderCustomerId || message.senderId || null
+                          : null;
 
-                        return (
-                          <div
-                            key={message.id}
-                            className={`flex ${isIncoming ? 'justify-start' : 'justify-end'}`}
-                          >
-                            <div className="max-w-[70%]">
-                              <div
-                                className={`mb-2 flex items-center gap-2 text-xs ${
-                                  isIncoming ? 'justify-start' : 'justify-end'
-                                }`}
+                      const isIncoming =
+                        senderType !== 'STAFF' ||
+                        effectiveSenderStaffId !== customerId;
+
+                      const senderLabel = getSenderLabel(
+                        senderType,
+                        effectiveSenderStaffId,
+                        effectiveSenderCustomerId,
+                        currentChat,
+                        customerId,
+                        staffNameById
+                      );
+
+                      const senderChipClassName =
+                        senderType === 'AI'
+                          ? 'bg-slate-200 text-slate-700'
+                          : senderType === 'CUSTOMER'
+                            ? 'bg-emerald-100 text-emerald-700'
+                            : 'bg-blue-100 text-blue-700';
+
+                      const bubbleClassName =
+                        senderType === 'AI'
+                          ? 'bg-slate-100 text-slate-800 border border-slate-200'
+                          : senderType === 'CUSTOMER'
+                            ? 'bg-gray-100 text-gray-800'
+                            : 'bg-blue-500 text-white';
+
+                      return (
+                        <div
+                          key={message.id}
+                          className={`flex ${isIncoming ? 'justify-start' : 'justify-end'}`}
+                        >
+                          <div className="max-w-[70%]">
+                            <div
+                              className={`mb-2 flex items-center gap-2 text-xs ${
+                                isIncoming ? 'justify-start' : 'justify-end'
+                              }`}
+                            >
+                              <span
+                                className={`rounded-full px-2 py-1 text-xs font-semibold ${senderChipClassName}`}
                               >
-                                <span
-                                  className={`rounded-full px-2 py-1 text-xs font-semibold ${senderChipClassName}`}
-                                >
-                                  {getSenderLabel(senderType)}
-                                </span>
-                                <span className="text-gray-400">
-                                  {formatMessageTime(message.createdAt)}
-                                </span>
-                              </div>
+                                {senderLabel}
+                              </span>
+                              <span className="text-gray-400">
+                                {formatMessageTime(message.createdAt)}
+                              </span>
+                            </div>
 
-                              <div
-                                className={`rounded-2xl px-4 py-3 ${bubbleClassName}`}
-                              >
-                                <p className="m-0 whitespace-pre-wrap break-words text-sm leading-relaxed">
-                                  {message.content}
-                                </p>
-                              </div>
+                            <div
+                              className={`rounded-2xl px-4 py-3 ${bubbleClassName}`}
+                            >
+                              <Paragraph className="!m-0 !text-sm !leading-relaxed !text-inherit whitespace-pre-wrap break-words">
+                                {message.content}
+                              </Paragraph>
                             </div>
                           </div>
-                        );
-                      })}
-                    </div>
-                  </>
+                        </div>
+                      );
+                    })}
+                  </div>
                 )}
               </div>
 
               <div className="border-t border-gray-200 p-4">
+                {canAssignConversation && (
+                  <div className="mb-3 rounded-lg border border-gray-200 bg-gray-50 p-3">
+                    <div className="flex flex-wrap items-center gap-2">
+                      <Select
+                        placeholder="Select staff to assign"
+                        value={selectedAssigneeStaffId || undefined}
+                        options={assignableStaffOptions}
+                        onChange={(value) => setSelectedAssigneeStaffId(value)}
+                        onPopupScroll={handleAssignableStaffPopupScroll}
+                        disabled={assigningChatId === currentChat.id}
+                        loading={
+                          loadingAssignableStaff || loadingMoreAssignableStaff
+                        }
+                        className="min-w-[220px]"
+                        showSearch
+                        optionFilterProp="label"
+                      />
+                      <Button
+                        type="primary"
+                        onClick={() => {
+                          handleAssign();
+                        }}
+                        loading={assigningChatId === currentChat.id}
+                        disabled={assignDisabled}
+                      >
+                        Assign
+                      </Button>
+                    </div>
+                    {assignmentHelperText && (
+                      <Text className="mt-2 block text-xs text-gray-500">
+                        {assignmentHelperText}
+                      </Text>
+                    )}
+                  </div>
+                )}
+
                 {sendError && (
                   <Alert
                     type="error"
