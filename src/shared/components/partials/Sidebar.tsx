@@ -15,7 +15,12 @@ import {
   TeamOutlined,
 } from '@ant-design/icons';
 import { useNavigate } from '@tanstack/react-router';
+import { useAuthStore } from '@stores/authStore';
 import { Button, Drawer, Layout, Menu, Typography } from 'antd';
+import {
+  MENU_REQUIRED_PERMISSION,
+  hasRequiredPermission,
+} from '@/auth/staffAccessPolicy';
 
 const { Sider } = Layout;
 const { Text } = Typography;
@@ -40,6 +45,7 @@ export function Sidebar({
   onClose,
 }: SidebarProps) {
   const navigate = useNavigate();
+  const user = useAuthStore((state) => state.user);
   const background = darkMode ? '#111827' : '#ffffff';
   const borderColor = darkMode ? '#334155' : '#e2e8f0';
 
@@ -160,6 +166,15 @@ export function Sidebar({
     },
   ];
 
+  const filteredMenuItems = menuItems
+    .map((group) => ({
+      ...group,
+      children: group.children.filter((item) =>
+        hasRequiredPermission(user, MENU_REQUIRED_PERMISSION[item.key])
+      ),
+    }))
+    .filter((group) => group.children.length > 0);
+
   const menuNode = (
     <div className="flex h-full flex-col">
       <div className="border-b px-4 pb-4 pt-5" style={{ borderColor }}>
@@ -214,7 +229,7 @@ export function Sidebar({
         <Menu
           mode="inline"
           selectedKeys={[selectedKey]}
-          items={menuItems}
+          items={filteredMenuItems}
           theme={darkMode ? 'dark' : 'light'}
           onClick={() => {
             if (mobile) {

@@ -5,6 +5,10 @@ import {
   captureRedirectPath,
   setAuthFeedbackReason,
 } from '@/auth/sessionPolicy';
+import {
+  hasRequiredPermission,
+  resolveRequiredPermissionByPath,
+} from '@/auth/staffAccessPolicy';
 
 type AuthPersistApi = {
   hasHydrated: () => boolean;
@@ -73,6 +77,7 @@ export async function waitForAuthHydration(): Promise<void> {
 
 export async function requireStaffAuth(opts?: {
   location?: RouterLocationLike;
+  requiredPermission?: string | null;
 }): Promise<void> {
   await waitForAuthHydration();
 
@@ -81,9 +86,20 @@ export async function requireStaffAuth(opts?: {
     await initializeAuth(true);
   }
 
-  if (!useAuthStore.getState().isAuthenticated) {
+  const currentState = useAuthStore.getState();
+
+  if (!currentState.isAuthenticated) {
     captureRedirectPath(buildPathFromLocation(opts?.location));
     setAuthFeedbackReason('login-required');
     throw redirect({ to: '/login' });
+  }
+
+  const requiredPermission =
+    opts?.requiredPermission ??
+    resolveRequiredPermissionByPath(opts?.location?.pathname ?? '/');
+
+  if (!hasRequiredPermission(currentState.user, requiredPermission)) {
+    captureRedirectPath(buildPathFromLocation(opts?.location));
+    throw redirect({ to: '/' });
   }
 }

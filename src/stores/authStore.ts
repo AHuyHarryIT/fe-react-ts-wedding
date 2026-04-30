@@ -1,16 +1,6 @@
+import type { User } from '@types';
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
-
-export interface User {
-  id: string;
-  phoneNumber: string;
-  firstName?: string;
-  lastName?: string;
-  email?: string;
-  isActive: boolean;
-  createdAt: string;
-  updatedAt: string;
-}
 
 export interface AuthState {
   user: User | null;
