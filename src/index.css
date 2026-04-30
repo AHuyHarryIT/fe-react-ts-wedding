@@ -121,6 +121,23 @@ html {
   background: #1f2937;
 }
 
+/* Force chart tooltip readability in light/dark themes */
+.g2-tooltip,
+.g2-tooltip * {
+  color: #141414 !important;
+}
+
+.g2-tooltip {
+  background: #ffffff !important;
+  border: 1px solid #d9d9d9 !important;
+}
+
+.g2-tooltip-list-item-name,
+.g2-tooltip-list-item-value,
+.g2-tooltip-title {
+  color: #141414 !important;
+}
+
 /* Backdrop blur support */
 .backdrop-blur-elegant {
   backdrop-filter: blur(20px);

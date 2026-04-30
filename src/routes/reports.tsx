@@ -1,6 +1,7 @@
 import { lazy, Suspense } from 'react';
 import { createFileRoute } from '@tanstack/react-router';
 import { AdminLayout } from '@shared/components/AdminLayout';
+import { requireStaffAuth } from '@utils/authGuard';
 import { Spin } from 'antd';
 
 const ReportsView = lazy(() =>
@@ -11,7 +12,7 @@ const ReportsView = lazy(() =>
 
 export const Route = createFileRoute('/reports')({
   component: ReportsPage,
-  beforeLoad: () => ({ adminOnly: true }),
+  beforeLoad: ({ location }) => requireStaffAuth({ location }),
 });
 
 function ReportsPage() {
