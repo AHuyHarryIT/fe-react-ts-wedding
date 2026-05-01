@@ -686,6 +686,78 @@ html {
   color: #f8fafc;
 }
 
+.staff-interactive-surface {
+  transition:
+    transform 0.2s ease,
+    box-shadow 0.2s ease,
+    border-color 0.2s ease;
+}
+
+.staff-interactive-surface:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 10px 20px -18px rgba(15, 23, 42, 0.55);
+  border-color: rgba(59, 130, 246, 0.3) !important;
+}
+
+.dark .staff-interactive-surface:hover {
+  border-color: rgba(125, 211, 252, 0.32) !important;
+  box-shadow: 0 10px 20px -16px rgba(2, 6, 23, 0.9);
+}
+
+.staff-page .ant-card-head {
+  padding-left: 1.1rem;
+  padding-right: 1.1rem;
+}
+
+.staff-page .ant-card-body {
+  padding: 1.1rem;
+}
+
+@media (min-width: 1024px) {
+  .staff-page .ant-card-head {
+    padding-left: 1.25rem;
+    padding-right: 1.25rem;
+  }
+
+  .staff-page .ant-card-body {
+    padding: 1.25rem;
+  }
+}
+
+.staff-page .ant-alert {
+  border-radius: 14px;
+}
+
+.staff-page .ant-skeleton {
+  margin-bottom: 2px;
+}
+
+.staff-page .group:hover .staff-stat-card {
+  box-shadow:
+    0 18px 32px -24px rgba(15, 23, 42, 0.45),
+    0 8px 16px -14px rgba(30, 41, 59, 0.32);
+}
+
+.dark .staff-page .group:hover .staff-stat-card {
+  box-shadow:
+    0 20px 34px -22px rgba(2, 6, 23, 0.86),
+    0 10px 18px -12px rgba(15, 23, 42, 0.72);
+}
+
+.staff-page .ant-btn {
+  font-weight: 600;
+}
+
+.staff-page .ant-btn-default:hover {
+  border-color: #93c5fd;
+  color: #1d4ed8;
+}
+
+.dark .staff-page .ant-btn-default:hover {
+  border-color: rgba(125, 211, 252, 0.45);
+  color: #bae6fd;
+}
+
 .staff-toolbar {
   display: flex;
   flex-direction: column;
