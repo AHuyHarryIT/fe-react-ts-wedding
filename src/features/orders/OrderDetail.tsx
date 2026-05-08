@@ -82,12 +82,12 @@ export const OrderDetail: React.FC<OrderDetailProps> = ({
         return <Tag color={colors[status] || 'blue'}>{status}</Tag>;
       },
     },
-    {
-      title: 'Transaction ID',
-      dataIndex: 'txnId',
-      key: 'txnId',
-      render: (txnId: string) => (txnId ? <code>{txnId}</code> : '-'),
-    },
+    // {
+    //   title: 'Transaction ID',
+    //   dataIndex: 'txnId',
+    //   key: 'txnId',
+    //   render: (txnId: string) => (txnId ? <code>{txnId}</code> : '-'),
+    // },
   ];
 
   return (
